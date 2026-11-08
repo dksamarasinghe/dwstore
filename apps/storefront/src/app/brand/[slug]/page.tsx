@@ -144,23 +144,36 @@ export default function BrandPage() {
                       <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
                         {product.brand || 'GENUINE'}
                       </span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          toggleWishlist(product.id);
-                        }}
-                        className={`w-7 h-7 rounded-full flex items-center justify-center transition cursor-pointer ${
-                          isInWishlist(product.id)
-                            ? 'bg-rose-50 text-rose-500 border border-rose-200 shadow-xs'
-                            : 'bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-500'
-                        }`}
-                        aria-label="Wishlist"
-                        title={isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
-                      >
-                        <Heart className={`w-3.5 h-3.5 ${isInWishlist(product.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        {product.inStock !== false ? (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200/80">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            In Stock
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-200/80">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                            Out of Stock
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleWishlist(product.id);
+                          }}
+                          className={`w-7 h-7 rounded-full flex items-center justify-center transition cursor-pointer ${
+                            isInWishlist(product.id)
+                              ? 'bg-rose-50 text-rose-500 border border-rose-200 shadow-xs'
+                              : 'bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-500'
+                          }`}
+                          aria-label="Wishlist"
+                          title={isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${isInWishlist(product.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
+                        </button>
+                      </div>
                     </div>
 
                     <Link

@@ -11,7 +11,7 @@ import brandsData from '@/data/brands.json';
 import { formatPriceLKR } from '@/lib/catalog';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { Star, ShoppingCart, Heart, SlidersHorizontal, ChevronRight, X, Check } from 'lucide-react';
+import { Star, ShoppingCart, Heart, SlidersHorizontal, ChevronRight, X, Check, Filter } from 'lucide-react';
 
 function ShopContent() {
   const searchParams = useSearchParams();
@@ -32,22 +32,47 @@ function ShopContent() {
   const [onlyDeals, setOnlyDeals] = useState<boolean>(
     () => searchParams.get('filter') === 'deals'
   );
+  const [stockFilter, setStockFilter] = useState<'all' | 'in-stock' | 'out-of-stock'>(
+    () => (searchParams.get('stock') as any) || 'all'
+  );
+
+  // Price range filter states (in LKR rupees)
+  const [minPrice, setMinPrice] = useState<string>(
+    () => searchParams.get('minPrice') || ''
+  );
+  const [maxPrice, setMaxPrice] = useState<string>(
+    () => searchParams.get('maxPrice') || ''
+  );
+  const [inputMinPrice, setInputMinPrice] = useState<string>(
+    () => searchParams.get('minPrice') || ''
+  );
+  const [inputMaxPrice, setInputMaxPrice] = useState<string>(
+    () => searchParams.get('maxPrice') || ''
+  );
+
   const [currentPage, setCurrentPage] = useState(1);
   const [cartNotice, setCartNotice] = useState<string | null>(null);
   const itemsPerPage = 20;
 
-  // Crucial: Automatically synchronize filter state whenever searchParams in the URL changes
-  // (e.g. clicking "Smart Watches", "Power Banks", "Earbuds", "Hot Deals", or "All Products" in the navbar)
+  // Synchronize filter state whenever searchParams in the URL changes
   useEffect(() => {
     const cat = searchParams.get('category') || 'all';
     const br = searchParams.get('brand') || 'all';
     const q = searchParams.get('q') || '';
     const filter = searchParams.get('filter') || 'all';
+    const stock = (searchParams.get('stock') as any) || 'all';
+    const minP = searchParams.get('minPrice') || '';
+    const maxP = searchParams.get('maxPrice') || '';
 
     setSelectedCategory(cat);
     setSelectedBrand(br);
     setSearchQuery(q);
     setOnlyDeals(filter === 'deals');
+    setStockFilter(stock);
+    setMinPrice(minP);
+    setMaxPrice(maxP);
+    setInputMinPrice(minP);
+    setInputMaxPrice(maxP);
     setCurrentPage(1);
   }, [searchParams]);
 
@@ -57,16 +82,27 @@ function ShopContent() {
     brand?: string;
     q?: string;
     deals?: boolean;
+    stock?: 'all' | 'in-stock' | 'out-of-stock';
+    minPrice?: string;
+    maxPrice?: string;
   }) => {
     const nextCat = newParams.category !== undefined ? newParams.category : selectedCategory;
     const nextBrand = newParams.brand !== undefined ? newParams.brand : selectedBrand;
     const nextQ = newParams.q !== undefined ? newParams.q : searchQuery;
     const nextDeals = newParams.deals !== undefined ? newParams.deals : onlyDeals;
+    const nextStock = newParams.stock !== undefined ? newParams.stock : stockFilter;
+    const nextMin = newParams.minPrice !== undefined ? newParams.minPrice : minPrice;
+    const nextMax = newParams.maxPrice !== undefined ? newParams.maxPrice : maxPrice;
 
     setSelectedCategory(nextCat);
     setSelectedBrand(nextBrand);
     setSearchQuery(nextQ);
     setOnlyDeals(nextDeals);
+    setStockFilter(nextStock);
+    setMinPrice(nextMin);
+    setMaxPrice(nextMax);
+    setInputMinPrice(nextMin);
+    setInputMaxPrice(nextMax);
     setCurrentPage(1);
 
     const query = new URLSearchParams();
@@ -74,15 +110,43 @@ function ShopContent() {
     if (nextBrand && nextBrand !== 'all') query.set('brand', nextBrand);
     if (nextQ) query.set('q', nextQ);
     if (nextDeals) query.set('filter', 'deals');
+    if (nextStock && nextStock !== 'all') query.set('stock', nextStock);
+    if (nextMin) query.set('minPrice', nextMin);
+    if (nextMax) query.set('maxPrice', nextMax);
 
     const qs = query.toString();
     router.replace(`/shop${qs ? `?${qs}` : ''}`, { scroll: false });
   };
 
-  // Filter products with robust case-insensitive slug checking
+  const handleApplyPrice = () => {
+    updateFilters({
+      minPrice: inputMinPrice.trim(),
+      maxPrice: inputMaxPrice.trim(),
+    });
+  };
+
+  const handleClearPrice = () => {
+    setInputMinPrice('');
+    setInputMaxPrice('');
+    updateFilters({ minPrice: '', maxPrice: '' });
+  };
+
+  // Stock counts in the dataset
+  const { totalInStock, totalOutOfStock } = useMemo(() => {
+    let inS = 0;
+    let outS = 0;
+    (productsData as any[]).forEach((p) => {
+      if (p.inStock !== false) inS++;
+      else outS++;
+    });
+    return { totalInStock: inS, totalOutOfStock: outS };
+  }, []);
+
+  // Filter products with robust case-insensitive slug checking, stock status, and price range
   const filteredProducts = useMemo(() => {
     return (productsData as any[])
       .filter((p) => {
+        // Category filter
         if (selectedCategory !== 'all') {
           const hasCategory = p.categorySlugs?.some(
             (slug: string) => slug.toLowerCase() === selectedCategory.toLowerCase()
@@ -90,6 +154,7 @@ function ShopContent() {
           if (!hasCategory) return false;
         }
 
+        // Brand filter
         if (selectedBrand !== 'all') {
           const matchBrand =
             p.brandSlug?.toLowerCase() === selectedBrand.toLowerCase() ||
@@ -97,10 +162,32 @@ function ShopContent() {
           if (!matchBrand) return false;
         }
 
+        // Deals filter
         if (onlyDeals && (!p.salePriceMinor || p.salePriceMinor >= p.regularPriceMinor)) {
           return false;
         }
 
+        // Stock filter (in-stock vs out-of-stock)
+        const isInStock = p.inStock !== false;
+        if (stockFilter === 'in-stock' && !isInStock) {
+          return false;
+        }
+        if (stockFilter === 'out-of-stock' && isInStock) {
+          return false;
+        }
+
+        // Price range filter (prices in minor cents / 100)
+        const priceLkr = (p.salePriceMinor || p.minPriceMinor || p.regularPriceMinor || 0) / 100;
+        if (minPrice) {
+          const minVal = parseFloat(minPrice);
+          if (!isNaN(minVal) && priceLkr < minVal) return false;
+        }
+        if (maxPrice) {
+          const maxVal = parseFloat(maxPrice);
+          if (!isNaN(maxVal) && priceLkr > maxVal) return false;
+        }
+
+        // Search query
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
           const matchesName = (p.name || '').toLowerCase().includes(q);
@@ -119,7 +206,7 @@ function ShopContent() {
         if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
         return 0;
       });
-  }, [selectedCategory, selectedBrand, searchQuery, onlyDeals, sortBy]);
+  }, [selectedCategory, selectedBrand, searchQuery, onlyDeals, stockFilter, minPrice, maxPrice, sortBy]);
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
   const paginatedProducts = filteredProducts.slice(
@@ -133,9 +220,25 @@ function ShopContent() {
     );
   }, [selectedCategory]);
 
+  const hasActiveFilters =
+    selectedCategory !== 'all' ||
+    selectedBrand !== 'all' ||
+    searchQuery ||
+    onlyDeals ||
+    stockFilter !== 'all' ||
+    Boolean(minPrice) ||
+    Boolean(maxPrice);
+
   const handleAddToCart = (product: any, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (product.inStock === false) {
+      setCartNotice(`"${product.name}" is currently Out of Stock.`);
+      setTimeout(() => setCartNotice(null), 3000);
+      return;
+    }
+
     addToCart({
       productId: product.id,
       name: product.name,
@@ -152,8 +255,8 @@ function ShopContent() {
     <>
       {/* Floating Cart Notice */}
       {cartNotice && (
-        <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 animate-bounce">
-          <Check className="w-4 h-4" />
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 animate-bounce border border-slate-700">
+          <Check className="w-4 h-4 text-emerald-400" />
           <span>{cartNotice}</span>
         </div>
       )}
@@ -168,10 +271,18 @@ function ShopContent() {
               href="/shop"
               onClick={(e) => {
                 e.preventDefault();
-                updateFilters({ category: 'all', brand: 'all', q: '', deals: false });
+                updateFilters({
+                  category: 'all',
+                  brand: 'all',
+                  q: '',
+                  deals: false,
+                  stock: 'all',
+                  minPrice: '',
+                  maxPrice: '',
+                });
               }}
               className={`hover:text-blue-600 ${
-                selectedCategory === 'all' && !onlyDeals ? 'font-bold text-slate-800' : ''
+                !hasActiveFilters ? 'font-bold text-slate-800' : ''
               }`}
             >
               All Products
@@ -201,6 +312,24 @@ function ShopContent() {
                 </span>
               </>
             )}
+
+            {stockFilter !== 'all' && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                <span className={`font-bold capitalize ${stockFilter === 'in-stock' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {stockFilter === 'in-stock' ? 'In Stock Only' : 'Out of Stock Only'}
+                </span>
+              </>
+            )}
+
+            {(minPrice || maxPrice) && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-slate-700 font-bold">
+                  Price: LKR {minPrice ? Number(minPrice).toLocaleString() : '0'} - {maxPrice ? Number(maxPrice).toLocaleString() : 'Any'}
+                </span>
+              </>
+            )}
           </div>
           <span className="font-semibold text-slate-700">
             Showing {filteredProducts.length} Products
@@ -219,11 +348,19 @@ function ShopContent() {
                   <SlidersHorizontal className="w-4 h-4 text-blue-600" />
                   Filter Catalog
                 </span>
-                {(selectedCategory !== 'all' || selectedBrand !== 'all' || searchQuery || onlyDeals) && (
+                {hasActiveFilters && (
                   <button
                     type="button"
                     onClick={() => {
-                      updateFilters({ category: 'all', brand: 'all', q: '', deals: false });
+                      updateFilters({
+                        category: 'all',
+                        brand: 'all',
+                        q: '',
+                        deals: false,
+                        stock: 'all',
+                        minPrice: '',
+                        maxPrice: '',
+                      });
                     }}
                     className="text-[11px] font-bold text-rose-600 hover:underline flex items-center gap-1 cursor-pointer"
                   >
@@ -245,6 +382,139 @@ function ShopContent() {
                   />
                   <span>Show Discounted Deals Only</span>
                 </label>
+              </div>
+
+              {/* Stock Availability Filter */}
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 mb-2">
+                  Stock Availability
+                </h4>
+                <div className="space-y-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => updateFilters({ stock: 'all' })}
+                    className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
+                      stockFilter === 'all'
+                        ? 'bg-blue-600 text-white font-bold'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span>All Availability</span>
+                    <span>{productsData.length}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateFilters({ stock: 'in-stock' })}
+                    className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
+                      stockFilter === 'in-stock'
+                        ? 'bg-emerald-600 text-white font-bold'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      In Stock
+                    </span>
+                    <span>{totalInStock}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateFilters({ stock: 'out-of-stock' })}
+                    className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
+                      stockFilter === 'out-of-stock'
+                        ? 'bg-rose-600 text-white font-bold'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                      Out of Stock
+                    </span>
+                    <span>{totalOutOfStock}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Price Range Filter (LKR) */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                    Price Range (LKR)
+                  </h4>
+                  {(minPrice || maxPrice) && (
+                    <button
+                      type="button"
+                      onClick={handleClearPrice}
+                      className="text-[10px] text-blue-600 hover:underline font-bold"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div>
+                    <label className="text-[10px] text-slate-500 font-medium block mb-1">Min (LKR)</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 500"
+                      value={inputMinPrice}
+                      onChange={(e) => setInputMinPrice(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleApplyPrice()}
+                      className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-500 font-medium block mb-1">Max (LKR)</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 5000"
+                      value={inputMaxPrice}
+                      onChange={(e) => setInputMaxPrice(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleApplyPrice()}
+                      className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleApplyPrice}
+                  className="w-full py-1.5 bg-slate-900 hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Filter className="w-3 h-3" />
+                  Apply Price Filter
+                </button>
+
+                {/* Quick Price Preset Chips */}
+                <div className="flex flex-wrap gap-1 mt-2.5">
+                  {[
+                    { label: '< 2.5K', min: '', max: '2500' },
+                    { label: '2.5K - 10K', min: '2500', max: '10000' },
+                    { label: '10K - 30K', min: '10000', max: '30000' },
+                    { label: '> 30K', min: '30000', max: '' },
+                  ].map((preset) => {
+                    const isSelected = minPrice === preset.min && maxPrice === preset.max;
+                    return (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => {
+                          setInputMinPrice(preset.min);
+                          setInputMaxPrice(preset.max);
+                          updateFilters({ minPrice: preset.min, maxPrice: preset.max });
+                        }}
+                        className={`text-[10px] px-2 py-1 rounded-md border transition cursor-pointer ${
+                          isSelected
+                            ? 'bg-blue-50 border-blue-500 text-blue-600 font-bold'
+                            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Category Filter */}
@@ -364,7 +634,15 @@ function ShopContent() {
                   <button
                     type="button"
                     onClick={() => {
-                      updateFilters({ category: 'all', brand: 'all', q: '', deals: false });
+                      updateFilters({
+                        category: 'all',
+                        brand: 'all',
+                        q: '',
+                        deals: false,
+                        stock: 'all',
+                        minPrice: '',
+                        maxPrice: '',
+                      });
                     }}
                     className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
                   >
@@ -382,6 +660,7 @@ function ShopContent() {
                       ? Math.round(((regularPrice - price) / regularPrice) * 100)
                       : 0;
 
+                  const isInStock = product.inStock !== false;
                   const isFavorited = isInWishlist(product.id);
 
                   return (
@@ -389,12 +668,14 @@ function ShopContent() {
                       key={product.id}
                       className="bg-white rounded-2xl border border-slate-200/90 p-3 flex flex-col justify-between hover:shadow-lg hover:border-blue-200 transition-all group relative"
                     >
-                      {/* Discount Badge */}
-                      {discountPercent > 0 && (
-                        <div className="absolute top-2 left-2 z-10 bg-rose-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
-                          -{discountPercent}%
-                        </div>
-                      )}
+                      {/* Top Badges Container: Discount */}
+                      <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 items-start">
+                        {discountPercent > 0 && (
+                          <div className="bg-rose-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
+                            -{discountPercent}%
+                          </div>
+                        )}
+                      </div>
 
                       {/* Wishlist Icon */}
                       <button
@@ -422,21 +703,44 @@ function ShopContent() {
                       </button>
 
                       <Link href={`/product/${product.slug}`} className="block">
-                        <div className="w-full aspect-square bg-slate-50/50 rounded-xl p-3 flex items-center justify-center overflow-hidden mb-3">
+                        <div className="w-full aspect-square bg-slate-50/50 rounded-xl p-3 flex items-center justify-center overflow-hidden mb-3 relative">
                           <img
                             src={product.displayImage || product.imageUrls?.[0] || '/dwstore_logo.png'}
                             alt={product.name}
-                            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                            className={`w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 ${
+                              !isInStock ? 'opacity-70 grayscale-[20%]' : ''
+                            }`}
                             loading="lazy"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = '/dwstore_logo.png';
                             }}
                           />
+                          {!isInStock && (
+                            <div className="absolute inset-0 bg-slate-900/10 flex items-center justify-center pointer-events-none">
+                              <span className="bg-slate-900/85 backdrop-blur-xs text-white text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg shadow-md border border-white/20">
+                                Out of Stock
+                              </span>
+                            </div>
+                          )}
                         </div>
 
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                          {product.brand || 'ELECTRONICS'}
-                        </span>
+                        {/* Brand & Stock Status Badge */}
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">
+                            {product.brand || 'ELECTRONICS'}
+                          </span>
+                          {isInStock ? (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200/80 shrink-0">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                              In Stock
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-200/80 shrink-0">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                              Out of Stock
+                            </span>
+                          )}
+                        </div>
 
                         <div className="flex items-center gap-1 mb-1.5">
                           <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
@@ -462,14 +766,27 @@ function ShopContent() {
                           </div>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={(e) => handleAddToCart(product, e)}
-                          className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition shadow-xs cursor-pointer"
-                          aria-label="Add to cart"
-                        >
-                          <ShoppingCart className="w-3.5 h-3.5" />
-                        </button>
+                        {isInStock ? (
+                          <button
+                            type="button"
+                            onClick={(e) => handleAddToCart(product, e)}
+                            className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition shadow-xs cursor-pointer"
+                            aria-label="Add to cart"
+                            title="Add to cart"
+                          >
+                            <ShoppingCart className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => handleAddToCart(product, e)}
+                            className="w-8 h-8 rounded-xl bg-slate-100 text-slate-400 cursor-not-allowed flex items-center justify-center"
+                            aria-label="Out of stock"
+                            title="Currently Out of Stock"
+                          >
+                            <ShoppingCart className="w-3.5 h-3.5 opacity-40" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
