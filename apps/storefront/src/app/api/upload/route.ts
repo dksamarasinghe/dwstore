@@ -76,6 +76,24 @@ export async function POST(req: NextRequest) {
     // Sanitize and create unique filename
     const originalName = file.name || 'image.jpg';
     const ext = path.extname(originalName).toLowerCase() || '.jpg';
+
+    // Anti-Malware / Anti-Shell Upload Protection: Only allow genuine image extensions
+    const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.svg', '.gif', '.avif'];
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return NextResponse.json(
+        { success: false, error: 'Security Warning: Only image files (JPG, PNG, WebP, SVG, AVIF) are permitted.' },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    // Maximum file size limit: 15MB
+    if (buffer.length > 15 * 1024 * 1024) {
+      return NextResponse.json(
+        { success: false, error: 'File size exceeds the 15MB upload limit.' },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
     const baseName = path.basename(originalName, ext)
       .toLowerCase()
       .replace(/[^\w\s-]/g, '')
