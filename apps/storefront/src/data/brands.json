@@ -1,0 +1,340 @@
+[
+  {
+    "id": "aspor",
+    "name": "Aspor",
+    "slug": "aspor",
+    "productCount": 36
+  },
+  {
+    "id": "jc-comm",
+    "name": "JC COMM",
+    "slug": "jc-comm",
+    "productCount": 1
+  },
+  {
+    "id": "remax",
+    "name": "Remax",
+    "slug": "remax",
+    "productCount": 15
+  },
+  {
+    "id": "tandg",
+    "name": "T&G",
+    "slug": "tandg",
+    "productCount": 4
+  },
+  {
+    "id": "jedel",
+    "name": "JEDEL",
+    "slug": "jedel",
+    "productCount": 1
+  },
+  {
+    "id": "lenovo",
+    "name": "Lenovo",
+    "slug": "lenovo",
+    "productCount": 4,
+    "logo": "/media/brands/lenovo-logo.svg"
+  },
+  {
+    "id": "qkz",
+    "name": "QKZ",
+    "slug": "qkz",
+    "productCount": 2
+  },
+  {
+    "id": "celebrat",
+    "name": "Celebrat",
+    "slug": "celebrat",
+    "productCount": 10
+  },
+  {
+    "id": "bwoo",
+    "name": "BWOO",
+    "slug": "bwoo",
+    "productCount": 23
+  },
+  {
+    "id": "jbl",
+    "name": "JBL",
+    "slug": "jbl",
+    "productCount": 4
+  },
+  {
+    "id": "meetion",
+    "name": "Meetion",
+    "slug": "meetion",
+    "productCount": 6
+  },
+  {
+    "id": "vdenmenv",
+    "name": "VDENMENV",
+    "slug": "vdenmenv",
+    "productCount": 6
+  },
+  {
+    "id": "foneng",
+    "name": "FONENG",
+    "slug": "foneng",
+    "productCount": 11
+  },
+  {
+    "id": "brodu",
+    "name": "Brodu",
+    "slug": "brodu",
+    "productCount": 6
+  },
+  {
+    "id": "plokama",
+    "name": "PLOKAMA",
+    "slug": "plokama",
+    "productCount": 15
+  },
+  {
+    "id": "anker",
+    "name": "Anker",
+    "slug": "anker",
+    "productCount": 20
+  },
+  {
+    "id": "joyroom",
+    "name": "Joyroom",
+    "slug": "joyroom",
+    "productCount": 1
+  },
+  {
+    "id": "vgr",
+    "name": "VGR",
+    "slug": "vgr",
+    "productCount": 3
+  },
+  {
+    "id": "yesido",
+    "name": "YESIDO",
+    "slug": "yesido",
+    "productCount": 2
+  },
+  {
+    "id": "tplink",
+    "name": "TPLINK",
+    "slug": "tplink",
+    "productCount": 1
+  },
+  {
+    "id": "hikvision-ezviz-hikvision",
+    "name": "Hikvision > EZVIZ, Hikvision",
+    "slug": "hikvision-ezviz-hikvision",
+    "productCount": 7
+  },
+  {
+    "id": "ldnio",
+    "name": "LDNIO",
+    "slug": "ldnio",
+    "productCount": 6
+  },
+  {
+    "id": "baseus",
+    "name": "Baseus",
+    "slug": "baseus",
+    "productCount": 7
+  },
+  {
+    "id": "ndr",
+    "name": "NDR",
+    "slug": "ndr",
+    "productCount": 5
+  },
+  {
+    "id": "mi",
+    "name": "Mi",
+    "slug": "mi",
+    "productCount": 1
+  },
+  {
+    "id": "kts",
+    "name": "KTS",
+    "slug": "kts",
+    "productCount": 1
+  },
+  {
+    "id": "lb-link",
+    "name": "LB-LINK",
+    "slug": "lb-link",
+    "productCount": 4
+  },
+  {
+    "id": "haylou",
+    "name": "HAYLOU",
+    "slug": "haylou",
+    "productCount": 3
+  },
+  {
+    "id": "keqiwear",
+    "name": "KEQIWEAR",
+    "slug": "keqiwear",
+    "productCount": 1
+  },
+  {
+    "id": "goop",
+    "name": "GOOP",
+    "slug": "goop",
+    "productCount": 2
+  },
+  {
+    "id": "jio",
+    "name": "JIO",
+    "slug": "jio",
+    "productCount": 1
+  },
+  {
+    "id": "uiisii",
+    "name": "UiiSii",
+    "slug": "uiisii",
+    "productCount": 1
+  },
+  {
+    "id": "tiandy",
+    "name": "Tiandy",
+    "slug": "tiandy",
+    "productCount": 2
+  },
+  {
+    "id": "aibimy",
+    "name": "aibimy",
+    "slug": "aibimy",
+    "productCount": 3
+  },
+  {
+    "id": "lito",
+    "name": "LITO",
+    "slug": "lito",
+    "productCount": 7
+  },
+  {
+    "id": "ven-dens",
+    "name": "VEN-DENS",
+    "slug": "ven-dens",
+    "productCount": 4
+  },
+  {
+    "id": "kingston",
+    "name": "Kingston",
+    "slug": "kingston",
+    "productCount": 4
+  },
+  {
+    "id": "kisonli",
+    "name": "Kisonli",
+    "slug": "kisonli",
+    "productCount": 3
+  },
+  {
+    "id": "sandisk",
+    "name": "SanDisk",
+    "slug": "sandisk",
+    "productCount": 2
+  },
+  {
+    "id": "vstarcam",
+    "name": "VSTARCAM",
+    "slug": "vstarcam",
+    "productCount": 6
+  },
+  {
+    "id": "soundpeats",
+    "name": "Soundpeats",
+    "slug": "soundpeats",
+    "productCount": 1
+  },
+  {
+    "id": "sky-mobile",
+    "name": "SKY MOBILE",
+    "slug": "sky-mobile",
+    "productCount": 2
+  },
+  {
+    "id": "ugreen",
+    "name": "UGREEN",
+    "slug": "ugreen",
+    "productCount": 6
+  },
+  {
+    "id": "sony",
+    "name": "SONY",
+    "slug": "sony",
+    "productCount": 22,
+    "logo": "/media/brands/sony-logo.svg"
+  },
+  {
+    "id": "pluzz",
+    "name": "PLUZZ",
+    "slug": "pluzz",
+    "productCount": 2
+  },
+  {
+    "id": "nokia",
+    "name": "NOKIA",
+    "slug": "nokia",
+    "productCount": 1
+  },
+  {
+    "id": "hmd",
+    "name": "HMD",
+    "slug": "hmd",
+    "productCount": 1
+  },
+  {
+    "id": "softlogic",
+    "name": "Softlogic",
+    "slug": "softlogic",
+    "productCount": 1
+  },
+  {
+    "id": "hono",
+    "name": "Hono",
+    "slug": "hono",
+    "productCount": 1
+  },
+  {
+    "id": "greentel",
+    "name": "Greentel",
+    "slug": "greentel",
+    "productCount": 2
+  },
+  {
+    "id": "samsung",
+    "name": "SAMSUNG",
+    "slug": "samsung",
+    "productCount": 1
+  },
+  {
+    "id": "microlab",
+    "name": "Microlab",
+    "slug": "microlab",
+    "productCount": 2
+  },
+  {
+    "id": "hoioto",
+    "name": "HOIOTO",
+    "slug": "hoioto",
+    "productCount": 2
+  },
+  {
+    "id": "aoc",
+    "name": "AOC",
+    "slug": "aoc",
+    "productCount": 1
+  },
+  {
+    "id": "hiksemi",
+    "name": "HIKSEMI",
+    "slug": "hiksemi",
+    "productCount": 2
+  },
+  {
+    "id": "mikorean",
+    "name": "Mikorean",
+    "slug": "mikorean",
+    "productCount": 2
+  }
+]

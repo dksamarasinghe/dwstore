@@ -1,0 +1,234 @@
+{
+  "hero": {
+    "mainBox": {
+      "type": "custom",
+      "selectedId": "",
+      "badge": "DWSTORE • SRI LANKA'S TRUSTED TECH STORE",
+      "title": "PREMIUM TECH, SMARTWATCHES & ACCESSORIES",
+      "description": "Direct importer warranties, 100% genuine products & island-wide express cash on delivery. Pay in 3x or 4x installments with KOKO and Payzy.",
+      "button1Text": "SHOP ALL PRODUCTS",
+      "button1Link": "/shop",
+      "button2Text": "EXPLORE DEALS",
+      "button2Link": "/shop",
+      "image": "https://www.dwstore.lk/wp-content/uploads/2024/10/T800-Ultra-Smart-Watch-1.jpg",
+      "secondaryImage": "https://www.dwstore.lk/wp-content/uploads/2024/10/RPP2921.jpg"
+    },
+    "sideBox1": {
+      "type": "product",
+      "selectedId": "29517",
+      "badge": "BEST SELLER",
+      "title": "T800 Ultra Series 8",
+      "subtitle": "Large HD Display • Bluetooth Call • Sports Modes",
+      "priceText": "Rs. 1,990",
+      "buttonText": "Order now",
+      "link": "/product/t800-ultra-smartwatch-series-8-29517",
+      "image": "https://www.dwstore.lk/wp-content/uploads/2024/10/T800-Ultra-Smart-Watch-1.jpg"
+    },
+    "sideBox2": {
+      "type": "product",
+      "selectedId": "29534",
+      "badge": "HIGH CAPACITY",
+      "title": "Remax RPP-292 PD+QC",
+      "subtitle": "20,000mAh 22.5W Super Fast Charging with LED",
+      "priceText": "Rs. 9,990",
+      "buttonText": "Order now",
+      "link": "/product/remax-rpp-292-225w-20000mah-pdqc-power-bank-29534",
+      "image": "https://www.dwstore.lk/wp-content/uploads/2024/10/RPP2921.jpg"
+    }
+  },
+  "brandsBar": {
+    "enabled": true,
+    "selectedBrands": [
+      {
+        "name": "Anker",
+        "slug": "anker",
+        "tag": "Sound & Power",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Anker_logo.svg/512px-Anker_logo.svg.png"
+      },
+      {
+        "name": "Baseus",
+        "slug": "baseus",
+        "tag": "Charging & Audio",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Baseus_logo.svg/512px-Baseus_logo.svg.png"
+      },
+      {
+        "name": "JBL",
+        "slug": "jbl",
+        "tag": "Signature Sound",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/JBL_logo.svg/512px-JBL_logo.svg.png"
+      },
+      {
+        "name": "Remax",
+        "slug": "remax",
+        "tag": "Life Accessories",
+        "logo": "https://seeklogo.com/images/R/remax-logo-F91A8CF3BA-seeklogo.com.png"
+      },
+      {
+        "name": "Joyroom",
+        "slug": "joyroom",
+        "tag": "Fast Charging",
+        "logo": "https://cdn.worldvectorlogo.com/logos/joyroom.svg"
+      },
+      {
+        "name": "Lenovo",
+        "slug": "lenovo",
+        "tag": "Audio & Tech",
+        "logo": "/media/brands/lenovo-logo.svg"
+      },
+      {
+        "name": "SONY",
+        "slug": "sony",
+        "tag": "Audio & Imaging",
+        "logo": "/media/brands/sony-logo.svg"
+      },
+      {
+        "name": "SAMSUNG",
+        "slug": "samsung",
+        "tag": "Original Accessories",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Samsung_Logo.svg/512px-Samsung_Logo.svg.png"
+      },
+      {
+        "name": "SanDisk",
+        "slug": "sandisk",
+        "tag": "Storage & Flash",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/SanDisk_Logo.svg/512px-SanDisk_Logo.svg.png"
+      },
+      {
+        "name": "UGREEN",
+        "slug": "ugreen",
+        "tag": "Adapters & Hubs",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/UGREEN_logo.svg/512px-UGREEN_logo.svg.png"
+      },
+      {
+        "name": "Hikvision",
+        "slug": "hikvision",
+        "tag": "Security & Cam",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Hikvision_logo.svg/512px-Hikvision_logo.svg.png"
+      },
+      {
+        "name": "Aspor",
+        "slug": "aspor",
+        "tag": "Power Banks",
+        "logo": "https://aspor.com.pk/wp-content/uploads/2021/04/aspor-logo.png"
+      }
+    ]
+  },
+  "promoBanners": {
+    "enabled": true,
+    "recommendedSize": "1400 x 360 px (Aspect ratio ~ 4:1 desktop, responsive mobile)",
+    "banners": [
+      {
+        "id": "banner-1",
+        "title": "11.11 Mega Sale - Up to 50% Off Top Tech & Accessories",
+        "image": "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1400&auto=format&fit=crop&q=80",
+        "link": "/shop",
+        "active": true
+      },
+      {
+        "id": "banner-2",
+        "title": "Smart Watch Festival - Island-wide Free Delivery on Prepaid & COD",
+        "image": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=1400&auto=format&fit=crop&q=80",
+        "link": "/category/smart-watches",
+        "active": true
+      }
+    ]
+  },
+  "shopByCategories": {
+    "enabled": true,
+    "title": "Shop by Categories",
+    "subtitle": "Explore authentic imported tech products with official warranty",
+    "selectedCategorySlugs": [
+      "phone-accessories",
+      "cable-and-adaptors",
+      "headphone-and-headset",
+      "electronics-accessories",
+      "bluetooth-speakers",
+      "computer-accessories",
+      "bluetooth-handfree",
+      "power-banks",
+      "smartwatches",
+      "backcovers",
+      "smart-devices",
+      "fashion",
+      "car-accessories",
+      "network-tools-and-accessories"
+    ]
+  },
+  "superDeals": {
+    "enabled": true,
+    "title": "Today's Super Deals",
+    "badge": "⚡ LIMITED TIME OFFERS",
+    "subtitle": "Limited time mega discounts with express island-wide cash on delivery",
+    "endTimeHours": 14,
+    "productIds": [
+      "29528",
+      "29522",
+      "33554",
+      "29532",
+      "31905",
+      "32146",
+      "33412"
+    ],
+    "countdownHours": 18
+  },
+  "bentoGrid": {
+    "enabled": true,
+    "boxes": [
+      {
+        "id": "box1",
+        "categorySlug": "headphone-and-headset",
+        "badge": "STUDIO & WIRELESS",
+        "title": "Headphones & Earbuds",
+        "description": "Over-Ear Headsets, TWS Noise Cancelling & Wireless Earphones",
+        "subtitle": "",
+        "buttonText": "Explore Headphones",
+        "link": "/category/headphone-and-headset",
+        "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80"
+      },
+      {
+        "id": "box2",
+        "categorySlug": "smartwatches",
+        "badge": "WEARABLE TECH",
+        "title": "Smart Watches",
+        "description": "AMOLED Displays, Bluetooth Calling, Heart Rate & Fitness Sensors",
+        "subtitle": "",
+        "buttonText": "Explore Smartwatches",
+        "link": "/category/smartwatches",
+        "image": "https://www.dwstore.lk/wp-content/uploads/2024/10/T800-Ultra-Smart-Watch-1.jpg"
+      },
+      {
+        "id": "box3",
+        "categorySlug": "bluetooth-speakers",
+        "badge": "HI-FI SOUND",
+        "title": "Speakers",
+        "description": "Wireless Bluetooth & Extra Bass",
+        "subtitle": "55+ Models",
+        "buttonText": "Shop Speakers",
+        "link": "/category/bluetooth-speakers",
+        "image": "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=240&auto=format&fit=crop&q=80"
+      },
+      {
+        "id": "box4",
+        "categorySlug": "power-banks",
+        "badge": "FAST CHARGE",
+        "title": "PowerBanks",
+        "description": "10000mAh – 30000mAh 22.5W PD",
+        "subtitle": "32+ Models",
+        "buttonText": "Shop PowerBanks",
+        "link": "/category/power-banks",
+        "image": "https://www.dwstore.lk/wp-content/uploads/2024/10/1.jpg"
+      },
+      {
+        "id": "box5",
+        "categorySlug": "phone-accessories",
+        "badge": "DAILY ESSENTIALS",
+        "title": "Phone Accessories",
+        "description": "Fast Wall Chargers, Type-C Cables, 9H Tempered Glass & Car Phone Mounts.",
+        "subtitle": "140+ Certified Accessories",
+        "buttonText": "Explore Phone Accessories",
+        "link": "/category/phone-accessories",
+        "image": "https://www.dwstore.lk/wp-content/uploads/2024/10/UIYMHe1d4e6137a474dab9a387743d627bef1H.jpg"
+      }
+    ]
+  }
+}

@@ -1,0 +1,227 @@
+[
+  {
+    "id": "electronics-accessories",
+    "name": "Electronics Accessories",
+    "slug": "electronics-accessories",
+    "parentSlug": null,
+    "level": 0,
+    "productCount": 56,
+    "imageUrl": "/media/categories/electronics-accessories-5-5.jpg"
+  },
+  {
+    "id": "smartwatches",
+    "name": "SmartWatches",
+    "slug": "smartwatches",
+    "parentSlug": "electronics-accessories",
+    "level": 1,
+    "productCount": 15,
+    "imageUrl": "/media/categories/smartwatches-T800-Ultra-Smart-Watch-1.jpg"
+  },
+  {
+    "id": "bluetooth-handfree",
+    "name": "Bluetooth Handfree",
+    "slug": "bluetooth-handfree",
+    "parentSlug": "electronics-accessories",
+    "level": 1,
+    "productCount": 47,
+    "imageUrl": "/media/categories/bluetooth-handfree-m-8.jpg"
+  },
+  {
+    "id": "headphone-and-headset",
+    "name": "Headphone and Headset",
+    "slug": "headphone-and-headset",
+    "parentSlug": "electronics-accessories",
+    "level": 1,
+    "productCount": 84,
+    "imageUrl": "/media/categories/headphone-and-headset-m-8.jpg"
+  },
+  {
+    "id": "power-banks",
+    "name": "Power Banks",
+    "slug": "power-banks",
+    "parentSlug": "electronics-accessories",
+    "level": 1,
+    "productCount": 32,
+    "imageUrl": "/media/categories/power-banks-1.jpg"
+  },
+  {
+    "id": "phone-accessories",
+    "name": "Phone Accessories",
+    "slug": "phone-accessories",
+    "parentSlug": null,
+    "level": 0,
+    "productCount": 140,
+    "imageUrl": "/media/categories/phone-accessories-m-6.jpg"
+  },
+  {
+    "id": "temperd-glass",
+    "name": "Temperd Glass",
+    "slug": "temperd-glass",
+    "parentSlug": "phone-accessories",
+    "level": 1,
+    "productCount": 4,
+    "imageUrl": "/media/categories/temperd-glass-14pro_max_2_.jpg"
+  },
+  {
+    "id": "photography-and-studio-lighting",
+    "name": "Photography & Studio Lighting",
+    "slug": "photography-and-studio-lighting",
+    "parentSlug": null,
+    "level": 0,
+    "productCount": 21,
+    "imageUrl": "/media/categories/photography-and-studio-lighting-Wide-Angle-Mobile-Phone-Camera-Lens-Fish-Eye-Macro-Lens-for-Iphone-7-8-12.jpg"
+  },
+  {
+    "id": "backcovers",
+    "name": "Backcovers",
+    "slug": "backcovers",
+    "parentSlug": "phone-accessories",
+    "level": 1,
+    "productCount": 5,
+    "imageUrl": "/media/categories/backcovers-M-9.jpg"
+  },
+  {
+    "id": "cable-and-adaptors",
+    "name": "Cable & Adaptors",
+    "slug": "cable-and-adaptors",
+    "parentSlug": "phone-accessories",
+    "level": 1,
+    "productCount": 87,
+    "imageUrl": "/media/categories/cable-and-adaptors-3-2.jpg"
+  },
+  {
+    "id": "personal-care",
+    "name": "Personal Care",
+    "slug": "personal-care",
+    "parentSlug": null,
+    "level": 0,
+    "productCount": 10,
+    "imageUrl": "/media/categories/personal-care-JYYewatch6.jpg"
+  },
+  {
+    "id": "bluetooth-speakers",
+    "name": "Bluetooth Speakers",
+    "slug": "bluetooth-speakers",
+    "parentSlug": "electronics-accessories",
+    "level": 1,
+    "productCount": 55,
+    "imageUrl": "/media/categories/bluetooth-speakers-M-10.jpg"
+  },
+  {
+    "id": "computer-accessories",
+    "name": "Computer Accessories",
+    "slug": "computer-accessories",
+    "parentSlug": null,
+    "level": 0,
+    "productCount": 52,
+    "imageUrl": "/media/categories/computer-accessories-1.1-1.jpg"
+  },
+  {
+    "id": "network-tools-and-accessories",
+    "name": "Network Tools & Accessories",
+    "slug": "network-tools-and-accessories",
+    "parentSlug": null,
+    "level": 0,
+    "productCount": 13,
+    "imageUrl": "/media/categories/network-tools-and-accessories-1.1-1.jpg"
+  },
+  {
+    "id": "phone-holders",
+    "name": "Phone Holders",
+    "slug": "phone-holders",
+    "parentSlug": "phone-accessories",
+    "level": 1,
+    "productCount": 23,
+    "imageUrl": "/media/categories/phone-holders-Metal-Strong-Lazy-Holder-Long-Arm-Flexible-Bed-Lazy-Bracket-Desk-Phone-6.jpg"
+  },
+  {
+    "id": "cleaning-products",
+    "name": "Cleaning Products",
+    "slug": "cleaning-products",
+    "parentSlug": null,
+    "level": 0,
+    "productCount": 1,
+    "imageUrl": "/media/categories/cleaning-products-clean-agent.jpg"
+  },
+  {
+    "id": "wall-chargers",
+    "name": "Wall Chargers",
+    "slug": "wall-chargers",
+    "parentSlug": "electronics-accessories",
+    "level": 1,
+    "productCount": 7,
+    "imageUrl": "/media/categories/wall-chargers-m-6.jpg"
+  },
+  {
+    "id": "car-accessories",
+    "name": "Car Accessories",
+    "slug": "car-accessories",
+    "parentSlug": null,
+    "level": 0,
+    "productCount": 10,
+    "imageUrl": "/media/categories/car-accessories-Untitled-1-Recovered.jpg"
+  },
+  {
+    "id": "fashion",
+    "name": "Fashion",
+    "slug": "fashion",
+    "parentSlug": null,
+    "level": 0,
+    "productCount": 2,
+    "imageUrl": "/media/categories/fashion-TmIzMen-s-Multifunction-Anti-theft-USB-Shoulder-Bag-Man-Crossbody-Cross-Body-Travel-Sling-Chest-Bags.jpg"
+  },
+  {
+    "id": "optical-mouse",
+    "name": "Optical Mouse",
+    "slug": "optical-mouse",
+    "parentSlug": "computer-accessories",
+    "level": 1,
+    "productCount": 3,
+    "imageUrl": "/media/categories/optical-mouse-Meetion-r547.jpg"
+  },
+  {
+    "id": "keybord",
+    "name": "Keybord",
+    "slug": "keybord",
+    "parentSlug": "computer-accessories",
+    "level": 1,
+    "productCount": 3,
+    "imageUrl": "/media/categories/keybord-Main-2.jpg"
+  },
+  {
+    "id": "security-camera-and-accessories",
+    "name": "Security Camera & Accessories",
+    "slug": "security-camera-and-accessories",
+    "parentSlug": null,
+    "level": 0,
+    "productCount": 31,
+    "imageUrl": "/media/categories/security-camera-and-accessories-61pF93XmDxL._SL1500.jpg"
+  },
+  {
+    "id": "smart-devices",
+    "name": "Smart Devices",
+    "slug": "smart-devices",
+    "parentSlug": null,
+    "level": 0,
+    "productCount": 4,
+    "imageUrl": "/media/categories/smart-devices-M.jpg"
+  },
+  {
+    "id": "storage",
+    "name": "Storage",
+    "slug": "storage",
+    "parentSlug": null,
+    "level": 0,
+    "productCount": 8,
+    "imageUrl": "/media/categories/storage-download-2025-11-16T140459.365.webp"
+  },
+  {
+    "id": "mobile-phones",
+    "name": "Mobile Phones",
+    "slug": "mobile-phones",
+    "parentSlug": null,
+    "level": 0,
+    "productCount": 10,
+    "imageUrl": "/media/categories/mobile-phones-8d117c015982b0e25f5626c5f220fe38-scaled.webp"
+  }
+]

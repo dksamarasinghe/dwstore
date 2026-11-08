@@ -1,0 +1,95 @@
+services:
+  # 1. PostgreSQL 16 Private Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: dwstore_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dwstore}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_db_password_lkr}
+      POSTGRES_DB: ${POSTGRES_DB:-dwstore_production}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dwstore_private
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dwstore} -d ${POSTGRES_DB:-dwstore_production}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. NestJS REST Backend API
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api.Dockerfile
+    container_name: dwstore_api
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dwstore}:${POSTGRES_PASSWORD:-secure_db_password_lkr}@postgres:5432/${POSTGRES_DB:-dwstore_production}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_dwstore_key}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dwstore_private
+      - dwstore_public
+    expose:
+      - "4000"
+
+  # 3. Next.js Customer Storefront
+  storefront:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/storefront.Dockerfile
+    container_name: dwstore_storefront
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: https://api.dwstore.lk
+    networks:
+      - dwstore_public
+    expose:
+      - "3000"
+
+  # 4. React Vite Admin Static Web Server
+  admin:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/admin.Dockerfile
+    container_name: dwstore_admin
+    restart: always
+    networks:
+      - dwstore_public
+    expose:
+      - "80"
+
+  # 5. Nginx Reverse Proxy (SSL, Gzip, Routing)
+  nginx:
+    image: nginx:alpine
+    container_name: dwstore_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - certs_data:/etc/letsencrypt:ro
+    depends_on:
+      - storefront
+      - admin
+      - api
+    networks:
+      - dwstore_public
+
+volumes:
+  postgres_data:
+  certs_data:
+
+networks:
+  dwstore_private:
+    internal: true
+  dwstore_public:

@@ -1,0 +1,110 @@
+{
+  "stats": {
+    "storeName": "DWStore",
+    "rating": 4.9,
+    "totalReviews": 112,
+    "mapsUrl": "https://maps.google.com/?q=DWStore+No.55/1/2+Borella+Rd+Pannipitiya"
+  },
+  "reviews": [
+    {
+      "id": "rev-1",
+      "name": "Sisira Ranasinghe",
+      "time": "2 months ago",
+      "rating": 5,
+      "text": "Super Quality Genuine Product!",
+      "verified": true,
+      "location": "Borella Rd Store",
+      "avatarBg": "bg-blue-600"
+    },
+    {
+      "id": "rev-2",
+      "name": "Kalder Helessage",
+      "time": "2 months ago",
+      "rating": 5,
+      "text": "Very good thank you for your service ❤️",
+      "verified": true,
+      "location": "Borella Rd Store",
+      "avatarBg": "bg-indigo-600"
+    },
+    {
+      "id": "rev-3",
+      "name": "Ruwindi Wijethunge",
+      "time": "2 months ago",
+      "rating": 5,
+      "text": "I bought a tripod and it's better than I expected... It's in good quality. I recommend this shop.",
+      "verified": true,
+      "location": "Borella Rd Store",
+      "avatarBg": "bg-emerald-600"
+    },
+    {
+      "id": "rev-4",
+      "name": "Mewan Andradi",
+      "time": "3 months ago",
+      "rating": 5,
+      "text": "Thank you so much, DWstore.lk! I got the Sony Theatre Bar 6 at the best price. Highly recommended!",
+      "verified": true,
+      "location": "Borella Rd Store",
+      "avatarBg": "bg-purple-600"
+    },
+    {
+      "id": "rev-5",
+      "name": "Imesh Jayarathna",
+      "time": "2 months ago",
+      "rating": 5,
+      "text": "Excellent service and Good quality genuine items. Fast delivery and reliable customer care.",
+      "verified": true,
+      "location": "Borella Rd Store",
+      "avatarBg": "bg-teal-600"
+    },
+    {
+      "id": "rev-6",
+      "name": "Niroshan Fernando",
+      "time": "1 month ago",
+      "rating": 5,
+      "text": "Best place to buy original smartwatches and accessories with warranty in Sri Lanka. Fast delivery in 24 hours!",
+      "verified": true,
+      "location": "Borella Rd Store",
+      "avatarBg": "bg-amber-600"
+    },
+    {
+      "id": "rev-7",
+      "name": "Dinuka Pathirana",
+      "time": "3 weeks ago",
+      "rating": 5,
+      "text": "100% Genuine Aspor power bank received in perfect condition. Friendly customer support on WhatsApp!",
+      "verified": true,
+      "location": "Borella Rd Store",
+      "avatarBg": "bg-rose-600"
+    },
+    {
+      "id": "rev-8",
+      "name": "Chamara Perera",
+      "time": "1 month ago",
+      "rating": 5,
+      "text": "Highly recommended store in Pannipitiya. Reasonable prices and authentic gadgets with official warranty.",
+      "verified": true,
+      "location": "Borella Rd Store",
+      "avatarBg": "bg-blue-700"
+    },
+    {
+      "id": "rev-9",
+      "name": "Kasun Wickramasinghe",
+      "time": "3 weeks ago",
+      "rating": 5,
+      "text": "Ordered an T800 Ultra smartwatch. Arrived within 2 days with cash on delivery. Great battery life and display!",
+      "verified": true,
+      "location": "Borella Rd Store",
+      "avatarBg": "bg-cyan-600"
+    },
+    {
+      "id": "rev-10",
+      "name": "Tharindu Madushanka",
+      "time": "4 weeks ago",
+      "rating": 5,
+      "text": "Friendly staff and quick response. Original Remax fast charger works perfectly with my phone.",
+      "verified": true,
+      "location": "Borella Rd Store",
+      "avatarBg": "bg-violet-600"
+    }
+  ]
+}

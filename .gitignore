@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build Outputs
+.next/
+dist/
+build/
+out/
+.turbo/
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# WhatsApp Gateway Auth & Sessions (CRITICAL: Do not commit auth keys)
+**/session/
+**/auth_info*/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS / Editor
+.DS_Store
+*.pem
+Thumbs.db
+*.tsbuildinfo
+.vscode/
+.idea/
+
+# Large Database dumps & CSV exports
+*.sql
+*.csv
+/upload/
+/Admin dashboard template/
+
+# Temporary test / scratch files
+coverage/
+.temp/
