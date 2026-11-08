@@ -241,7 +241,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, theme, setTheme }
                         fontSize: '14px',
                         outline: 'none'
                       }}
-                      placeholder="dwstorel or ashanfreelancer@gmail.com"
+                      placeholder="Enter username or email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
