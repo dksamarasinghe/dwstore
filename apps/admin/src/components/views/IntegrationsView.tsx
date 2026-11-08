@@ -15,6 +15,10 @@ import {
   Save,
   ShieldAlert,
   Zap,
+  QrCode,
+  Smartphone,
+  RefreshCw,
+  LogOut,
 } from 'lucide-react';
 import { getStorefrontUrl } from '../../config';
 
@@ -59,6 +63,23 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
   const [showSecret, setShowSecret] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // WhatsApp Gateway Live State
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
+  const [whatsappStatus, setWhatsappStatus] = useState<{
+    online: boolean;
+    isConnected: boolean;
+    phone: string | null;
+    status: string;
+    qr: string | null;
+  }>({
+    online: false,
+    isConnected: false,
+    phone: null,
+    status: 'checking',
+    qr: null,
+  });
+  const [isLoggingOutWhatsApp, setIsLoggingOutWhatsApp] = useState(false);
+
   // Fetch gateway configs on mount
   useEffect(() => {
     fetch(`${getStorefrontUrl()}/api/integrations/payment-gateways`)
@@ -70,6 +91,50 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
       })
       .catch(() => {});
   }, []);
+
+  const fetchWhatsAppStatus = async () => {
+    try {
+      const res = await fetch(`${getStorefrontUrl()}/api/whatsapp`);
+      const data = await res.json();
+      if (data) {
+        setWhatsappStatus({
+          online: Boolean(data.online),
+          isConnected: Boolean(data.isConnected),
+          phone: data.phone || null,
+          status: data.status || 'offline',
+          qr: data.qr || null,
+        });
+      }
+    } catch (e) {
+      setWhatsappStatus((prev) => ({ ...prev, online: false, isConnected: false }));
+    }
+  };
+
+  // Poll WhatsApp status every 2.5 seconds when modal is open
+  useEffect(() => {
+    fetchWhatsAppStatus();
+    if (!whatsappModalOpen) return;
+    const interval = setInterval(fetchWhatsAppStatus, 2500);
+    return () => clearInterval(interval);
+  }, [whatsappModalOpen]);
+
+  const handleLogoutWhatsApp = async () => {
+    setIsLoggingOutWhatsApp(true);
+    try {
+      const res = await fetch(`${getStorefrontUrl()}/api/whatsapp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+      const data = await res.json();
+      showNotification('WhatsApp account disconnected. A new QR code is ready to scan.');
+      fetchWhatsAppStatus();
+    } catch (err: any) {
+      showNotification('Failed to disconnect WhatsApp: ' + err.message);
+    } finally {
+      setIsLoggingOutWhatsApp(false);
+    }
+  };
 
   const handleSaveGateway = async (gatewayKey: string) => {
     setIsSaving(true);
@@ -228,7 +293,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
           </div>
         </div>
 
-        {/* 4. WhatsApp Business API */}
+        {/* 4. WhatsApp Business Gateway */}
         <div className="col-12 col-md-6 col-xl-4">
           <div className="card-x h-100 d-flex flex-column justify-content-between">
             <div>
@@ -236,15 +301,32 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                 <span className="thumb" style={{ background: 'var(--hover)', color: '#25D366' }}>
                   <MessageCircle size={22} />
                 </span>
-                <span className="badge-x s-Delivered" style={{ fontSize: '11px' }}>Connected</span>
+                <span
+                  className={`badge-x ${whatsappStatus.isConnected ? 's-Delivered' : 's-Shipped'}`}
+                  style={{ fontSize: '11px' }}
+                >
+                  {whatsappStatus.isConnected ? `Linked (+${whatsappStatus.phone || 'Active'})` : 'Ready to Link'}
+                </span>
               </div>
               <h5 className="mb-1">WhatsApp Business Gateway</h5>
               <p className="text-muted mb-3" style={{ fontSize: '13px' }}>
                 Automatic order status messages, recovery offers, and one-click customer chats.
               </p>
             </div>
-            <div className="pt-2 border-top border-border text-muted" style={{ fontSize: '12px' }}>
-              Port 3002 Baileys Automation Active
+            <div className="pt-2 border-top border-border">
+              <button
+                className="btn-dark-x w-100 d-flex align-items-center justify-content-center gap-2"
+                onClick={() => setWhatsappModalOpen(true)}
+                type="button"
+                style={{
+                  fontSize: '13px',
+                  background: whatsappStatus.isConnected ? undefined : 'linear-gradient(135deg, #25D366, #128C7E)',
+                  color: whatsappStatus.isConnected ? undefined : '#ffffff',
+                  border: 'none',
+                }}
+              >
+                <QrCode size={15} /> {whatsappStatus.isConnected ? 'Manage WhatsApp Link' : 'Scan QR Code to Link'}
+              </button>
             </div>
           </div>
         </div>
@@ -291,6 +373,121 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
           </div>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* WHATSAPP LINK & QR CODE MODAL */}
+      {/* ========================================================================= */}
+      {whatsappModalOpen && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
+          style={{ background: 'rgba(0,0,0,0.7)', zIndex: 9999 }}
+        >
+          <div
+            className="card-x w-100 shadow-lg text-center"
+            style={{ maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            <div className="d-flex align-items-center justify-content-between pb-3 border-bottom border-border mb-3 text-start">
+              <h4 className="m-0 d-flex align-items-center gap-2">
+                <MessageCircle size={20} className="text-success" /> Link WhatsApp Business
+              </h4>
+              <button
+                type="button"
+                className="btn-link-x p-1 border-0 bg-transparent text-muted"
+                onClick={() => setWhatsappModalOpen(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {whatsappStatus.isConnected ? (
+              <div className="py-4 d-flex flex-column align-items-center">
+                <div
+                  className="rounded-circle d-flex align-items-center justify-content-center mb-3"
+                  style={{ width: '68px', height: '68px', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }}
+                >
+                  <CheckCircle2 size={40} />
+                </div>
+                <h5 className="mb-1 text-success">WhatsApp Account Connected!</h5>
+                <p className="text-muted mb-3" style={{ fontSize: '13px' }}>
+                  Linked Device: <b className="text-foreground">+{whatsappStatus.phone || 'Your WhatsApp Number'}</b>
+                </p>
+                <div className="p-3 rounded-2 text-start w-100 mb-4" style={{ background: 'var(--hover)', fontSize: '12.5px' }}>
+                  <div className="d-flex align-items-center gap-2 text-success mb-1">
+                    <Check size={14} /> Automated order confirmation messages active
+                  </div>
+                  <div className="d-flex align-items-center gap-2 text-success mb-1">
+                    <Check size={14} /> Courier dispatch tracking alerts active
+                  </div>
+                  <div className="d-flex align-items-center gap-2 text-muted">
+                    <Check size={14} /> Free Baileys WebSocket connection active
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-danger-x w-100 d-flex align-items-center justify-content-center gap-2 py-2"
+                  disabled={isLoggingOutWhatsApp}
+                  onClick={handleLogoutWhatsApp}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    color: '#ef4444',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <LogOut size={15} /> {isLoggingOutWhatsApp ? 'Disconnecting...' : 'Disconnect WhatsApp Account'}
+                </button>
+              </div>
+            ) : whatsappStatus.qr ? (
+              <div className="py-2 d-flex flex-column align-items-center">
+                <div className="text-muted mb-3" style={{ fontSize: '13px' }}>
+                  Open WhatsApp on your phone &gt; <b>Settings (or ⋮)</b> &gt; <b>Linked Devices</b> &gt; <b>Link a Device</b> and point camera here:
+                </div>
+
+                {/* High-contrast White QR Container for 100% reliable camera scanning */}
+                <div
+                  className="p-3 rounded-3 mb-3 shadow-sm d-inline-block"
+                  style={{ background: '#ffffff', border: '3px solid #25D366' }}
+                >
+                  <img
+                    src={whatsappStatus.qr}
+                    alt="Scan WhatsApp QR"
+                    style={{ width: '250px', height: '250px', display: 'block' }}
+                  />
+                </div>
+
+                <div className="d-flex align-items-center gap-2 text-muted mb-3" style={{ fontSize: '12px' }}>
+                  <RefreshCw size={13} className="spinner-border spinner-border-sm" />
+                  Waiting for phone scan... (Auto-syncs live)
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-soft w-100"
+                  onClick={fetchWhatsAppStatus}
+                >
+                  <RefreshCw size={14} /> Refresh QR Code
+                </button>
+              </div>
+            ) : (
+              <div className="py-5 d-flex flex-column align-items-center text-center">
+                <RefreshCw size={32} className="spinner-border text-success mb-3" />
+                <h5>Starting WhatsApp Gateway Session...</h5>
+                <p className="text-muted" style={{ fontSize: '13px' }}>
+                  Connecting to Baileys service. The QR code will appear in a moment.
+                </p>
+                <button
+                  type="button"
+                  className="btn-soft mt-3"
+                  onClick={fetchWhatsAppStatus}
+                >
+                  Check Again
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* PAYHERE CONFIGURATION MODAL */}

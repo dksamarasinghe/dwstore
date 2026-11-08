@@ -156,6 +156,7 @@ app.get('/status', (req, res) => {
     isConnected,
     phone: userPhone,
     hasQr: !!latestQrDataUrl,
+    qr: latestQrDataUrl,
     timestamp: new Date().toISOString(),
   });
 });
