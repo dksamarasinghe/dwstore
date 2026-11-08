@@ -847,6 +847,12 @@ body.collapsed .main {
   color: #b91c1c
 }
 
+.s-Returned {
+  background: rgba(244, 63, 94, 0.15);
+  color: #f43f5e;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
 .s-Low {
   background: #fef3c7;
   color: #b45309

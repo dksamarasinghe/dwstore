@@ -75,6 +75,36 @@ export interface ProductItem {
   variations?: ProductVariationItem[];
 }
 
+export type ReturnReason =
+  | 'defective'
+  | 'warranty_fault'
+  | 'wrong_item'
+  | 'courier_failed'
+  | 'customer_change'
+  | 'other';
+
+export type WarrantyAction =
+  | 'replacement'
+  | 'refund'
+  | 'repair'
+  | 'shipping_only'
+  | 'rejected';
+
+export interface ReturnRecord {
+  id: string;
+  orderId: string;
+  createdAt: string;
+  reason: ReturnReason;
+  reasonDescription?: string;
+  warrantyAction: WarrantyAction;
+  replacementItemTitle?: string;
+  shippingLoss: number;
+  productLoss: number;
+  totalLoss: number;
+  notes?: string;
+  resolutionStatus: 'investigating' | 'resolved' | 'replacement_dispatched' | 'refunded';
+}
+
 export interface OrderItem {
   orderId: string;
   createdAt: string;
@@ -88,7 +118,7 @@ export interface OrderItem {
   carrier?: 'Koombiyo Delivery' | string;
   trackingNumber?: string;
   dispatchedDate?: string;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | string;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'returned' | string;
   paymentMethod: string;
   paymentStatus: 'Paid' | 'Unpaid' | 'Refunded' | string;
   total: number;
@@ -104,6 +134,7 @@ export interface OrderItem {
     image?: string;
   }[];
   notes?: string;
+  returnRecord?: ReturnRecord;
 }
 
 export interface ReviewItem {

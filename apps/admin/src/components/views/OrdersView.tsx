@@ -21,12 +21,14 @@ import {
   ExternalLink,
   Printer,
   Edit3,
-  RotateCw
+  RotateCw,
+  RotateCcw,
 } from 'lucide-react';
 import { OrderItem } from '../../types';
 import { WaybillSlipModal } from '../orders/WaybillSlipModal';
 import { EditOrderModal } from '../orders/EditOrderModal';
 import { DispatchOrderModal } from '../orders/DispatchOrderModal';
+import { ReturnClaimModal } from '../orders/ReturnClaimModal';
 
 interface OrdersViewProps {
   orders: OrderItem[];
@@ -59,6 +61,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   const [waybillOrders, setWaybillOrders] = useState<OrderItem[] | null>(null);
   const [editingOrder, setEditingOrder] = useState<OrderItem | null>(null);
   const [dispatchingOrder, setDispatchingOrder] = useState<OrderItem | null>(null);
+  const [claimingReturnOrder, setClaimingReturnOrder] = useState<OrderItem | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
 
@@ -67,6 +70,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   const pendingCount = orders.filter((o) => o?.status === 'pending' || o?.status === 'processing').length;
   const shippedCount = orders.filter((o) => o?.status === 'shipped').length;
   const deliveredCount = orders.filter((o) => o?.status === 'delivered' || o?.status === 'completed').length;
+  const returnedCount = orders.filter((o) => o?.status === 'returned' || Boolean(o?.returnRecord)).length;
   const cancelledCount = orders.filter((o) => o?.status === 'cancelled' || o?.status === 'failed').length;
 
   // Filtered orders
@@ -78,6 +82,8 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         matchesTab = oStatus === 'pending' || oStatus === 'processing' || oStatus === 'on-hold';
       } else if (activeTab === 'delivered') {
         matchesTab = oStatus === 'delivered' || oStatus === 'completed';
+      } else if (activeTab === 'returned') {
+        matchesTab = oStatus === 'returned' || Boolean(order?.returnRecord);
       } else if (activeTab === 'cancelled') {
         matchesTab = oStatus === 'cancelled' || oStatus === 'failed' || oStatus === 'refunded';
       } else if (activeTab !== 'all') {
@@ -271,6 +277,16 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
             Delivered <em>{deliveredCount}</em>
           </button>
           <button
+            className={activeTab === 'returned' ? 'on' : ''}
+            onClick={() => {
+              setActiveTab('returned');
+              setCurrentPage(1);
+            }}
+            type="button"
+          >
+            Returned <em>{returnedCount}</em>
+          </button>
+          <button
             className={activeTab === 'cancelled' ? 'on' : ''}
             onClick={() => {
               setActiveTab('cancelled');
@@ -396,6 +412,8 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                       ? 's-Shipped'
                       : status === 'processing' || status === 'pending'
                       ? 's-Processing'
+                      : status === 'returned'
+                      ? 's-Returned'
                       : 's-Cancelled';
 
                   const customerName = order?.customerName || 'Customer';
@@ -477,7 +495,9 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                           value={status}
                           onChange={(e) => {
                             const newSt = e.target.value;
-                            if (newSt === 'shipped' && !order?.trackingNumber) {
+                            if (newSt === 'returned') {
+                              setClaimingReturnOrder(order);
+                            } else if (newSt === 'shipped' && !order?.trackingNumber) {
                               setDispatchingOrder(order);
                             } else {
                               onUpdateStatus(order?.orderId, newSt);
@@ -488,6 +508,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                           <option value="processing">Processing</option>
                           <option value="shipped">Shipped</option>
                           <option value="delivered">Delivered</option>
+                          <option value="returned">Returned</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
                       </td>
@@ -510,6 +531,19 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                             title="Print Order Invoice / Bill Slip"
                           >
                             <Printer size={16} className="text-primary" />
+                          </button>
+                          <button
+                            type="button"
+                            className="icon-btn"
+                            style={{
+                              width: '34px',
+                              height: '34px',
+                              color: order?.status === 'returned' || order?.returnRecord ? '#f43f5e' : undefined,
+                            }}
+                            onClick={() => setClaimingReturnOrder(order)}
+                            title="Record / View Return & Warranty Loss"
+                          >
+                            <RotateCcw size={15} />
                           </button>
                           {cleanPhone && (
                             <a
@@ -795,6 +829,24 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
             await onDispatchOrder(ordId, carrier, trk, dt);
             setDispatchingOrder(null);
             showNotification(`Order #${ordId} dispatched via ${carrier} (${trk})!`);
+          }}
+        />
+      )}
+
+      {/* Return & Warranty Claim Modal */}
+      {claimingReturnOrder && (
+        <ReturnClaimModal
+          order={claimingReturnOrder}
+          onClose={() => setClaimingReturnOrder(null)}
+          onSave={async (orderId, returnRecord) => {
+            const ord = orders.find((o) => o.orderId === orderId);
+            if (ord) {
+              await onUpdateOrder({ ...ord, status: 'returned', returnRecord });
+            } else {
+              await onUpdateStatus(orderId, 'returned');
+            }
+            showNotification(`Order #${orderId} marked as RETURNED & financial loss recorded!`);
+            setClaimingReturnOrder(null);
           }}
         />
       )}

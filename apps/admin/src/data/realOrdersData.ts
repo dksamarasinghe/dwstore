@@ -218,7 +218,7 @@ export const realOrders: OrderItem[] = [
     "carrier": "Koombiyo Delivery",
     "trackingNumber": "17525212",
     "dispatchedDate": "2026-10-16",
-    "status": "shipped",
+    "status": "returned",
     "paymentMethod": "Koko: Buy Now Pay Later",
     "paymentStatus": "Paid",
     "total": 1870,
@@ -232,7 +232,21 @@ export const realOrders: OrderItem[] = [
         "price": 1870
       }
     ],
-    "notes": ""
+    "notes": "",
+    "returnRecord": {
+      "id": "ret-35212",
+      "orderId": "DWS-35212",
+      "createdAt": "2026-10-18T14:20:00.000Z",
+      "reason": "warranty_fault",
+      "reasonDescription": "Smartwatch display stopped working after 2 days. 1-to-1 warranty replacement given.",
+      "warrantyAction": "replacement",
+      "replacementItemTitle": "Brand New Replacement Unit Dispatched",
+      "shippingLoss": 400,
+      "productLoss": 1520,
+      "totalLoss": 1920,
+      "notes": "Serial verified, replacement parcel dispatched via Koombiyo",
+      "resolutionStatus": "replacement_dispatched"
+    }
   },
   {
     "orderId": "DWS-35211",
@@ -366,7 +380,7 @@ export const realOrders: OrderItem[] = [
     "carrier": "Koombiyo Delivery",
     "trackingNumber": "",
     "dispatchedDate": "",
-    "status": "cancelled",
+    "status": "returned",
     "paymentMethod": "Payzy: Buy Now Pay Later",
     "paymentStatus": "Paid",
     "total": 11740.7,
@@ -381,7 +395,20 @@ export const realOrders: OrderItem[] = [
         "productTitle": "Anker Soundcore R60i NC True Wireless ANC Earbuds - Blue"
       }
     ],
-    "notes": ""
+    "notes": "",
+    "returnRecord": {
+      "id": "ret-35195",
+      "orderId": "DWS-35195",
+      "createdAt": "2026-10-15T11:00:00.000Z",
+      "reason": "courier_failed",
+      "reasonDescription": "Customer unreachable after 3 delivery attempts in Trincomalee. Return to origin (RTO). Item in perfect condition.",
+      "warrantyAction": "shipping_only",
+      "shippingLoss": 700,
+      "productLoss": 0,
+      "totalLoss": 700,
+      "notes": "Parcel received back at warehouse intact. Only courier return shipping cost lost.",
+      "resolutionStatus": "resolved"
+    }
   },
   {
     "orderId": "DWS-35194",

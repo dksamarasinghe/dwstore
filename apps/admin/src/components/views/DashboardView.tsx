@@ -16,7 +16,9 @@ import {
   Sparkles,
   Calendar,
   Layers,
-  ChevronDown
+  ChevronDown,
+  RotateCcw,
+  ShieldAlert,
 } from 'lucide-react';
 import { OrderItem, ProductItem, ReviewItem, TabType } from '../../types';
 
@@ -97,6 +99,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     (o) => o?.status === 'delivered' || o?.status === 'completed'
   ).length;
   const kpiAvgOrderValue = Math.round(kpiGrossSales / Math.max(1, validKpiOrders.length));
+
+  // Return & Warranty Financial Loss calculation dynamically filtered by timeFilter
+  const returnedKpiOrders = useMemo(() => {
+    return filteredKpiOrders.filter((o) => o?.status === 'returned' || Boolean(o?.returnRecord));
+  }, [filteredKpiOrders]);
+
+  const kpiTotalReturnLoss = useMemo(() => {
+    return returnedKpiOrders.reduce((sum, o) => {
+      if (o.returnRecord?.totalLoss !== undefined) return sum + o.returnRecord.totalLoss;
+      return sum + (o.shippingCost || 400);
+    }, 0);
+  }, [returnedKpiOrders]);
+
+  const kpiShippingLoss = useMemo(() => {
+    return returnedKpiOrders.reduce((sum, o) => {
+      return sum + (o.returnRecord?.shippingLoss ?? (o.shippingCost || 400));
+    }, 0);
+  }, [returnedKpiOrders]);
+
+  const kpiProductLoss = useMemo(() => {
+    return returnedKpiOrders.reduce((sum, o) => {
+      return sum + (o.returnRecord?.productLoss || 0);
+    }, 0);
+  }, [returnedKpiOrders]);
+
+  const kpiReturnCount = returnedKpiOrders.length;
 
   const kpiVisitors = useMemo(() => {
     if (timeFilter === 'day') return { live: '48 Live', note: '580 visits today' };
@@ -303,7 +331,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* 4 Khamba KPI Cards (k1, k2, k3, k4) dynamically filtered */}
       <section className="row g-3 mb-4">
         {/* KPI 1 */}
-        <div className="col-12 col-sm-6 col-xl-3">
+        <div className="col-12 col-sm-6 col-xl">
           <div className="kpi k1">
             <div className="lbl">
               <span>Gross Sales (LKR)</span>
@@ -322,7 +350,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* KPI 2 */}
-        <div className="col-12 col-sm-6 col-xl-3">
+        <div className="col-12 col-sm-6 col-xl">
           <div className="kpi k2">
             <div className="lbl">
               <span>Completed Orders</span>
@@ -343,7 +371,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* KPI 3 */}
-        <div className="col-12 col-sm-6 col-xl-3">
+        <div className="col-12 col-sm-6 col-xl">
           <div className="kpi k3">
             <div className="lbl">
               <span>Average Order Value</span>
@@ -362,7 +390,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* KPI 4 */}
-        <div className="col-12 col-sm-6 col-xl-3">
+        <div className="col-12 col-sm-6 col-xl">
           <div className="kpi k4">
             <div className="lbl">
               <span>Live Visitors</span>
@@ -376,6 +404,43 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 ● Active
               </span>
               <span>{kpiVisitors.note}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* KPI 5: Return & Warranty Loss Card */}
+        <div className="col-12 col-sm-6 col-xl">
+          <div
+            className="kpi"
+            style={{
+              background: 'var(--card)',
+              border: '1px solid rgba(244, 63, 94, 0.4)',
+              cursor: 'pointer',
+              borderRadius: '12px',
+            }}
+            onClick={() => setActiveTab('returns')}
+            title="Click to view all warranty claims & return losses"
+          >
+            <div className="lbl">
+              <span className="text-danger fw-bold">Return & Warranty Loss</span>
+              <span
+                className="ico text-danger"
+                style={{ background: 'rgba(244, 63, 94, 0.15)', color: '#f43f5e' }}
+              >
+                <RotateCcw size={18} />
+              </span>
+            </div>
+            <div className="val text-danger">Rs. {kpiTotalReturnLoss.toLocaleString()}</div>
+            <div className="foot">
+              <span
+                className="chg down"
+                style={{ background: 'rgba(244, 63, 94, 0.15)', color: '#f43f5e' }}
+              >
+                <ArrowDownRight size={14} /> {kpiReturnCount} Claims
+              </span>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                {timeFilter} period
+              </span>
             </div>
           </div>
         </div>

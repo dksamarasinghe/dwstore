@@ -1,0 +1,46 @@
+[
+  {
+    "id": "cp-1",
+    "code": "DWFIRST",
+    "discountType": "percentage",
+    "discountValue": 10,
+    "minSpend": 3000,
+    "usedCount": 184,
+    "maxUsage": 500,
+    "expiryDate": "2026-12-31",
+    "status": "Active"
+  },
+  {
+    "id": "cp-2",
+    "code": "FLASH2026",
+    "discountType": "fixed",
+    "discountValue": 500,
+    "minSpend": 5000,
+    "usedCount": 92,
+    "maxUsage": 200,
+    "expiryDate": "2026-12-31",
+    "status": "Active"
+  },
+  {
+    "id": "cp-3",
+    "code": "FREESHIP",
+    "discountType": "fixed",
+    "discountValue": 400,
+    "minSpend": 4000,
+    "usedCount": 312,
+    "maxUsage": 1000,
+    "expiryDate": "2026-12-31",
+    "status": "Active"
+  },
+  {
+    "id": "cp-4",
+    "code": "WELCOME5",
+    "discountType": "percentage",
+    "discountValue": 5,
+    "minSpend": 1000,
+    "usedCount": 45,
+    "maxUsage": 500,
+    "expiryDate": "2026-12-31",
+    "status": "Active"
+  }
+]

@@ -28,6 +28,7 @@ import { DiscountsView } from './components/views/DiscountsView';
 import { PaymentsView } from './components/views/PaymentsView';
 import { AnalyticsView } from './components/views/AnalyticsView';
 import { ShipmentsView } from './components/views/ShipmentsView';
+import { ReturnsView } from './components/views/ReturnsView';
 import { AbandonedCartsView } from './components/views/AbandonedCartsView';
 import { ImportsView } from './components/views/ImportsView';
 import { SettingsView } from './components/views/SettingsView';
@@ -123,6 +124,18 @@ export default function App() {
     } catch (e) {}
   }, [brands]);
   const [coupons, setCoupons] = useState<CouponItem[]>(initialCoupons);
+
+  // Sync coupons with Storefront API
+  useEffect(() => {
+    fetch(`${getStorefrontUrl()}/api/coupons`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.success && Array.isArray(data.coupons)) {
+          setCoupons(data.coupons);
+        }
+      })
+      .catch((err) => console.warn('Failed to load coupons from API:', err));
+  }, []);
   const [shipments, setShipments] = useState<ShipmentItem[]>(() => {
     try {
       const saved = localStorage.getItem('dwstore_admin_shipments_v3');
@@ -611,14 +624,38 @@ export default function App() {
     showNotification('Brand deleted.');
   };
 
-  // Coupon handlers
-  const handleAddCoupon = (cp: CouponItem) => {
+  // Coupon handlers with API persistence
+  const handleAddCoupon = async (cp: CouponItem) => {
     setCoupons((prev) => [cp, ...prev]);
-    showNotification(`Coupon "${cp.code}" created!`);
+    try {
+      const res = await fetch(`${getStorefrontUrl()}/api/coupons`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cp),
+      });
+      const data = await res.json();
+      if (data?.success && Array.isArray(data.coupons)) {
+        setCoupons(data.coupons);
+      }
+    } catch (e) {
+      console.warn('API coupon save error:', e);
+    }
+    showNotification(`Coupon "${cp.code}" is live on Storefront cart & checkout!`);
   };
 
-  const handleDeleteCoupon = (id: string) => {
+  const handleDeleteCoupon = async (id: string) => {
     setCoupons((prev) => prev.filter((c) => c.id !== id));
+    try {
+      const res = await fetch(`${getStorefrontUrl()}/api/coupons?id=${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data?.success && Array.isArray(data.coupons)) {
+        setCoupons(data.coupons);
+      }
+    } catch (e) {
+      console.warn('API coupon delete error:', e);
+    }
     showNotification('Coupon deleted.');
   };
 
@@ -826,22 +863,13 @@ export default function App() {
           )}
 
           {activeTab === 'returns' && (
-            <div className="content">
-              <div className="page-head">
-                <div>
-                  <h1>Warranty Claims & Returns</h1>
-                  <p>Process checking warranty replacements and 7-day return inquiries.</p>
-                </div>
-              </div>
-              <div className="card-x">
-                <div className="p-4 text-center text-muted">
-                  <h5>No active return or replacement requests</h5>
-                  <p className="m-0" style={{ fontSize: '13px' }}>
-                    All items dispatched in the last 7 days are within normal warranty tolerances.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <ReturnsView
+              orders={orders}
+              onUpdateOrder={handleUpdateFullOrder}
+              onUpdateStatus={handleUpdateOrderStatus}
+              showNotification={showNotification}
+              setSelectedOrder={setSelectedOrder}
+            />
           )}
 
           {activeTab === 'abandoned-carts' && (

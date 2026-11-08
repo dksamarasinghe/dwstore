@@ -6,12 +6,19 @@ import { sendOrderWhatsAppNotification } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
-const ORDERS_FILE = path.join(process.cwd(), 'src', 'data', 'orders.json');
+function getOrdersFilePath(): string {
+  const p1 = path.join(process.cwd(), 'apps', 'storefront', 'src', 'data', 'orders.json');
+  if (fs.existsSync(p1)) return p1;
+  const p2 = path.join(process.cwd(), 'src', 'data', 'orders.json');
+  if (fs.existsSync(p2)) return p2;
+  return p1;
+}
 
 function getOrders() {
   try {
-    if (fs.existsSync(ORDERS_FILE)) {
-      const content = fs.readFileSync(ORDERS_FILE, 'utf-8');
+    const filePath = getOrdersFilePath();
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf-8');
       return JSON.parse(content);
     }
   } catch (err) {
@@ -22,7 +29,9 @@ function getOrders() {
 
 function saveOrders(orders: any[]) {
   try {
-    fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2), 'utf-8');
+    const filePath = getOrdersFilePath();
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(orders, null, 2), 'utf-8');
     return true;
   } catch (err) {
     console.error('Error saving orders:', err);
@@ -150,7 +159,8 @@ export async function PATCH(req: NextRequest) {
       paymentStatus,
       paymentMethod,
       total,
-      totalMinor
+      totalMinor,
+      returnRecord,
     } = body;
 
     if (!orderId) {
@@ -184,6 +194,7 @@ export async function PATCH(req: NextRequest) {
     if (dispatchedDate !== undefined) orders[index].dispatchedDate = dispatchedDate;
     if (paymentStatus !== undefined) orders[index].paymentStatus = paymentStatus;
     if (paymentMethod !== undefined) orders[index].paymentMethod = paymentMethod;
+    if (returnRecord !== undefined) orders[index].returnRecord = returnRecord;
     if (total !== undefined) {
       orders[index].total = total;
       orders[index].totalMinor = Math.round(total * 100);

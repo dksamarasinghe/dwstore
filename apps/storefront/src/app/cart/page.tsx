@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -28,16 +28,47 @@ export default function CartPage() {
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponError, setCouponError] = useState('');
+  const [couponSuccess, setCouponSuccess] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+
+  // Restore coupon from sessionStorage if present
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('dwstore_cart_coupon');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.code) {
+          setCouponCode(parsed.code);
+          setAppliedCoupon(parsed);
+          setCouponApplied(true);
+        }
+      }
+    } catch {}
+  }, []);
 
   const shippingFeeMinor = subtotalMinor === 0 ? 0 : STANDARD_SHIPPING_FEE_MINOR;
 
-  const discountMinor = couponApplied ? Math.round(subtotalMinor * 0.05) : 0; // 5% discount
-  const finalTotalMinor = subtotalMinor - discountMinor + shippingFeeMinor;
+  // Calculate dynamic coupon discount in minor units (cents)
+  const discountMinor = useMemo(() => {
+    if (!couponApplied || !appliedCoupon || subtotalMinor === 0) return 0;
+    const subtotalRs = subtotalMinor / 100;
+    if (appliedCoupon.minSpend && subtotalRs < appliedCoupon.minSpend) {
+      return 0;
+    }
+    if (appliedCoupon.discountType === 'percentage') {
+      return Math.round((subtotalMinor * (appliedCoupon.discountValue || 0)) / 100);
+    }
+    const fixedMinor = Math.round((appliedCoupon.discountValue || 0) * 100);
+    return Math.min(fixedMinor, subtotalMinor);
+  }, [couponApplied, appliedCoupon, subtotalMinor]);
+
+  const finalTotalMinor = Math.max(0, subtotalMinor - discountMinor + shippingFeeMinor);
 
   // Exact DWstore BNPL Installment calculations (Matching product page formula):
   // KOKO: Price + 10%, divided by 3
   // Payzy: Price + 13%, divided by 4
-  const priceBase = subtotalMinor > 0 ? subtotalMinor / 100 : 0;
+  const priceBase = finalTotalMinor > 0 ? finalTotalMinor / 100 : 0;
   const kokoTotal = priceBase * 1.10;
   const kokoMonthly = kokoTotal / 3;
 
@@ -51,16 +82,56 @@ export default function CartPage() {
     });
   };
 
-  const handleApplyCoupon = (e: React.FormEvent) => {
+  const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!couponCode.trim()) return;
-    if (couponCode.trim().toUpperCase() === 'DWSTORE' || couponCode.trim().toUpperCase() === 'WELCOME5') {
-      setCouponApplied(true);
-      setCouponError('');
-    } else {
-      setCouponError('Invalid coupon code. Try WELCOME5');
+    setCouponLoading(true);
+    setCouponError('');
+    setCouponSuccess('');
+
+    try {
+      const subtotalRs = subtotalMinor / 100;
+      const res = await fetch(`/api/coupons?code=${encodeURIComponent(couponCode.trim())}&subtotal=${subtotalRs}`);
+      const data = await res.json();
+
+      if (data.valid && data.coupon) {
+        setAppliedCoupon(data.coupon);
+        setCouponApplied(true);
+        setCouponSuccess(data.message || `Coupon "${data.coupon.code}" applied successfully!`);
+        try {
+          sessionStorage.setItem('dwstore_cart_coupon', JSON.stringify({
+            code: data.coupon.code,
+            discountType: data.coupon.discountType,
+            discountValue: data.coupon.discountValue,
+            minSpend: data.coupon.minSpend,
+          }));
+        } catch {}
+      } else {
+        setCouponApplied(false);
+        setAppliedCoupon(null);
+        setCouponError(data.error || 'Invalid coupon code. Please try again.');
+        try {
+          sessionStorage.removeItem('dwstore_cart_coupon');
+        } catch {}
+      }
+    } catch (err: any) {
+      setCouponError('Failed to validate coupon: ' + err.message);
       setCouponApplied(false);
+      setAppliedCoupon(null);
+    } finally {
+      setCouponLoading(false);
     }
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponApplied(false);
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponSuccess('');
+    setCouponError('');
+    try {
+      sessionStorage.removeItem('dwstore_cart_coupon');
+    } catch {}
   };
 
   const buildWhatsAppCartUrl = () => {
@@ -244,32 +315,54 @@ export default function CartPage() {
                     </Link>
 
                     {/* Coupon Form */}
-                    <form onSubmit={handleApplyCoupon} className="flex gap-2 w-full sm:w-auto">
-                      <div className="relative flex-1 sm:w-56">
-                        <Tag className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={couponCode}
-                          onChange={(e) => setCouponCode(e.target.value)}
-                          placeholder="Coupon Code"
-                          className="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 bg-white"
-                        />
+                    {couponApplied && appliedCoupon ? (
+                      <div className="flex items-center justify-between gap-3 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-xl w-full sm:w-auto">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          <div>
+                            <span className="font-mono font-black text-emerald-800 text-xs">{appliedCoupon.code}</span>
+                            <span className="text-[11px] text-emerald-700 ml-1.5 font-bold">
+                              (-LKR {formatPriceLKR(discountMinor)})
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          className="text-[11px] text-rose-600 hover:text-rose-700 font-bold underline"
+                        >
+                          Remove
+                        </button>
                       </div>
-                      <button
-                        type="submit"
-                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex-shrink-0"
-                      >
-                        Apply
-                      </button>
-                    </form>
+                    ) : (
+                      <form onSubmit={handleApplyCoupon} className="flex gap-2 w-full sm:w-auto">
+                        <div className="relative flex-1 sm:w-56">
+                          <Tag className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value)}
+                            placeholder="Coupon Code"
+                            className="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 bg-white font-mono uppercase"
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={couponLoading || !couponCode.trim()}
+                          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white rounded-xl text-xs font-bold transition flex-shrink-0"
+                        >
+                          {couponLoading ? 'Checking...' : 'Apply'}
+                        </button>
+                      </form>
+                    )}
                   </div>
                   {couponError && (
                     <div className="px-5 pb-3 text-[11px] text-rose-600 font-medium">{couponError}</div>
                   )}
-                  {couponApplied && (
+                  {couponSuccess && (
                     <div className="px-5 pb-3 text-[11px] text-emerald-600 font-medium flex items-center gap-1">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      Coupon applied successfully! 5% discount deducted.
+                      {couponSuccess}
                     </div>
                   )}
                 </div>
@@ -319,9 +412,12 @@ export default function CartPage() {
                       <span className="font-bold text-slate-900">LKR {formatPriceLKR(subtotalMinor)}</span>
                     </div>
 
-                    {couponApplied && (
-                      <div className="flex justify-between text-emerald-600 font-medium">
-                        <span>Promo Discount (5%)</span>
+                    {couponApplied && discountMinor > 0 && (
+                      <div className="flex justify-between text-emerald-700 bg-emerald-50 px-2 py-1.5 rounded-lg border border-emerald-200 font-bold text-xs items-center">
+                        <span className="flex items-center gap-1">
+                          <Tag className="w-3.5 h-3.5 text-emerald-600" />
+                          Coupon ({appliedCoupon?.code || 'PROMO'})
+                        </span>
                         <span>- LKR {formatPriceLKR(discountMinor)}</span>
                       </div>
                     )}

@@ -20,6 +20,7 @@ import {
   ArrowRight,
   AlertCircle,
   Sparkles,
+  Tag,
 } from 'lucide-react';
 
 const SRI_LANKA_DISTRICTS = [
@@ -114,11 +115,95 @@ export default function CheckoutPage() {
     return Math.round((subtotalMinor * val) / 100);
   }, [activeGateway, subtotalMinor]);
 
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState('');
+  const [couponSuccess, setCouponSuccess] = useState('');
+
+  // Auto-restore coupon from cart session
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('dwstore_cart_coupon');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.code) {
+          setCouponCode(parsed.code);
+          setAppliedCoupon(parsed);
+          setCouponSuccess(`Coupon "${parsed.code}" applied from cart!`);
+        }
+      }
+    } catch {}
+  }, []);
+
+  const handleApplyCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponError('');
+    setCouponSuccess('');
+
+    try {
+      const subtotalRs = subtotalMinor / 100;
+      const res = await fetch(`/api/coupons?code=${encodeURIComponent(couponCode.trim())}&subtotal=${subtotalRs}`);
+      const data = await res.json();
+
+      if (data.valid && data.coupon) {
+        setAppliedCoupon(data.coupon);
+        setCouponSuccess(data.message || `Coupon "${data.coupon.code}" applied successfully!`);
+        try {
+          sessionStorage.setItem('dwstore_cart_coupon', JSON.stringify({
+            code: data.coupon.code,
+            discountType: data.coupon.discountType,
+            discountValue: data.coupon.discountValue,
+            minSpend: data.coupon.minSpend,
+          }));
+        } catch {}
+      } else {
+        setAppliedCoupon(null);
+        setCouponError(data.error || 'Invalid coupon code.');
+        try {
+          sessionStorage.removeItem('dwstore_cart_coupon');
+        } catch {}
+      }
+    } catch (err: any) {
+      setCouponError('Failed to validate coupon: ' + err.message);
+      setAppliedCoupon(null);
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponSuccess('');
+    setCouponError('');
+    try {
+      sessionStorage.removeItem('dwstore_cart_coupon');
+    } catch {}
+  };
+
+  // Calculate dynamic coupon discount in minor units (cents)
+  const couponDiscountMinor = useMemo(() => {
+    if (!appliedCoupon || subtotalMinor === 0) return 0;
+    const subtotalRs = subtotalMinor / 100;
+    if (appliedCoupon.minSpend && subtotalRs < appliedCoupon.minSpend) {
+      return 0;
+    }
+    if (appliedCoupon.discountType === 'percentage') {
+      return Math.round((subtotalMinor * (appliedCoupon.discountValue || 0)) / 100);
+    }
+    const fixedMinor = Math.round((appliedCoupon.discountValue || 0) * 100);
+    return Math.min(fixedMinor, subtotalMinor);
+  }, [appliedCoupon, subtotalMinor]);
+
   const shippingFeeMinor = subtotalMinor >= FREE_SHIPPING_THRESHOLD_MINOR || subtotalMinor === 0
     ? 0
     : STANDARD_SHIPPING_FEE_MINOR;
 
-  const totalMinor = Math.max(0, subtotalMinor + shippingFeeMinor - paymentDiscountMinor);
+  const totalMinor = Math.max(0, subtotalMinor + shippingFeeMinor - paymentDiscountMinor - couponDiscountMinor);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -159,6 +244,8 @@ export default function CheckoutPage() {
       subtotalMinor,
       shippingFeeMinor,
       paymentDiscountMinor,
+      couponDiscountMinor,
+      couponCode: appliedCoupon?.code || '',
       totalMinor,
       shippingAddress: formData,
       paymentMethod,
@@ -177,6 +264,8 @@ export default function CheckoutPage() {
           subtotalMinor,
           shippingFeeMinor,
           paymentDiscountMinor,
+          couponDiscountMinor,
+          couponCode: appliedCoupon?.code || '',
           totalMinor,
           paymentMethod,
         }),
@@ -291,6 +380,9 @@ export default function CheckoutPage() {
     });
 
     message += `\n*Subtotal:* LKR ${formatPriceLKR(subtotalMinor)}\n`;
+    if (couponDiscountMinor > 0) {
+      message += `*Promo Coupon (${appliedCoupon?.code}):* -LKR ${formatPriceLKR(couponDiscountMinor)}\n`;
+    }
     if (paymentDiscountMinor > 0) {
       message += `*Payment Method Discount:* -LKR ${formatPriceLKR(paymentDiscountMinor)}\n`;
     }
@@ -805,6 +897,16 @@ export default function CheckoutPage() {
                       </span>
                     </div>
 
+                    {couponDiscountMinor > 0 && (
+                      <div className="flex justify-between text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200/80 items-center font-bold">
+                        <span className="flex items-center gap-1">
+                          <Tag className="w-3.5 h-3.5 text-emerald-600" />
+                          Promo Coupon ({appliedCoupon?.code})
+                        </span>
+                        <span>-LKR {formatPriceLKR(couponDiscountMinor)}</span>
+                      </div>
+                    )}
+
                     {paymentDiscountMinor > 0 && (
                       <div className="flex justify-between text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200/80 items-center font-bold">
                         <span className="flex items-center gap-1">
@@ -814,6 +916,54 @@ export default function CheckoutPage() {
                         <span>-LKR {formatPriceLKR(paymentDiscountMinor)}</span>
                       </div>
                     )}
+
+                    {/* Coupon Input Box */}
+                    <div className="pt-2 border-t border-slate-100">
+                      {appliedCoupon ? (
+                        <div className="flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <Tag className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="font-mono font-bold text-emerald-800">{appliedCoupon.code}</span>
+                            <span className="text-emerald-700 font-semibold">(-LKR {formatPriceLKR(couponDiscountMinor)})</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleRemoveCoupon}
+                            className="text-[11px] text-rose-600 hover:text-rose-700 font-bold underline"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <form onSubmit={handleApplyCoupon} className="flex gap-1.5">
+                          <div className="relative flex-1">
+                            <Tag className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              value={couponCode}
+                              onChange={(e) => setCouponCode(e.target.value)}
+                              placeholder="Have a promo coupon?"
+                              className="w-full pl-8 pr-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-blue-600 bg-white font-mono uppercase"
+                            />
+                          </div>
+                          <button
+                            type="submit"
+                            disabled={couponLoading || !couponCode.trim()}
+                            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white rounded-lg text-xs font-bold transition flex-shrink-0"
+                          >
+                            {couponLoading ? '...' : 'Apply'}
+                          </button>
+                        </form>
+                      )}
+                      {couponError && (
+                        <div className="text-[10px] text-rose-600 font-medium mt-1">{couponError}</div>
+                      )}
+                      {couponSuccess && (
+                        <div className="text-[10px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> {couponSuccess}
+                        </div>
+                      )}
+                    </div>
 
                     <div className="pt-3 border-t border-slate-200 flex justify-between items-baseline">
                       <span className="text-sm font-black text-slate-900">Total</span>
