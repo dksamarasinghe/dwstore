@@ -317,13 +317,13 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
             <button
               className="btn-soft"
               type="button"
-              style={{ background: '#4f46e5', color: '#fff', borderColor: '#4338ca' }}
+              style={{ background: '#0284c7', color: '#fff', borderColor: '#0284c7' }}
               onClick={() => {
                 const selected = orders.filter((o) => selectedIds.includes(o.orderId));
                 setWaybillOrders(selected);
               }}
             >
-              <Printer size={15} /> Print {selectedIds.length} Waybill Slips
+              <Printer size={15} /> Print {selectedIds.length} Invoice / Bill Slips
             </button>
             <button
               className="btn-soft"
@@ -507,7 +507,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                             className="icon-btn"
                             style={{ width: '34px', height: '34px' }}
                             onClick={() => setWaybillOrders([order])}
-                            title="Print Courier Waybill Slip"
+                            title="Print Order Invoice / Bill Slip"
                           >
                             <Printer size={16} className="text-primary" />
                           </button>
@@ -739,10 +739,10 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               <button
                 type="button"
                 className="btn-dark-x w-100 justify-content-center d-flex align-items-center gap-2"
-                style={{ height: '42px', background: '#4f46e5', borderColor: '#4338ca' }}
+                style={{ height: '42px', background: '#0284c7', borderColor: '#0284c7' }}
                 onClick={() => setWaybillOrders([selectedOrder])}
               >
-                <Printer size={16} /> Print Courier Waybill Slip
+                <Printer size={16} /> Print Order Invoice / Bill Slip
               </button>
 
               {selectedOrder.customerPhone && (

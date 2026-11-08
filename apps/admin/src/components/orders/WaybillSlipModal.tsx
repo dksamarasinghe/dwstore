@@ -1,5 +1,5 @@
 import React from 'react';
-import { Printer, X, Download, Package, MapPin, Phone, Truck, ShieldCheck } from 'lucide-react';
+import { Printer, X, Download, Receipt } from 'lucide-react';
 import { OrderItem } from '../../types';
 
 interface WaybillSlipModalProps {
@@ -16,9 +16,8 @@ export const WaybillSlipModal: React.FC<WaybillSlipModalProps> = ({ orders, onCl
 
   // Generate SVG barcode stripes deterministically from orderId
   const renderBarcode = (code: string) => {
-    const clean = code.replace(/[^0-9A-Z]/gi, '');
+    const clean = (code || 'DWS0000').replace(/[^0-9A-Z]/gi, '');
     const bars: boolean[] = [];
-    // Standard barcode pattern generator
     bars.push(true, false, true); // start guard
     for (let i = 0; i < clean.length; i++) {
       const charCode = clean.charCodeAt(i);
@@ -30,13 +29,13 @@ export const WaybillSlipModal: React.FC<WaybillSlipModalProps> = ({ orders, onCl
     bars.push(true, false, true, true); // stop guard
 
     return (
-      <div className="d-flex flex-column align-items-center">
+      <div className="d-flex flex-column align-items-center my-2">
         <svg
-          height="46"
+          height="38"
           width="100%"
-          viewBox={`0 0 ${bars.length * 3} 46`}
+          viewBox={`0 0 ${bars.length * 3} 38`}
           preserveAspectRatio="none"
-          style={{ maxWidth: '240px' }}
+          style={{ maxWidth: '200px' }}
         >
           {bars.map((isBlack, idx) =>
             isBlack ? (
@@ -45,15 +44,21 @@ export const WaybillSlipModal: React.FC<WaybillSlipModalProps> = ({ orders, onCl
                 x={idx * 3}
                 y="0"
                 width="2.5"
-                height="46"
+                height="38"
                 fill="#000"
               />
             ) : null
           )}
         </svg>
         <span
-          className="font-monospace fw-bold mt-1"
-          style={{ fontSize: '12px', letterSpacing: '3px', color: '#111' }}
+          style={{
+            fontFamily: 'monospace',
+            fontSize: '11px',
+            letterSpacing: '2px',
+            color: '#111',
+            fontWeight: 700,
+            marginTop: '2px',
+          }}
         >
           *{code}*
         </span>
@@ -61,43 +66,53 @@ export const WaybillSlipModal: React.FC<WaybillSlipModalProps> = ({ orders, onCl
     );
   };
 
+  const formatPrice = (val: number | undefined | null) => {
+    return Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   return (
     <>
-      {/* Screen Backdrop & Container (hidden on print) */}
+      {/* Screen Backdrop & Modal Dialog (hidden on print) */}
       <div className="react-modal-backdrop d-print-none" onClick={onClose}>
         <div
           className="card-x p-0 overflow-hidden"
-          style={{ width: '100%', maxWidth: '820px', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}
+          style={{
+            width: '100%',
+            maxWidth: '560px',
+            maxHeight: '94vh',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Modal Header Control Bar */}
+          {/* Modal Top Bar */}
           <div
             className="p-3 d-flex align-items-center justify-content-between border-bottom"
             style={{ borderColor: 'var(--border)', background: 'var(--card)' }}
           >
             <div>
-              <h5 className="m-0 d-flex align-items-center gap-2">
-                <Truck size={20} className="text-primary" /> Courier Waybill Slip Preview
+              <h5 className="m-0 d-flex align-items-center gap-2" style={{ fontSize: '15px' }}>
+                <Receipt size={18} className="text-primary" /> Order Invoice & Waybill Slip
               </h5>
               <small className="text-muted">
                 {orders.length === 1
-                  ? `Waybill for Order #${orders[0].orderId}`
-                  : `Batch of ${orders.length} Waybill Slips ready for courier dispatch`}
+                  ? `Invoice for Order #${orders[0].orderId}`
+                  : `Batch of ${orders.length} Invoices ready for printing`}
               </small>
             </div>
             <div className="d-flex align-items-center gap-2">
               <button
                 type="button"
                 className="btn-dark-x d-flex align-items-center gap-2"
-                style={{ height: '38px', padding: '0 16px', background: '#4f46e5', borderColor: '#4338ca' }}
+                style={{ height: '36px', padding: '0 14px', background: '#0284c7', borderColor: '#0284c7' }}
                 onClick={handlePrint}
               >
-                <Printer size={16} /> Print {orders.length === 1 ? 'Waybill Slip' : `All (${orders.length}) Slips`}
+                <Printer size={15} /> Print {orders.length === 1 ? 'Invoice' : `All (${orders.length})`}
               </button>
               <button
                 type="button"
                 className="icon-btn"
-                style={{ width: '36px', height: '36px' }}
+                style={{ width: '34px', height: '34px' }}
                 onClick={onClose}
               >
                 <X size={18} />
@@ -105,216 +120,210 @@ export const WaybillSlipModal: React.FC<WaybillSlipModalProps> = ({ orders, onCl
             </div>
           </div>
 
-          {/* Scrollable Waybills Preview Area */}
+          {/* Scrollable Preview Area */}
           <div
-            className="p-4 overflow-y-auto"
+            className="p-3 overflow-y-auto"
             style={{
-              background: '#e2e8f0',
+              background: '#f1f5f9',
               flex: 1,
             }}
           >
             <div className="d-flex flex-column gap-4 align-items-center">
-              {orders.map((order, index) => {
+              {orders.map((order, orderIdx) => {
                 const isPaid = order.paymentStatus === 'Paid';
-                const totalAmount = order.total || 0;
-                const cleanPhone = order.customerPhone || '';
+                const subtotal = order.subtotal || order.total || 0;
+                const shipping = order.shippingCost ?? 0;
+                const total = order.total || subtotal + shipping;
+                const orderDate = order.createdAt
+                  ? new Date(order.createdAt).toISOString().slice(0, 10)
+                  : new Date().toISOString().slice(0, 10);
 
                 return (
                   <div
-                    key={order.orderId || index}
-                    className="waybill-slip bg-white text-dark p-4 rounded-2 shadow-sm"
-                    style={{
-                      width: '100%',
-                      maxWidth: '650px',
-                      color: '#0f172a',
-                      fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                      border: '2px solid #000',
-                      boxSizing: 'border-box',
-                    }}
+                    key={order.orderId || orderIdx}
+                    className="tm_pos_invoice_wrap tm_receipt_print"
                   >
-                    {/* Top Dispatcher & Barcode Row */}
-                    <div className="row g-2 align-items-center pb-3 border-bottom border-2 border-dark">
-                      <div className="col-7">
-                        <div className="d-flex align-items-center gap-2 mb-1">
+                    {/* Header: Logo, Company Name, Address, Contact */}
+                    <div className="tm_pos_invoice_top">
+                      <div className="tm_pos_company_logo">
+                        <img
+                          src="/dwstoreicon_logo.png"
+                          alt="DWstore.lk"
+                          onError={(e) => {
+                            // Fallback to text if image not loaded
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      <div className="tm_pos_company_name">DWSTORE (PVT) LTD</div>
+                      <div className="tm_pos_company_address">
+                        No.55/1/2, Borella road, Pannipitiya, Sri Lanka
+                      </div>
+                      <div className="tm_pos_company_mobile">
+                        Hotline: +94 75 669 3358 | Email: support@dwstore.lk
+                      </div>
+                    </div>
+
+                    {/* Receipt Heading with Dashed Line */}
+                    <div className="tm_pos_invoice_body">
+                      <div className="tm_pos_invoice_heading">
+                        <span>Retail Receipt / Waybill</span>
+                      </div>
+
+                      {/* Customer & Order Metadata List */}
+                      <ul className="tm_list tm_style1">
+                        <li>
+                          <div className="tm_list_title">Name:</div>
+                          <div className="tm_list_desc">{order.customerName || 'Customer'}</div>
+                        </li>
+                        <li className="text-right">
+                          <div className="tm_list_title">Invoice No:</div>
+                          <div className="tm_list_desc">{order.orderId}</div>
+                        </li>
+                        <li>
+                          <div className="tm_list_title">Phone:</div>
+                          <div className="tm_list_desc">{order.customerPhone || 'N/A'}</div>
+                        </li>
+                        <li className="text-right">
+                          <div className="tm_list_title">Date:</div>
+                          <div className="tm_list_desc">{orderDate}</div>
+                        </li>
+                        <li className="tm_list_full">
+                          <div className="tm_list_title">Deliver To:</div>
+                          <div className="tm_list_desc">
+                            {order.shippingAddress}
+                            {order.city ? `, ${order.city}` : ''}
+                            {order.district ? `, ${order.district}` : ''}
+                          </div>
+                        </li>
+                      </ul>
+
+                      {/* Items Table */}
+                      <table className="tm_pos_invoice_table">
+                        <thead>
+                          <tr>
+                            <th style={{ width: '24px' }}>SL</th>
+                            <th>Item</th>
+                            <th style={{ textAlign: 'right' }}>Price</th>
+                            <th style={{ textAlign: 'center', width: '32px' }}>Qty</th>
+                            <th style={{ textAlign: 'right' }}>Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {order.items && order.items.length > 0 ? (
+                            order.items.map((item, idx) => (
+                              <tr key={idx}>
+                                <td>{idx + 1}.</td>
+                                <td>
+                                  <div style={{ fontWeight: 600, color: '#111' }}>
+                                    {item.productTitle}
+                                  </div>
+                                  {item.productSku && (
+                                    <div style={{ fontSize: '9.5px', color: '#777' }}>
+                                      SKU: {item.productSku}
+                                    </div>
+                                  )}
+                                </td>
+                                <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                  {formatPrice(item.price)}
+                                </td>
+                                <td style={{ textAlign: 'center' }}>{item.quantity}</td>
+                                <td style={{ textAlign: 'right', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                  {formatPrice((item.price || 0) * (item.quantity || 1))}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td>1.</td>
+                              <td>DWstore Gadgets & Electronics</td>
+                              <td style={{ textAlign: 'right' }}>{formatPrice(subtotal)}</td>
+                              <td style={{ textAlign: 'center' }}>1</td>
+                              <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                                {formatPrice(subtotal)}
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+
+                      {/* Calculations / Subtotal / Shipping / Total Breakdown */}
+                      <div className="tm_bill_list">
+                        <div className="tm_bill_list_in">
+                          <div className="tm_bill_title">Sub-Total:</div>
+                          <div className="tm_bill_value">LKR {formatPrice(subtotal)}</div>
+                        </div>
+
+                        <div className="tm_bill_list_in">
+                          <div className="tm_bill_title">Shipping:</div>
+                          <div className="tm_bill_value">
+                            {shipping === 0 ? 'FREE' : `LKR ${formatPrice(shipping)}`}
+                          </div>
+                        </div>
+
+                        <div className="tm_invoice_seperator" />
+
+                        <div className="tm_bill_list_in">
+                          <div className="tm_bill_title">Payment Method:</div>
+                          <div className="tm_bill_value" style={{ textTransform: 'capitalize' }}>
+                            {order.paymentMethod || 'COD'}
+                          </div>
+                        </div>
+
+                        <div className="tm_bill_list_in">
+                          <div className="tm_bill_title">Payment Status:</div>
                           <div
+                            className="tm_bill_value"
                             style={{
-                              background: '#0f172a',
-                              color: '#fff',
-                              padding: '3px 8px',
-                              borderRadius: '4px',
-                              fontWeight: 900,
-                              fontSize: '14px',
-                              letterSpacing: '0.05em',
+                              fontWeight: 700,
+                              color: isPaid ? '#15803d' : '#b91c1c',
                             }}
                           >
-                            DWSTORE
+                            {isPaid ? 'PAID (Verified)' : 'UNPAID (Collect Cash)'}
                           </div>
-                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#4338ca' }}>
-                            PRIORITY EXPRESS
-                          </span>
                         </div>
-                        <div style={{ fontSize: '11px', lineHeight: '1.4', color: '#334155' }}>
-                          <b>Sender Hub:</b> DWstore.lk Showroom & Fulfillment Hub<br />
-                          No.55/1/2, Borella road, Pannipitiya<br />
-                          <b>Hotline / WhatsApp:</b> +94 75 669 3358
-                        </div>
-                      </div>
-                      <div className="col-5 text-end">
-                        {renderBarcode(order.orderId)}
-                        <div style={{ fontSize: '10px', color: '#475569', marginTop: '2px' }}>
-                          WAYBILL REF: {order.orderId}
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Destination Banner */}
-                    <div
-                      className="d-flex align-items-center justify-content-between my-2 p-2 px-3 border border-2 border-dark"
-                      style={{ background: '#f1f5f9' }}
-                    >
-                      <div className="d-flex align-items-center gap-2">
-                        <MapPin size={18} className="text-dark" />
-                        <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>
-                          DESTINATION CITY / DISTRICT:
-                        </span>
-                      </div>
-                      <b style={{ fontSize: '18px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                        {order.city || 'COLOMBO'}
-                      </b>
-                    </div>
+                        <div className="tm_invoice_seperator" />
 
-                    {/* Customer Deliver To Section */}
-                    <div className="row g-2 py-2 border-bottom border-2 border-dark">
-                      <div className="col-12">
-                        <small
-                          className="d-block text-uppercase fw-bold text-muted mb-1"
-                          style={{ fontSize: '10px', letterSpacing: '0.08em' }}
-                        >
-                          CONSIGNEE (DELIVER TO):
-                        </small>
-                        <h4 className="fw-bolder mb-1" style={{ fontSize: '20px', color: '#0f172a' }}>
-                          {order.customerName}
-                        </h4>
-                        <div className="fw-bold mb-1" style={{ fontSize: '14px', color: '#0f172a' }}>
-                          {order.shippingAddress}
-                          {order.postalCode ? `, ${order.postalCode}` : ''}
-                        </div>
-                        <div className="d-flex flex-wrap align-items-center gap-3 mt-2">
-                          <span
-                            className="d-flex align-items-center gap-1 border border-2 border-dark px-2 py-1 rounded"
-                            style={{ background: '#fef08a', fontSize: '14px', fontWeight: 800 }}
-                          >
-                            <Phone size={14} /> TEL: {cleanPhone || 'Not Available'}
-                          </span>
-                          {order.customerEmail && (
-                            <span style={{ fontSize: '12px', color: '#475569' }}>
-                              Email: {order.customerEmail}
-                            </span>
-                          )}
+                        <div className="tm_bill_list_in">
+                          <div className="tm_bill_title tm_bill_focus">
+                            {isPaid ? 'Total Amount:' : 'Total Payable (COD):'}
+                          </div>
+                          <div className="tm_bill_value tm_bill_focus" style={{ fontSize: '14px', color: '#000' }}>
+                            LKR {formatPrice(total)}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Payment / COD Collection Box - THE MOST CRITICAL PART */}
-                    <div className="row g-2 my-2 align-items-stretch">
-                      <div className="col-7">
+                      {/* Special Delivery Note if provided */}
+                      {order.notes && (
                         <div
-                          className="p-3 border border-3 border-dark rounded h-100 d-flex flex-column justify-content-center"
                           style={{
-                            background: isPaid ? '#dcfce7' : '#fee2e2',
-                            borderColor: isPaid ? '#15803d' : '#b91c1c',
+                            padding: '6px 8px',
+                            background: '#fef2f2',
+                            border: '1px dashed #ef4444',
+                            borderRadius: '4px',
+                            margin: '8px 0',
+                            fontSize: '10px',
+                            color: '#991b1b',
                           }}
                         >
-                          <small
-                            className="d-block text-uppercase fw-bolder mb-1"
-                            style={{ fontSize: '11px', color: isPaid ? '#166534' : '#991b1b', letterSpacing: '0.05em' }}
-                          >
-                            {isPaid ? '✔ PAYMENT VERIFIED (PREPAID)' : '⚠ CASH ON DELIVERY (COD) COLLECTION:'}
-                          </small>
-                          {isPaid ? (
-                            <div>
-                              <b style={{ fontSize: '20px', color: '#166534' }}>DO NOT COLLECT CASH</b>
-                              <small className="d-block text-muted" style={{ fontSize: '11px' }}>
-                                Fully Settled via {order.paymentMethod || 'Online Payment'}
-                              </small>
-                            </div>
-                          ) : (
-                            <div>
-                              <b style={{ fontSize: '24px', color: '#b91c1c' }}>
-                                Rs. {totalAmount.toLocaleString()}
-                              </b>
-                              <small className="d-block" style={{ fontSize: '11px', color: '#7f1d1d', fontWeight: 600 }}>
-                                Exact Cash Collection required upon handover
-                              </small>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="col-5">
-                        <div className="p-2 border border-2 border-dark rounded h-100 d-flex flex-column justify-content-between" style={{ background: '#f8fafc', fontSize: '11px' }}>
-                          <div>
-                            <div className="d-flex justify-content-between mb-1">
-                              <span className="text-muted">Order Date:</span>
-                              <b>{order.createdAt?.slice(0, 10)}</b>
-                            </div>
-                            <div className="d-flex justify-content-between mb-1">
-                              <span className="text-muted">Weight:</span>
-                              <b>0.50 kg</b>
-                            </div>
-                            <div className="d-flex justify-content-between mb-1">
-                              <span className="text-muted">Pieces:</span>
-                              <b>{order.items?.length || 1} pkg</b>
-                            </div>
-                          </div>
-                          <div className="pt-1 border-top border-dark" style={{ fontSize: '10px' }}>
-                            <span>Partner: <b>DW Express / Koombiyo</b></span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Content Items Summary */}
-                    <div className="my-2 p-2 border border-dark rounded" style={{ background: '#f8fafc', fontSize: '11px' }}>
-                      <div className="fw-bold mb-1 text-uppercase" style={{ fontSize: '10px', color: '#475569' }}>
-                        Package Contents:
-                      </div>
-                      <div className="d-flex flex-column gap-1">
-                        {order.items && order.items.length > 0 ? (
-                          order.items.map((item, i) => (
-                            <div key={i} className="d-flex justify-content-between align-items-center">
-                              <span className="text-truncate" style={{ maxWidth: '440px' }}>
-                                • <b>{item.productTitle}</b>
-                              </span>
-                              <b className="font-monospace">Qty: {item.quantity}</b>
-                            </div>
-                          ))
-                        ) : (
-                          <div>• DWstore Smart Gadget Goods (Qty: 1)</div>
-                        )}
-                      </div>
-                      {order.notes && (
-                        <div className="mt-1 pt-1 border-top text-danger fw-bold" style={{ fontSize: '11px' }}>
-                          Special Note: {order.notes}
+                          <b>Note:</b> {order.notes}
                         </div>
                       )}
-                    </div>
 
-                    {/* Delivery Agent Instructions & Signature Box */}
-                    <div className="row g-2 mt-2 pt-2 border-top border-2 border-dark" style={{ fontSize: '10px' }}>
-                      <div className="col-8">
-                        <b>COURIER INSTRUCTIONS:</b>
-                        <ul className="m-0 p-0 ps-3 text-muted" style={{ lineHeight: '1.4' }}>
-                          <li>Please phone the customer prior to delivery attempt.</li>
-                          <li>Do NOT allow parcel opening before full COD settlement.</li>
-                          <li>If unreachable, hold for 24h & contact DWstore hub hotline.</li>
-                        </ul>
+                      {/* Barcode for Courier / Handover Scanning */}
+                      <div className="tm_pos_barcode_wrap">
+                        {renderBarcode(order.orderId)}
                       </div>
-                      <div className="col-4 border-start border-dark ps-2">
-                        <div className="text-center" style={{ height: '38px', borderBottom: '1px dashed #000' }} />
-                        <div className="text-center mt-1" style={{ fontSize: '9px', fontWeight: 600 }}>
-                          Receiver Signature & Date
-                        </div>
+
+                      {/* Footer notice */}
+                      <div className="tm_pos_sample_text">
+                        Thank you for your purchase with DWstore.lk!<br />
+                        Please retain this receipt for warranty claims & service support.
+                      </div>
+                      <div className="tm_pos_invoice_footer">
+                        Powered by DWstore.lk | All Rights Reserved
                       </div>
                     </div>
                   </div>
@@ -325,33 +334,253 @@ export const WaybillSlipModal: React.FC<WaybillSlipModalProps> = ({ orders, onCl
         </div>
       </div>
 
-      {/* Pure Print-Only Viewport Styles (Triggers on window.print()) */}
+      {/* Embedded CSS matching Waybill Slip template + Print Styles */}
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        .tm_pos_invoice_wrap {
+          width: 100%;
+          max-width: 380px;
+          margin: 0 auto;
+          padding: 24px 20px;
+          background-color: #ffffff;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+          border-radius: 8px;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          color: #444;
+          font-size: 11.5px;
+          line-height: 1.4em;
+          box-sizing: border-box;
+        }
+
+        .tm_pos_company_logo {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 8px;
+        }
+
+        .tm_pos_company_logo img {
+          max-height: 52px;
+          width: 52px;
+          object-fit: contain;
+          border-radius: 8px;
+        }
+
+        .tm_pos_invoice_top {
+          text-align: center;
+          margin-bottom: 12px;
+        }
+
+        .tm_pos_company_name {
+          font-weight: 700;
+          color: #111;
+          font-size: 14px;
+          line-height: 1.3em;
+          letter-spacing: -0.01em;
+        }
+
+        .tm_pos_company_address,
+        .tm_pos_company_mobile {
+          font-size: 10.5px;
+          color: #666;
+          margin-top: 2px;
+        }
+
+        .tm_pos_invoice_heading {
+          display: flex;
+          justify-content: center;
+          position: relative;
+          text-transform: uppercase;
+          font-size: 11px;
+          font-weight: 700;
+          margin: 12px 0 10px 0;
+          letter-spacing: 0.04em;
+        }
+
+        .tm_pos_invoice_heading:before {
+          content: '';
+          position: absolute;
+          height: 0;
+          width: 100%;
+          left: 0;
+          top: 50%;
+          border-top: 1px dashed #777;
+        }
+
+        .tm_pos_invoice_heading span {
+          display: inline-flex;
+          padding: 0 8px;
+          background-color: #fff;
+          z-index: 1;
+          font-weight: 700;
+          position: relative;
+          color: #111;
+        }
+
+        .tm_list.tm_style1 {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          display: flex;
+          flex-wrap: wrap;
+        }
+
+        .tm_list.tm_style1 li {
+          display: flex;
+          width: 50%;
+          font-size: 11px;
+          line-height: 1.3em;
+          margin-bottom: 6px;
+        }
+
+        .tm_list.tm_style1 li.tm_list_full {
+          width: 100%;
+        }
+
+        .tm_list.tm_style1 .text-right {
+          text-align: right;
+          justify-content: flex-end;
+        }
+
+        .tm_list_title {
+          color: #111;
+          margin-right: 4px;
+          font-weight: 600;
+          flex-shrink: 0;
+        }
+
+        .tm_list_desc {
+          color: #333;
+          word-break: break-word;
+        }
+
+        .tm_invoice_seperator {
+          width: 130px;
+          border-top: 1px dashed #888;
+          margin: 6px 0 6px auto;
+        }
+
+        .tm_pos_invoice_table {
+          width: 100%;
+          margin-top: 8px;
+          line-height: 1.3em;
+          border-collapse: collapse;
+          font-size: 11px;
+        }
+
+        .tm_pos_invoice_table thead th {
+          font-weight: 700;
+          color: #111;
+          text-align: left;
+          padding: 6px 3px;
+          border-top: 1px dashed #666;
+          border-bottom: 1px dashed #666;
+        }
+
+        .tm_pos_invoice_table td {
+          padding: 5px 3px;
+          vertical-align: top;
+        }
+
+        .tm_pos_invoice_table tbody tr:first-child td {
+          padding-top: 8px;
+        }
+
+        .tm_pos_invoice_table tbody tr:last-child td {
+          padding-bottom: 8px;
+          border-bottom: 1px dashed #666;
+        }
+
+        .tm_bill_list {
+          list-style: none;
+          margin: 0;
+          padding: 8px 0;
+          border-bottom: 1px dashed #666;
+        }
+
+        .tm_bill_list_in {
+          display: flex;
+          text-align: right;
+          justify-content: flex-end;
+          padding: 2.5px 0;
+          font-size: 11px;
+        }
+
+        .tm_bill_title {
+          padding-right: 16px;
+          color: #555;
+        }
+
+        .tm_bill_value {
+          width: 130px;
+          color: #111;
+        }
+
+        .tm_bill_value.tm_bill_focus,
+        .tm_bill_title.tm_bill_focus {
+          font-weight: 700;
+          color: #111;
+          font-size: 12.5px;
+        }
+
+        .tm_pos_barcode_wrap {
+          text-align: center;
+          padding: 8px 0 4px 0;
+        }
+
+        .tm_pos_sample_text {
+          text-align: center;
+          padding: 8px 0;
+          border-top: 1px dashed #888;
+          border-bottom: 1px dashed #888;
+          line-height: 1.4em;
+          color: #666;
+          font-size: 10px;
+          margin-top: 6px;
+        }
+
+        .tm_pos_invoice_footer {
+          text-align: center;
+          margin-top: 10px;
+          font-size: 9.5px;
+          color: #888;
+        }
+
+        /* Pure Print Viewport Styles */
         @media print {
           body * {
-            visibility: hidden;
+            visibility: hidden !important;
           }
-          .waybill-slip, .waybill-slip * {
-            visibility: visible;
+          .tm_receipt_print,
+          .tm_receipt_print * {
+            visibility: visible !important;
           }
-          .waybill-slip {
-            position: relative;
-            left: 0;
-            top: 0;
-            margin: 0 auto 30px auto !important;
+          .tm_receipt_print {
+            position: relative !important;
+            left: 0 !important;
+            top: 0 !important;
+            margin: 0 auto 20px auto !important;
             page-break-after: always;
             break-after: page;
             box-shadow: none !important;
-            border: 2px solid #000 !important;
+            border: 1px solid #ddd !important;
             width: 100% !important;
-            max-width: 100% !important;
+            max-width: 380px !important;
+            background: #fff !important;
+            padding: 20px !important;
           }
-          .d-print-none, .sidebar, .topbar, .backdrop, header, nav, aside {
+          .d-print-none,
+          .react-modal-backdrop,
+          .sidebar,
+          .topbar,
+          header,
+          nav,
+          aside {
             display: none !important;
           }
           @page {
             size: auto;
-            margin: 12mm;
+            margin: 8mm;
           }
         }
       `}</style>
