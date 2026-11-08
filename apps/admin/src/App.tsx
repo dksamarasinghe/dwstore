@@ -32,7 +32,6 @@ import { AbandonedCartsView } from './components/views/AbandonedCartsView';
 import { ImportsView } from './components/views/ImportsView';
 import { SettingsView } from './components/views/SettingsView';
 import { IntegrationsView } from './components/views/IntegrationsView';
-import { HelpView } from './components/views/HelpView';
 import { LoginView } from './components/auth/LoginView';
 
 export default function App() {
@@ -890,10 +889,6 @@ export default function App() {
 
           {activeTab === 'integrations' && (
             <IntegrationsView showNotification={showNotification} />
-          )}
-
-          {activeTab === 'help' && (
-            <HelpView />
           )}
         </div>
       </div>

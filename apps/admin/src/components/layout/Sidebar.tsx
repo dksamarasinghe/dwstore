@@ -26,7 +26,6 @@ import {
   Settings,
   Plug,
   Bell,
-  HelpCircle,
   PanelLeftClose,
   PanelLeft,
   ExternalLink,
@@ -447,19 +446,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <Plug size={18} />
             {!collapsed && <span>Integrations</span>}
-          </a>
-
-          <a
-            className={`sb-link ${activeTab === 'help' ? 'active' : ''}`}
-            href="#help"
-            onClick={(e) => {
-              e.preventDefault();
-              handleNavClick('help');
-            }}
-            title="Help & Support"
-          >
-            <HelpCircle size={18} />
-            {!collapsed && <span>Help & Docs</span>}
           </a>
         </nav>
 

@@ -15,7 +15,9 @@ import {
   User,
   Settings as SettingsIcon,
   LogOut,
-  Lock
+  Lock,
+  Calendar,
+  Clock,
 } from 'lucide-react';
 import { TabType } from '../../types';
 
@@ -41,6 +43,29 @@ export const Topbar: React.FC<TopbarProps> = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState<Date>(new Date());
+
+  // Live real-time clock updating every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formattedDate = currentDateTime.toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+
+  const formattedTime = currentDateTime.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
 
   const searchRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -155,6 +180,31 @@ export const Topbar: React.FC<TopbarProps> = ({
 
       {/* Topbar Actions */}
       <div className="top-actions">
+        {/* Live Date & Time Widget */}
+        <div
+          className="d-none d-md-flex align-items-center gap-2 px-3 rounded-pill"
+          style={{
+            background: 'var(--hover)',
+            border: '1px solid var(--border)',
+            fontSize: '12.5px',
+            height: '38px',
+            userSelect: 'none',
+          }}
+          title="Current System Date & Time"
+        >
+          <div className="d-flex align-items-center gap-1.5 text-muted">
+            <Calendar size={13} className="text-primary" />
+            <span style={{ fontWeight: 500 }}>{formattedDate}</span>
+          </div>
+          <span className="text-muted opacity-40">|</span>
+          <div className="d-flex align-items-center gap-1.5" style={{ color: 'var(--text)' }}>
+            <Clock size={13} className="text-success" />
+            <span style={{ fontFamily: 'monospace', fontWeight: 600, letterSpacing: '0.3px' }}>
+              {formattedTime}
+            </span>
+          </div>
+        </div>
+
         {/* View Storefront Pill Button */}
         <a
           href={getStorefrontUrl()}
