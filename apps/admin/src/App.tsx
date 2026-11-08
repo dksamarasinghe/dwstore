@@ -9,6 +9,7 @@ import { realProducts, realCategories } from './data/realCatalog';
 import { realBrands } from './data/realBrands';
 import { realOrders, realCustomers, realShipments } from './data/realOrdersData';
 import { normalizeOrder } from './utils/normalizer';
+import { getStorefrontUrl } from './config';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
 import { NotificationToast } from './components/layout/NotificationToast';
@@ -146,7 +147,7 @@ export default function App() {
   const handleSyncCourierStatus = async (isManual = false) => {
     setSyncingCourier(true);
     try {
-      const res = await fetch('http://localhost:3000/api/orders/sync-courier', {
+      const res = await fetch(`${getStorefrontUrl()}/api/orders/sync-courier`, {
         method: 'POST',
       });
       const data = await res.json();
@@ -230,7 +231,7 @@ export default function App() {
 
   // Fetch orders from API with normalization (syncs latest status & customer updates)
   const fetchOrders = () => {
-    fetch('http://localhost:3000/api/orders')
+    fetch(`${getStorefrontUrl()}/api/orders`)
       .then((res) => res.json())
       .then((data) => {
         if (data && Array.isArray(data.orders) && data.orders.length > 0) {
@@ -260,7 +261,7 @@ export default function App() {
 
   // Sync reviews from Storefront API
   const fetchReviews = () => {
-    fetch('http://localhost:3000/api/reviews')
+    fetch(`${getStorefrontUrl()}/api/reviews`)
       .then((res) => res.json())
       .then((data) => {
         if (data && Array.isArray(data.reviews) && data.reviews.length > 0) {
@@ -326,7 +327,7 @@ export default function App() {
     showNotification(`Order #${orderId} status set to ${newStatus.toUpperCase()}`);
 
     try {
-      await fetch('http://localhost:3000/api/orders', {
+      await fetch(`${getStorefrontUrl()}/api/orders`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId, status: newStatus }),
@@ -393,7 +394,7 @@ export default function App() {
 
     // 3. Sync to Storefront API
     try {
-      await fetch('http://localhost:3000/api/orders', {
+      await fetch(`${getStorefrontUrl()}/api/orders`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -465,7 +466,7 @@ export default function App() {
 
     // 3. Sync to Storefront API
     try {
-      await fetch('http://localhost:3000/api/orders', {
+      await fetch(`${getStorefrontUrl()}/api/orders`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -496,7 +497,7 @@ export default function App() {
   // Add review POST API
   const handleAddReview = async (reviewPayload: any) => {
     try {
-      const res = await fetch('http://localhost:3000/api/reviews', {
+      const res = await fetch(`${getStorefrontUrl()}/api/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(reviewPayload),
@@ -517,7 +518,7 @@ export default function App() {
   // Delete review DELETE API
   const handleDeleteReview = async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/reviews?id=${id}`, {
+      const res = await fetch(`${getStorefrontUrl()}/api/reviews?id=${id}`, {
         method: 'DELETE',
       });
       const result = await res.json();
@@ -536,7 +537,7 @@ export default function App() {
   const handleAddProduct = async (newProd: ProductItem) => {
     setProducts((prev) => [newProd, ...prev]);
     try {
-      await fetch('http://localhost:3000/api/products', {
+      await fetch(`${getStorefrontUrl()}/api/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newProd),
@@ -551,7 +552,7 @@ export default function App() {
       prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
     );
     try {
-      await fetch('http://localhost:3000/api/products', {
+      await fetch(`${getStorefrontUrl()}/api/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedProduct),

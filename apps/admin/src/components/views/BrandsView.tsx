@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { getStorefrontUrl } from '../../config';
 import {
   Tags,
   Plus,
@@ -51,7 +52,7 @@ export const BrandsView: React.FC<BrandsViewProps> = ({
       const fd = new FormData();
       fd.append('file', file);
       fd.append('folder', 'brands');
-      const res = await fetch('http://localhost:3000/api/upload', {
+      const res = await fetch(`${getStorefrontUrl()}/api/upload`, {
         method: 'POST',
         body: fd,
       });

@@ -1,4 +1,5 @@
 import React from 'react';
+import { getStorefrontUrl } from '../../config';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -477,7 +478,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
           <a
             className="sb-link"
-            href="http://localhost:3000"
+            href={getStorefrontUrl()}
             target="_blank"
             rel="noreferrer"
             title="View Live Storefront"

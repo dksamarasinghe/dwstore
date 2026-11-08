@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { getStorefrontUrl } from '../../config';
 import { Truck, CheckCircle2, Clock, MapPin, ChevronLeft, ChevronRight, Search, RotateCw } from 'lucide-react';
 import { ShipmentItem } from '../../types';
 
@@ -147,7 +148,7 @@ export const ShipmentsView: React.FC<ShipmentsViewProps> = ({
                       ? 's-Processing'
                       : 's-Pending';
 
-                  const trackUrl = `http://localhost:3000/track-order?trackingId=${encodeURIComponent(s.trackingNumber)}${s.customerPhone ? `&phone=${encodeURIComponent(s.customerPhone)}` : ''}&orderId=${encodeURIComponent(s.orderId)}`;
+                  const trackUrl = `${getStorefrontUrl()}/track-order?trackingId=${encodeURIComponent(s.trackingNumber)}${s.customerPhone ? `&phone=${encodeURIComponent(s.customerPhone)}` : ''}&orderId=${encodeURIComponent(s.orderId)}`;
 
                   return (
                     <tr key={s.id}>

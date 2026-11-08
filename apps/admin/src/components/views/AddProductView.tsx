@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { getStorefrontUrl } from '../../config';
 import {
   Package,
   ArrowLeft,
@@ -123,7 +124,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       const fd = new FormData();
       fd.append('file', file);
       fd.append('folder', folder);
-      const res = await fetch('http://localhost:3000/api/upload', {
+      const res = await fetch(`${getStorefrontUrl()}/api/upload`, {
         method: 'POST',
         body: fd,
       });

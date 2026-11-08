@@ -31,6 +31,7 @@ import {
   Zap
 } from 'lucide-react';
 import { ProductItem, CategoryItem, BrandItem } from '../../types';
+import { getStorefrontUrl } from '../../config';
 
 interface HomeCustomizerViewProps {
   products: ProductItem[];
@@ -222,7 +223,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
 
   // Unified robust API POST helper with fallback
   const postHomepageApi = async (dataToSave: any) => {
-    const endpoints = ['/api/homepage', 'http://localhost:3000/api/homepage'];
+    const endpoints = ['/api/homepage', `${getStorefrontUrl()}/api/homepage`];
     let lastError: any = null;
     for (const url of endpoints) {
       try {
@@ -247,7 +248,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
   // Fetch live config from Storefront API on mount
   React.useEffect(() => {
     const fetchConfig = async () => {
-      const endpoints = ['/api/homepage?t=' + Date.now(), 'http://localhost:3000/api/homepage?t=' + Date.now()];
+      const endpoints = ['/api/homepage?t=' + Date.now(), `${getStorefrontUrl()}/api/homepage?t=` + Date.now()];
       for (const url of endpoints) {
         try {
           const res = await fetch(url, { cache: 'no-store' });
@@ -276,7 +277,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
       const fd = new FormData();
       fd.append('file', file);
       fd.append('folder', 'home-customizer');
-      const endpoints = ['/api/upload', 'http://localhost:3000/api/upload'];
+      const endpoints = ['/api/upload', `${getStorefrontUrl()}/api/upload`];
       let lastError: any = null;
       for (const url of endpoints) {
         try {
@@ -784,7 +785,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
             <RotateCcw size={15} /> Reset
           </button>
           <a
-            href="http://localhost:3000"
+            href={getStorefrontUrl()}
             target="_blank"
             rel="noreferrer"
             className="btn btn-outline-primary d-inline-flex align-items-center gap-1.5"
@@ -3455,7 +3456,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
         }}
       >
         <span className="text-muted" style={{ fontSize: '13px' }}>
-          Unsaved changes will apply immediately to <code>localhost:3000</code> upon clicking Save.
+          Unsaved changes will apply immediately upon clicking Save.
         </span>
         <div className="d-flex align-items-center gap-2">
           <button

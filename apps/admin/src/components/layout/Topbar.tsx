@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { getStorefrontUrl } from '../../config';
 import {
   Search,
   ChevronDown,
@@ -156,7 +157,7 @@ export const Topbar: React.FC<TopbarProps> = ({
       <div className="top-actions">
         {/* View Storefront Pill Button */}
         <a
-          href="http://localhost:3000"
+          href={getStorefrontUrl()}
           target="_blank"
           rel="noreferrer"
           className="btn-soft d-none d-sm-inline-flex"
@@ -323,7 +324,7 @@ export const Topbar: React.FC<TopbarProps> = ({
               <li>
                 <a
                   className="dropdown-item text-muted"
-                  href="http://localhost:3000"
+                  href={getStorefrontUrl()}
                   target="_blank"
                   rel="noreferrer"
                 >
