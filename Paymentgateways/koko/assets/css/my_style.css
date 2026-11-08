@@ -1,0 +1,56 @@
+#payment .payment_methods li img.ph-logo-style{
+    float: none;
+    max-height: none;
+    width: 60px;
+    height: 20px;
+}
+
+.koko-installment-single{
+    font-size: 18px;
+    color: #8e8e8e;
+    line-height: 1rem;
+}
+
+.price div.product-price-installments-not-in-variation-single {
+    display: none !important;
+}
+
+.minpay-logo-single{
+    cursor: pointer;
+    position: relative; 
+    cursor: pointer; 
+    height: 19px;
+    vertical-align: middle;
+    width: auto;
+}
+
+.price div.product-price-installments-not-in-variation-single {
+    display: none !important;
+}
+
+.darazbnpl-logo {
+    max-width: 100%;
+    height: auto;
+}
+
+.darazbnpl-description {
+    font-size: 14px;
+    color: #555;
+    margin-top: 5px;
+    text-align: center;
+    line-height: 1.5;
+}
+
+.wc-block-components-payment-method-icon--darazbnpl {
+  max-height: 20px;
+  width: auto;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .darazbnpl-description {
+    font-size: 12px;
+  }
+}

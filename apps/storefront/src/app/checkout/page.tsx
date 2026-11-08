@@ -69,7 +69,7 @@ export default function CheckoutPage() {
     orderNotes: '',
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'bank' | 'koko' | 'card'>('cod');
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'bank' | 'koko' | 'card' | 'payzy'>('cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -104,7 +104,7 @@ export default function CheckoutPage() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleCompleteOrder = (e: React.FormEvent) => {
+  const handleCompleteOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
@@ -123,25 +123,85 @@ export default function CheckoutPage() {
       createdAt: new Date().toISOString(),
     };
 
-    // Save to API
-    fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        orderId,
-        customer: formData,
-        items: cart,
-        subtotalMinor,
-        shippingFeeMinor,
-        totalMinor,
-        paymentMethod,
-      }),
-    }).catch(console.error);
+    // Save order to API
+    try {
+      await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          customer: formData,
+          items: cart,
+          subtotalMinor,
+          shippingFeeMinor,
+          totalMinor,
+          paymentMethod,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to create order record:', err);
+    }
 
     try {
       sessionStorage.setItem('dwstore_last_order', JSON.stringify(orderData));
     } catch (err) {
       console.error(err);
+    }
+
+    // Online Payment Gateways Handler (PayHere, Koko, Payzy)
+    if (paymentMethod === 'card' || paymentMethod === 'koko' || paymentMethod === 'payzy') {
+      const gatewayEndpoint =
+        paymentMethod === 'card'
+          ? '/api/payments/payhere/initiate'
+          : paymentMethod === 'koko'
+          ? '/api/payments/koko/initiate'
+          : '/api/payments/payzy/initiate';
+
+      try {
+        const totalAmountRs = (totalMinor / 100).toFixed(2);
+        const res = await fetch(gatewayEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId,
+            amount: totalAmountRs,
+            currency: 'LKR',
+            customer: formData,
+            items: cart.map((i) => i.name).join(', ') || 'DWstore Electronics Order',
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success && data.checkoutUrl && data.params) {
+          // Dynamically construct and auto-submit payment gateway form
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = data.checkoutUrl;
+          form.style.display = 'none';
+
+          for (const [key, value] of Object.entries(data.params)) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = String(value);
+            form.appendChild(input);
+          }
+
+          document.body.appendChild(form);
+          clearCart();
+          form.submit();
+          return;
+        } else {
+          alert(data.error || 'Payment gateway configuration error. Please choose Cash on Delivery or contact us.');
+          setIsSubmitting(false);
+          return;
+        }
+      } catch (err: any) {
+        console.error('Payment gateway redirection error:', err);
+        alert('Could not initiate online payment gateway. Please choose Cash on Delivery or Bank Deposit.');
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     setTimeout(() => {
@@ -557,6 +617,38 @@ export default function CheckoutPage() {
                         </div>
                         <p className="text-[11px] text-slate-500 mt-1">
                           Secure 256-bit encrypted online card payment via PayHere Sri Lanka.
+                        </p>
+                      </div>
+                    </label>
+
+                    {/* Payzy BNPL */}
+                    <label
+                      className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition ${
+                        paymentMethod === 'payzy'
+                          ? 'border-pink-600 bg-pink-50/40 ring-1 ring-pink-600'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="payzy"
+                        checked={paymentMethod === 'payzy'}
+                        onChange={() => setPaymentMethod('payzy')}
+                        className="mt-0.5 text-pink-600 focus:ring-pink-500"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black text-slate-900 flex items-center gap-2">
+                            <span className="w-3.5 h-3.5 rounded-full bg-pink-600 text-white flex items-center justify-center text-[9px] font-bold">P</span>
+                            Payzy - Flexible Installments (BNPL)
+                          </span>
+                          <span className="text-[10px] font-bold bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full">
+                            Up to 4 Months
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1">
+                          Split your purchase into interest-free installments using your Debit or Credit card.
                         </p>
                       </div>
                     </label>

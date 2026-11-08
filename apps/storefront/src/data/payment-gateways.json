@@ -1,0 +1,30 @@
+{
+  "payhere": {
+    "enabled": false,
+    "title": "PayHere Online Payment",
+    "description": "Pay securely with Visa, MasterCard, Genie, FriMi or eZ Cash.",
+    "mode": "sandbox",
+    "merchantId": "",
+    "merchantSecret": "",
+    "appId": "",
+    "appSecret": ""
+  },
+  "koko": {
+    "enabled": false,
+    "title": "Koko (Buy Now Pay Later)",
+    "description": "Pay in 3 interest-free installments using Debit / Credit card.",
+    "mode": "test",
+    "merchantId": "",
+    "apiKey": "",
+    "publicKey": "",
+    "privateKey": ""
+  },
+  "payzy": {
+    "enabled": false,
+    "title": "Payzy (Buy Now Pay Later)",
+    "description": "Pay in up to 4 interest-free installments with Payzy.",
+    "mode": "test",
+    "shopId": "",
+    "secretKey": ""
+  }
+}
