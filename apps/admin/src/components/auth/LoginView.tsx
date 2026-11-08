@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   Store,
   ArrowRight,
-  Sparkles,
   Sun,
   Moon,
   AlertCircle
@@ -22,8 +21,8 @@ interface LoginViewProps {
 
 export const LoginView: React.FC<LoginViewProps> = ({ onLogin, theme, setTheme }) => {
   const [authMode, setAuthMode] = useState<'password' | 'pin'>('password');
-  const [email, setEmail] = useState('admin@dwstore.lk');
-  const [password, setPassword] = useState('dwstore2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [pin, setPin] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -38,37 +37,31 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, theme, setTheme }
     setTimeout(() => {
       setLoading(false);
       if (authMode === 'password') {
-        if (
-          (email.trim().toLowerCase() === 'admin@dwstore.lk' || email.trim().toLowerCase() === 'admin') &&
-          password.length >= 6
-        ) {
+        const inputUser = email.trim().toLowerCase();
+        const isValidUser = inputUser === 'dwstorel' || inputUser === 'ashanfreelancer@gmail.com';
+        const isValidPass = password === 'GqhWds84RYSdsj&*sd4#';
+
+        if (isValidUser && isValidPass) {
           onLogin({
             name: 'DWstore Admin',
-            email: email.trim().toLowerCase(),
+            email: 'ashanfreelancer@gmail.com',
             role: 'Super Administrator'
           });
         } else {
-          setError('Invalid email or password. Use demo credentials or PIN.');
+          setError('Invalid username or password. Please verify your credentials.');
         }
       } else {
-        if (pin === '123456' || pin === '9988' || pin.length >= 4) {
+        if (pin === '122392') {
           onLogin({
-            name: 'DWstore Dispatcher',
-            email: 'admin@dwstore.lk',
-            role: 'Hub Dispatcher'
+            name: 'DWstore Admin',
+            email: 'ashanfreelancer@gmail.com',
+            role: 'Super Administrator'
           });
         } else {
-          setError('Invalid PIN code. Try default PIN: 123456');
+          setError('Invalid 6-digit Security PIN code.');
         }
       }
-    }, 400);
-  };
-
-  const handleQuickDemoFill = () => {
-    setEmail('admin@dwstore.lk');
-    setPassword('dwstore2026');
-    setAuthMode('password');
-    setError(null);
+    }, 300);
   };
 
   return (
@@ -186,7 +179,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, theme, setTheme }
                 setError(null);
               }}
             >
-              Email & Password
+              Username & Password
             </button>
             <button
               type="button"
@@ -226,10 +219,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, theme, setTheme }
           <form onSubmit={handleSubmit}>
             {authMode === 'password' ? (
               <>
-                {/* Email Field */}
+                {/* Username / Email Field */}
                 <div className="mb-3">
                   <label className="d-block mb-1 text-muted" style={{ fontSize: '12px', fontWeight: 600 }}>
-                    ADMIN EMAIL ADDRESS
+                    ADMIN USERNAME OR EMAIL
                   </label>
                   <div className="position-relative">
                     <Mail
@@ -248,7 +241,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, theme, setTheme }
                         fontSize: '14px',
                         outline: 'none'
                       }}
-                      placeholder="admin@dwstore.lk"
+                      placeholder="dwstorel or ashanfreelancer@gmail.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -262,14 +255,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, theme, setTheme }
                     <label className="text-muted" style={{ fontSize: '12px', fontWeight: 600 }}>
                       SECURITY PASSWORD
                     </label>
-                    <button
-                      type="button"
-                      className="btn btn-link p-0 text-decoration-none"
-                      style={{ fontSize: '11px', color: '#6366f1' }}
-                      onClick={handleQuickDemoFill}
-                    >
-                      Fill default password
-                    </button>
                   </div>
                   <div className="position-relative">
                     <Lock
@@ -335,16 +320,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, theme, setTheme }
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
                   />
                 </div>
-                <div className="text-center">
-                  <button
-                    type="button"
-                    className="btn btn-link p-0 text-decoration-none"
-                    style={{ fontSize: '11px', color: '#6366f1' }}
-                    onClick={() => setPin('123456')}
-                  >
-                    Use Demo Hub PIN (123456)
-                  </button>
-                </div>
               </div>
             )}
 
@@ -387,38 +362,11 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, theme, setTheme }
               )}
             </button>
           </form>
-
-          {/* Quick Demo Helper Notice */}
-          <div
-            className="mt-4 p-3 rounded-3"
-            style={{
-              background: theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-              border: theme === 'dark' ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed rgba(0,0,0,0.1)'
-            }}
-          >
-            <div className="d-flex align-items-center justify-content-between mb-1">
-              <span className="d-flex align-items-center gap-1 fw-semibold text-muted" style={{ fontSize: '11px' }}>
-                <Sparkles size={12} className="text-warning" /> DEMO CREDENTIALS
-              </span>
-              <button
-                type="button"
-                className="btn btn-sm btn-link p-0 text-decoration-none fw-bold"
-                style={{ fontSize: '11px', color: '#6366f1' }}
-                onClick={handleQuickDemoFill}
-              >
-                1-Click Autofill
-              </button>
-            </div>
-            <div className="d-flex justify-content-between text-muted" style={{ fontSize: '12px' }}>
-              <span>User: <code style={{ color: 'inherit' }}>admin@dwstore.lk</code></span>
-              <span>PIN: <code style={{ color: 'inherit' }}>123456</code></span>
-            </div>
-          </div>
         </div>
 
         {/* Footer info */}
         <div className="text-center mt-3 text-muted" style={{ fontSize: '12px' }}>
-          DWstore.lk E-Commerce Ecosystem &bull; Colombo & Kandy Dispatch Hubs
+          DWstore.lk E-Commerce Ecosystem &bull; Official Administration Portal
         </div>
       </div>
     </div>

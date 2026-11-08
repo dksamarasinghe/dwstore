@@ -25,7 +25,8 @@ import {
   ArrowRight,
   MessageSquare,
   KeyRound,
-  Edit3
+  Edit3,
+  X
 } from 'lucide-react';
 import { formatPriceLKR } from '@/lib/catalog';
 import { KoombiyoTrackingModal } from '@/components/KoombiyoTrackingModal';
@@ -63,16 +64,16 @@ export default function AccountPage() {
   const [regPassword, setRegPassword] = useState('');
   const [regDistrict, setRegDistrict] = useState('Colombo');
 
-  // Dashboard State
+  const [googleModalOpen, setGoogleModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'orders' | 'addresses' | 'profile' | 'warranty'>('orders');
   const [userProfile, setUserProfile] = useState<UserProfile>({
-    name: 'Nuwan Pradeep',
-    phone: '077 123 4567',
-    email: 'nuwan.pradeep@gmail.com',
-    address: 'No. 45/2, Temple Road',
-    city: 'Maharagama',
-    district: 'Colombo',
-    postalCode: '10280',
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    city: '',
+    district: '',
+    postalCode: '',
   });
 
   const [orders, setOrders] = useState<any[]>([]);
@@ -160,20 +161,63 @@ export default function AccountPage() {
     showToast('Account created successfully! Welcome to DWstore.');
   };
 
-  const handleOneClickDemoLogin = () => {
-    const demoUser: UserProfile = {
-      name: 'Nuwan Pradeep',
-      phone: '077 123 4567',
-      email: 'nuwan.pradeep@gmail.com',
-      address: 'No. 45/2, Temple Road',
-      city: 'Maharagama',
-      district: 'Colombo',
-      postalCode: '10280',
-    };
-    setUserProfile(demoUser);
-    setIsLoggedIn(true);
-    localStorage.setItem('dwstore_user', JSON.stringify(demoUser));
-    showToast('Logged in with Verified Customer Account.');
+  // Load Google Identity Services script
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const existing = document.getElementById('google-gsi-script');
+    if (!existing) {
+      const script = document.createElement('script');
+      script.id = 'google-gsi-script';
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+  }, []);
+
+  const handleGoogleSignIn = () => {
+    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!googleClientId) {
+      setGoogleModalOpen(true);
+      return;
+    }
+
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+      (window as any).google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: (response: any) => {
+          try {
+            const base64Url = response.credential.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+              atob(base64)
+                .split('')
+                .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                .join('')
+            );
+            const payload = JSON.parse(jsonPayload);
+            const googleUser: UserProfile = {
+              name: payload.name || 'Google Customer',
+              email: payload.email || '',
+              phone: '',
+              address: '',
+              city: 'Colombo',
+              district: 'Colombo',
+              postalCode: '',
+            };
+            setUserProfile(googleUser);
+            setIsLoggedIn(true);
+            localStorage.setItem('dwstore_user', JSON.stringify(googleUser));
+            showToast(`Signed in successfully as ${googleUser.name}!`);
+          } catch (e) {
+            showToast('Google Sign In authentication error.');
+          }
+        },
+      });
+      (window as any).google.accounts.id.prompt();
+    } else {
+      showToast('Loading Google Authentication services. Please try again in a moment.');
+    }
   };
 
   const handleLogOut = () => {
@@ -368,16 +412,28 @@ export default function AccountPage() {
                     <ArrowRight className="w-4 h-4" />
                   </button>
 
-                  <div className="pt-2 border-t border-slate-100 text-center">
-                    <button
-                      type="button"
-                      onClick={handleOneClickDemoLogin}
-                      className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition text-[11px] flex items-center justify-center gap-1.5"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>One-Click Customer Demo Sign In</span>
-                    </button>
+                  <div className="relative my-3">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-slate-200"></div>
+                    </div>
+                    <div className="relative flex justify-center text-[10px] uppercase">
+                      <span className="bg-white px-3 text-slate-400 font-semibold tracking-wider">Or</span>
+                    </div>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={handleGoogleSignIn}
+                    className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl border border-slate-200 hover:border-slate-300 transition shadow-sm flex items-center justify-center gap-2.5 text-xs"
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                    </svg>
+                    <span>Sign in with Google</span>
+                  </button>
                 </form>
               ) : (
                 /* Register Form */
@@ -449,6 +505,29 @@ export default function AccountPage() {
                   >
                     <span>Create Free Account</span>
                     <ArrowRight className="w-4 h-4" />
+                  </button>
+
+                  <div className="relative my-3">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-slate-200"></div>
+                    </div>
+                    <div className="relative flex justify-center text-[10px] uppercase">
+                      <span className="bg-white px-3 text-slate-400 font-semibold tracking-wider">Or</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleGoogleSignIn}
+                    className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl border border-slate-200 hover:border-slate-300 transition shadow-sm flex items-center justify-center gap-2.5 text-xs"
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                    </svg>
+                    <span>Sign up with Google</span>
                   </button>
                 </form>
               )}
@@ -1100,6 +1179,59 @@ export default function AccountPage() {
           order={selectedTrackingOrder}
           onClose={() => setSelectedTrackingOrder(null)}
         />
+      )}
+
+      {/* Google Setup Guide Modal (Shows when NEXT_PUBLIC_GOOGLE_CLIENT_ID is not configured) */}
+      {googleModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative">
+            <button
+              onClick={() => setGoogleModalOpen(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Google Sign-In Integration</h3>
+                <p className="text-xs text-slate-500">Google Cloud Console Setup Instructions</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <p className="font-semibold text-slate-800">To enable real Google Sign-In for customers:</p>
+              <ol className="list-decimal pl-4 space-y-1.5">
+                <li>Go to <strong>console.cloud.google.com</strong> &rarr; APIs &amp; Services &rarr; Credentials.</li>
+                <li>Create an <strong>OAuth 2.0 Client ID</strong> (Web application).</li>
+                <li>Add Authorized Javascript origins:
+                  <div className="font-mono text-[11px] bg-white p-1.5 rounded border border-slate-200 mt-1">
+                    http://localhost:3000<br/>http://2.31.119.22<br/>https://dwstore.lk
+                  </div>
+                </li>
+                <li>Copy the <strong>Client ID</strong> and add to <code>.env.local</code>:
+                  <div className="font-mono text-[11px] bg-white p-1.5 rounded border border-slate-200 mt-1 select-all">
+                    NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+                  </div>
+                </li>
+              </ol>
+            </div>
+
+            <button
+              onClick={() => setGoogleModalOpen(false)}
+              className="mt-4 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition"
+            >
+              Understood / Close
+            </button>
+          </div>
+        </div>
       )}
 
       <Footer />
