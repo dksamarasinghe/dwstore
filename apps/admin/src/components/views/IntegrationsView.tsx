@@ -562,6 +562,32 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                 </div>
               </div>
 
+              {/* Public Key */}
+              <div>
+                <label className="d-block mb-1 text-muted" style={{ fontSize: '13px' }}>
+                  Koko Public Key (PEM format)
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="-----BEGIN PUBLIC KEY-----&#10;...&#10;-----END PUBLIC KEY-----"
+                  className="w-100 p-2 rounded-2"
+                  style={{
+                    background: 'var(--bg)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text)',
+                    fontFamily: 'monospace',
+                    fontSize: '11.5px',
+                  }}
+                  value={gatewayConfig?.koko?.publicKey || ''}
+                  onChange={(e) =>
+                    setGatewayConfig({
+                      ...gatewayConfig,
+                      koko: { ...gatewayConfig.koko, publicKey: e.target.value },
+                    })
+                  }
+                />
+              </div>
+
               {/* RSA Private Key */}
               <div>
                 <label className="d-block mb-1 text-muted" style={{ fontSize: '13px' }}>
