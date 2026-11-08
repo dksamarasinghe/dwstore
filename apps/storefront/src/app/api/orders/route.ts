@@ -4,6 +4,8 @@ import path from 'path';
 import { sendOrderEmails } from '@/lib/email';
 import { sendOrderWhatsAppNotification } from '@/lib/whatsapp';
 
+export const dynamic = 'force-dynamic';
+
 const ORDERS_FILE = path.join(process.cwd(), 'src', 'data', 'orders.json');
 
 function getOrders() {
