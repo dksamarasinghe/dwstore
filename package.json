@@ -13,6 +13,7 @@
     "dev:admin": "pnpm --filter admin dev",
     "whatsapp": "pnpm --filter whatsapp-gateway start",
     "build": "pnpm -r run build",
+    "clean:cache": "node scripts/clean-cache.js",
     "lint": "pnpm -r run lint"
   },
   "packageManager": "pnpm@12.15.0"

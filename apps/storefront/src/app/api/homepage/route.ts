@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { globalMemoryCache } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const HOMEPAGE_FILE = path.join(process.cwd(), 'src', 'data', 'homepage.json');
+const HOMEPAGE_CACHE_KEY = 'dwstore_homepage';
+const HOMEPAGE_CACHE_TTL = 60 * 1000;
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Allow-Private-Network': 'true',
-  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-  'Pragma': 'no-cache',
-  'Expires': '0',
+  'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
 };
 
 export async function OPTIONS() {
@@ -22,10 +23,15 @@ export async function OPTIONS() {
 }
 
 function getHomepageConfig() {
+  const cached = globalMemoryCache.get(HOMEPAGE_CACHE_KEY, HOMEPAGE_CACHE_TTL);
+  if (cached) return cached;
+
   try {
     if (fs.existsSync(HOMEPAGE_FILE)) {
       const content = fs.readFileSync(HOMEPAGE_FILE, 'utf-8');
-      return JSON.parse(content);
+      const data = JSON.parse(content);
+      globalMemoryCache.set(HOMEPAGE_CACHE_KEY, data);
+      return data;
     }
   } catch (err) {
     console.error('Error reading homepage.json:', err);
@@ -110,6 +116,7 @@ export async function POST(req: NextRequest) {
     };
 
     fs.writeFileSync(HOMEPAGE_FILE, JSON.stringify(mergedConfig, null, 2), 'utf-8');
+    globalMemoryCache.set(HOMEPAGE_CACHE_KEY, mergedConfig);
 
     return NextResponse.json(
       { success: true, message: 'Homepage configuration updated successfully', config: mergedConfig },

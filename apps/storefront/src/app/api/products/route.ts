@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { globalMemoryCache } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
 const PRODUCTS_FILE = path.join(process.cwd(), 'src', 'data', 'products.json');
+const CACHE_KEY = 'dwstore_products';
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
 
 function getProducts(): any[] {
+  const cached = globalMemoryCache.get<any[]>(CACHE_KEY, CACHE_TTL_MS);
+  if (cached) return cached;
+
   try {
     if (fs.existsSync(PRODUCTS_FILE)) {
       const content = fs.readFileSync(PRODUCTS_FILE, 'utf-8');
-      return JSON.parse(content);
+      const products = JSON.parse(content);
+      globalMemoryCache.set(CACHE_KEY, products);
+      return products;
     }
   } catch (err) {
     console.error('Error reading products:', err);
@@ -21,6 +29,7 @@ function getProducts(): any[] {
 function saveProducts(products: any[]) {
   try {
     fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2), 'utf-8');
+    globalMemoryCache.set(CACHE_KEY, products);
     return true;
   } catch (err) {
     console.error('Error saving products:', err);
@@ -32,6 +41,7 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
 };
 
 export async function OPTIONS() {
