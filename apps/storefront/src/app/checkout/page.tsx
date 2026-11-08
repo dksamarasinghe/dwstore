@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
@@ -18,7 +18,8 @@ import {
   CheckCircle2,
   Lock,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  Sparkles,
 } from 'lucide-react';
 
 const SRI_LANKA_DISTRICTS = [
@@ -72,12 +73,52 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'bank' | 'koko' | 'card' | 'payzy'>('cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [gatewaysConfig, setGatewaysConfig] = useState<any>(null);
+
+  // Fetch live gateway credentials, bank accounts, and active discounts
+  useEffect(() => {
+    fetch('/api/integrations/payment-gateways?public=true')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.gateways) {
+          setGatewaysConfig(data.gateways);
+        }
+      })
+      .catch((err) => console.error('Failed to load gateways config:', err));
+  }, []);
+
+  // Map paymentMethod ('cod' | 'bank' | 'card' | 'koko' | 'payzy') to gateway config key ('cod' | 'bank' | 'payhere' | 'koko' | 'payzy')
+  const activeGatewayKey = paymentMethod === 'card' ? 'payhere' : paymentMethod;
+  const activeGateway = gatewaysConfig?.[activeGatewayKey];
+
+  // Helper to get promotional discount badge
+  const getGatewayPromoBadge = (key: string) => {
+    const gwKey = key === 'card' ? 'payhere' : key;
+    const gw = gatewaysConfig?.[gwKey];
+    if (!gw?.discountEnabled || !Number(gw?.discountValue)) return null;
+    if (gw.discountBadge) return gw.discountBadge;
+    if (gw.discountType === 'fixed') {
+      return `LKR ${Number(gw.discountValue).toLocaleString()} OFF`;
+    }
+    return `${gw.discountValue}% OFF`;
+  };
+
+  // Calculate payment method discount in minor units (cents)
+  const paymentDiscountMinor = useMemo(() => {
+    if (!activeGateway?.discountEnabled || !Number(activeGateway?.discountValue)) return 0;
+    const val = Number(activeGateway.discountValue);
+    if (activeGateway.discountType === 'fixed') {
+      const fixedMinor = Math.round(val * 100);
+      return Math.min(fixedMinor, subtotalMinor);
+    }
+    return Math.round((subtotalMinor * val) / 100);
+  }, [activeGateway, subtotalMinor]);
 
   const shippingFeeMinor = subtotalMinor >= FREE_SHIPPING_THRESHOLD_MINOR || subtotalMinor === 0
     ? 0
     : STANDARD_SHIPPING_FEE_MINOR;
 
-  const totalMinor = subtotalMinor + shippingFeeMinor;
+  const totalMinor = Math.max(0, subtotalMinor + shippingFeeMinor - paymentDiscountMinor);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -117,6 +158,7 @@ export default function CheckoutPage() {
       items: cart,
       subtotalMinor,
       shippingFeeMinor,
+      paymentDiscountMinor,
       totalMinor,
       shippingAddress: formData,
       paymentMethod,
@@ -134,6 +176,7 @@ export default function CheckoutPage() {
           items: cart,
           subtotalMinor,
           shippingFeeMinor,
+          paymentDiscountMinor,
           totalMinor,
           paymentMethod,
         }),
@@ -248,6 +291,9 @@ export default function CheckoutPage() {
     });
 
     message += `\n*Subtotal:* LKR ${formatPriceLKR(subtotalMinor)}\n`;
+    if (paymentDiscountMinor > 0) {
+      message += `*Payment Method Discount:* -LKR ${formatPriceLKR(paymentDiscountMinor)}\n`;
+    }
     message += `*Delivery Fee:* ${shippingFeeMinor === 0 ? 'FREE' : `LKR ${formatPriceLKR(shippingFeeMinor)}`}\n`;
     message += `*Total Amount:* LKR ${formatPriceLKR(totalMinor)}\n`;
     message += `*Payment Method:* ${paymentMethod.toUpperCase()}\n\n`;
@@ -503,17 +549,24 @@ export default function CheckoutPage() {
                         className="mt-0.5 text-blue-600 focus:ring-blue-500"
                       />
                       <div className="flex-1">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
                           <span className="text-xs font-black text-slate-900 flex items-center gap-2">
                             <Banknote className="w-4 h-4 text-emerald-600" />
                             Cash on Delivery (COD)
                           </span>
-                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
-                            Most Popular
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {getGatewayPromoBadge('cod') && (
+                              <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('cod')}
+                              </span>
+                            )}
+                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                              Most Popular
+                            </span>
+                          </div>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-1">
-                          Pay cash to the courier delivery rider when your package arrives at your doorstep.
+                          {gatewaysConfig?.cod?.description || 'Pay cash to the courier delivery rider when your package arrives at your doorstep.'}
                         </p>
                       </div>
                     </label>
@@ -535,21 +588,51 @@ export default function CheckoutPage() {
                         className="mt-0.5 text-blue-600 focus:ring-blue-500"
                       />
                       <div className="flex-1">
-                        <span className="text-xs font-black text-slate-900 flex items-center gap-2">
-                          <Building2 className="w-4 h-4 text-blue-600" />
-                          Direct Bank Transfer / Deposit
-                        </span>
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <span className="text-xs font-black text-slate-900 flex items-center gap-2">
+                            <Building2 className="w-4 h-4 text-blue-600" />
+                            Direct Bank Transfer / Deposit
+                          </span>
+                          {getGatewayPromoBadge('bank') && (
+                            <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('bank')}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] text-slate-500 mt-1">
-                          Transfer directly into our Commercial Bank or Sampath Bank account and WhatsApp the slip.
+                          {gatewaysConfig?.bank?.description || 'Transfer directly into our bank account and WhatsApp the deposit slip.'}
                         </p>
 
                         {paymentMethod === 'bank' && (
-                          <div className="mt-3 p-3 bg-white rounded-lg border border-slate-200 text-[11px] space-y-1.5 text-slate-700">
-                            <div className="font-bold text-slate-900">Commercial Bank of Ceylon</div>
-                            <div>Account Name: DWstore (Pvt) Ltd</div>
-                            <div>Account Number: 8010023456 | Branch: Colombo</div>
-                            <div className="text-slate-500 pt-1">
-                              * Please send the deposit receipt / screenshot to our WhatsApp after placing the order.
+                          <div className="mt-3 p-3.5 bg-white rounded-xl border border-slate-200 text-[11px] space-y-2.5 text-slate-700 shadow-xs">
+                            {(gatewaysConfig?.bank?.accounts || [
+                              {
+                                bankName: 'Commercial Bank of Ceylon',
+                                accountName: 'DWstore (Pvt) Ltd',
+                                accountNumber: '8010023456',
+                                branch: 'Colombo',
+                              },
+                            ]).map((acc: any, i: number) => (
+                              <div key={acc.id || i} className="pb-2.5 border-b border-slate-100 last:border-b-0 last:pb-0">
+                                <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5 mb-1">
+                                  <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                                  {acc.bankName}
+                                </div>
+                                <div className="text-slate-600">
+                                  Account Name: <span className="font-semibold text-slate-800">{acc.accountName}</span>
+                                </div>
+                                <div className="text-slate-600 flex items-center gap-1 flex-wrap mt-0.5">
+                                  <span>Account Number:</span>
+                                  <span className="font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 select-all">
+                                    {acc.accountNumber}
+                                  </span>
+                                  {acc.branch && <span className="text-slate-500">| Branch: {acc.branch}</span>}
+                                </div>
+                              </div>
+                            ))}
+                            <div className="text-slate-500 pt-1 text-[10px] border-t border-slate-100 italic">
+                              {gatewaysConfig?.bank?.instructions ||
+                                '* Please send the deposit receipt / screenshot to our WhatsApp after placing the order.'}
                             </div>
                           </div>
                         )}
@@ -573,14 +656,21 @@ export default function CheckoutPage() {
                         className="mt-0.5 text-purple-600 focus:ring-purple-500"
                       />
                       <div className="flex-1">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
                           <span className="text-xs font-black text-slate-900 flex items-center gap-2">
                             <span className="w-3.5 h-3.5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[9px] font-bold">K</span>
                             KOKO - Pay in 3 Installments (BNPL)
                           </span>
-                          <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                            3 X LKR {formatPriceLKR(Math.round((totalMinor * 1.10) / 3))}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {getGatewayPromoBadge('koko') && (
+                              <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('koko')}
+                              </span>
+                            )}
+                            <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                              3 X LKR {formatPriceLKR(Math.round((totalMinor * 1.10) / 3))}
+                            </span>
+                          </div>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-1">
                           Pay 1/3 today using debit/credit card and the remainder over 2 months (+10% interest rate).
@@ -605,14 +695,21 @@ export default function CheckoutPage() {
                         className="mt-0.5 text-blue-600 focus:ring-blue-500"
                       />
                       <div className="flex-1">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
                           <span className="text-xs font-black text-slate-900 flex items-center gap-2">
                             <CreditCard className="w-4 h-4 text-blue-600" />
                             Credit or Debit Card (Visa / Mastercard)
                           </span>
-                          <div className="flex items-center gap-1">
-                            <span className="text-[9px] font-black text-blue-700 border border-slate-200 px-1.5 py-0.5 rounded">VISA</span>
-                            <span className="text-[9px] font-black text-red-600 border border-slate-200 px-1.5 py-0.5 rounded">MC</span>
+                          <div className="flex items-center gap-1.5">
+                            {getGatewayPromoBadge('card') && (
+                              <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('card')}
+                              </span>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <span className="text-[9px] font-black text-blue-700 border border-slate-200 px-1.5 py-0.5 rounded">VISA</span>
+                              <span className="text-[9px] font-black text-red-600 border border-slate-200 px-1.5 py-0.5 rounded">MC</span>
+                            </div>
                           </div>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-1">
@@ -638,14 +735,21 @@ export default function CheckoutPage() {
                         className="mt-0.5 text-pink-600 focus:ring-pink-500"
                       />
                       <div className="flex-1">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
                           <span className="text-xs font-black text-slate-900 flex items-center gap-2">
                             <span className="w-3.5 h-3.5 rounded-full bg-pink-600 text-white flex items-center justify-center text-[9px] font-bold">P</span>
                             Payzy - Flexible Installments (BNPL)
                           </span>
-                          <span className="text-[10px] font-bold bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full">
-                            Up to 4 Months
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {getGatewayPromoBadge('payzy') && (
+                              <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('payzy')}
+                              </span>
+                            )}
+                            <span className="text-[10px] font-bold bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full">
+                              Up to 4 Months
+                            </span>
+                          </div>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-1">
                           Split your purchase into interest-free installments using your Debit or Credit card.
@@ -700,6 +804,16 @@ export default function CheckoutPage() {
                         {shippingFeeMinor === 0 ? 'FREE' : `LKR ${formatPriceLKR(shippingFeeMinor)}`}
                       </span>
                     </div>
+
+                    {paymentDiscountMinor > 0 && (
+                      <div className="flex justify-between text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200/80 items-center font-bold">
+                        <span className="flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                          Payment Promo Discount ({getGatewayPromoBadge(paymentMethod) || `${activeGateway?.discountValue}%`})
+                        </span>
+                        <span>-LKR {formatPriceLKR(paymentDiscountMinor)}</span>
+                      </div>
+                    )}
 
                     <div className="pt-3 border-t border-slate-200 flex justify-between items-baseline">
                       <span className="text-sm font-black text-slate-900">Total</span>

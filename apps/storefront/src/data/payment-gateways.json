@@ -6,6 +6,10 @@
     "mode": "sandbox",
     "merchantId": "",
     "merchantSecret": "",
+    "discountEnabled": false,
+    "discountType": "percentage",
+    "discountValue": 0,
+    "discountBadge": "",
     "appId": "",
     "appSecret": ""
   },
@@ -17,7 +21,11 @@
     "merchantId": "",
     "apiKey": "",
     "publicKey": "",
-    "privateKey": ""
+    "privateKey": "",
+    "discountEnabled": false,
+    "discountType": "percentage",
+    "discountValue": 0,
+    "discountBadge": ""
   },
   "payzy": {
     "enabled": false,
@@ -25,6 +33,38 @@
     "description": "Pay in up to 4 interest-free installments with Payzy.",
     "mode": "test",
     "shopId": "",
-    "secretKey": ""
+    "secretKey": "",
+    "discountEnabled": false,
+    "discountType": "percentage",
+    "discountValue": 0,
+    "discountBadge": ""
+  },
+  "bank": {
+    "enabled": true,
+    "title": "Direct Bank Transfer / Deposit",
+    "description": "Transfer directly into our Commercial Bank or Sampath Bank account and WhatsApp the slip.",
+    "accounts": [
+      {
+        "id": "1",
+        "bankName": "Commercial Bank of Ceylon",
+        "accountName": "DWstore (Pvt) Ltd",
+        "accountNumber": "8010023456",
+        "branch": "Colombo"
+      }
+    ],
+    "instructions": "* Please transfer the total amount and send the deposit receipt / screenshot to our WhatsApp (+94 75 669 3358) with your Order ID after placing the order.",
+    "discountEnabled": false,
+    "discountType": "percentage",
+    "discountValue": 0,
+    "discountBadge": ""
+  },
+  "cod": {
+    "enabled": true,
+    "title": "Cash on Delivery (COD)",
+    "description": "Pay cash to the courier delivery rider when your package arrives at your doorstep.",
+    "discountEnabled": false,
+    "discountType": "percentage",
+    "discountValue": 0,
+    "discountBadge": ""
   }
 }

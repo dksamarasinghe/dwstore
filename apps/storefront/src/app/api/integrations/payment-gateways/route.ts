@@ -23,15 +23,27 @@ export async function GET(req: NextRequest) {
     const sanitized: Record<string, any> = {};
     for (const [key, val] of Object.entries(config) as any) {
       sanitized[key] = {
-        enabled: Boolean(val?.enabled),
+        enabled: val?.enabled !== false,
         title: val?.title || key,
         description: val?.description || '',
         mode: val?.mode || 'test',
+        discountEnabled: Boolean(val?.discountEnabled),
+        discountType: val?.discountType || 'percentage',
+        discountValue: Number(val?.discountValue || 0),
+        discountBadge: val?.discountBadge || '',
         hasKeys: Boolean(
           (key === 'payhere' && val?.merchantId && val?.merchantSecret) ||
           (key === 'koko' && val?.merchantId && val?.apiKey && val?.privateKey) ||
-          (key === 'payzy' && val?.shopId && val?.secretKey)
+          (key === 'payzy' && val?.shopId && val?.secretKey) ||
+          key === 'bank' ||
+          key === 'cod'
         ),
+        ...(key === 'bank'
+          ? {
+              accounts: val?.accounts || [],
+              instructions: val?.instructions || '',
+            }
+          : {}),
       };
     }
     return NextResponse.json({ success: true, gateways: sanitized }, { headers: CORS_HEADERS });

@@ -19,6 +19,12 @@ import {
   Smartphone,
   RefreshCw,
   LogOut,
+  Landmark,
+  Banknote,
+  Percent,
+  Plus,
+  Trash2,
+  Sparkles,
 } from 'lucide-react';
 import { getStorefrontUrl } from '../../config';
 
@@ -38,6 +44,10 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
       merchantSecret: '',
       appId: '',
       appSecret: '',
+      discountEnabled: false,
+      discountType: 'percentage',
+      discountValue: 0,
+      discountBadge: '',
     },
     koko: {
       enabled: false,
@@ -48,6 +58,10 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
       apiKey: '',
       publicKey: '',
       privateKey: '',
+      discountEnabled: false,
+      discountType: 'percentage',
+      discountValue: 0,
+      discountBadge: '',
     },
     payzy: {
       enabled: false,
@@ -56,10 +70,42 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
       mode: 'test',
       shopId: '',
       secretKey: '',
+      discountEnabled: false,
+      discountType: 'percentage',
+      discountValue: 0,
+      discountBadge: '',
+    },
+    bank: {
+      enabled: true,
+      title: 'Direct Bank Transfer / Deposit',
+      description: 'Transfer directly into our Commercial Bank or Sampath Bank account and WhatsApp the slip.',
+      accounts: [
+        {
+          id: '1',
+          bankName: 'Commercial Bank of Ceylon',
+          accountName: 'DWstore (Pvt) Ltd',
+          accountNumber: '8010023456',
+          branch: 'Colombo',
+        },
+      ],
+      instructions: '* Please transfer the total amount and send the deposit receipt / screenshot to our WhatsApp (+94 75 669 3358) with your Order ID after placing the order.',
+      discountEnabled: false,
+      discountType: 'percentage',
+      discountValue: 0,
+      discountBadge: '',
+    },
+    cod: {
+      enabled: true,
+      title: 'Cash on Delivery (COD)',
+      description: 'Pay cash to the courier delivery rider when your package arrives at your doorstep.',
+      discountEnabled: false,
+      discountType: 'percentage',
+      discountValue: 0,
+      discountBadge: '',
     },
   });
 
-  const [activeModal, setActiveModal] = useState<'payhere' | 'koko' | 'payzy' | null>(null);
+  const [activeModal, setActiveModal] = useState<'payhere' | 'koko' | 'payzy' | 'bank' | 'cod' | null>(null);
   const [showSecret, setShowSecret] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -126,7 +172,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'logout' }),
       });
-      const data = await res.json();
+      await res.json();
       showNotification('WhatsApp account disconnected. A new QR code is ready to scan.');
       fetchWhatsAppStatus();
     } catch (err: any) {
@@ -162,11 +208,105 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
 
   const isConnected = (key: string) => {
     const gw = gatewayConfig[key];
-    if (!gw?.enabled) return false;
-    if (key === 'payhere') return Boolean(gw.merchantId && gw.merchantSecret);
-    if (key === 'koko') return Boolean(gw.merchantId && gw.apiKey && gw.privateKey);
-    if (key === 'payzy') return Boolean(gw.shopId && gw.secretKey);
+    if (gw?.enabled === false) return false;
+    if (key === 'payhere') return Boolean(gw?.merchantId && gw?.merchantSecret);
+    if (key === 'koko') return Boolean(gw?.merchantId && gw?.apiKey && gw?.privateKey);
+    if (key === 'payzy') return Boolean(gw?.shopId && gw?.secretKey);
+    if (key === 'bank') return Boolean(gw?.accounts && gw?.accounts.length > 0 && gw?.accounts[0].accountNumber);
+    if (key === 'cod') return Boolean(gw?.enabled !== false);
     return false;
+  };
+
+  const hasActiveDiscount = (key: string) => {
+    const gw = gatewayConfig[key];
+    return Boolean(gw?.discountEnabled && Number(gw?.discountValue) > 0);
+  };
+
+  const renderDiscountSection = (gatewayKey: string, gatewayName: string) => {
+    const gw = gatewayConfig[gatewayKey] || {};
+    return (
+      <div className="p-3 rounded-2 border border-border" style={{ background: 'var(--hover)' }}>
+        <div className="d-flex align-items-center justify-content-between mb-2">
+          <div>
+            <div style={{ fontWeight: 600, fontSize: '13px' }} className="d-flex align-items-center gap-1.5">
+              <Percent size={14} className="text-success" /> Promotional Discount (Optional)
+            </div>
+            <small className="text-muted">Give customers an instant discount when choosing {gatewayName}</small>
+          </div>
+          <input
+            type="checkbox"
+            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            checked={gw.discountEnabled || false}
+            onChange={(e) =>
+              setGatewayConfig({
+                ...gatewayConfig,
+                [gatewayKey]: { ...gw, discountEnabled: e.target.checked },
+              })
+            }
+          />
+        </div>
+
+        {gw.discountEnabled && (
+          <div className="d-flex flex-column gap-2 pt-2 border-top border-border">
+            <div className="row g-2">
+              <div className="col-6">
+                <label className="d-block mb-1 text-muted" style={{ fontSize: '12px' }}>Discount Type</label>
+                <select
+                  className="w-100 p-2 rounded-2"
+                  style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12.5px' }}
+                  value={gw.discountType || 'percentage'}
+                  onChange={(e) =>
+                    setGatewayConfig({
+                      ...gatewayConfig,
+                      [gatewayKey]: { ...gw, discountType: e.target.value },
+                    })
+                  }
+                >
+                  <option value="percentage">Percentage (%)</option>
+                  <option value="fixed">Fixed Amount (LKR)</option>
+                </select>
+              </div>
+              <div className="col-6">
+                <label className="d-block mb-1 text-muted" style={{ fontSize: '12px' }}>
+                  Discount Value ({gw.discountType === 'fixed' ? 'LKR' : '%'}) *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder={gw.discountType === 'fixed' ? 'e.g. 500' : 'e.g. 5'}
+                  className="w-100 p-2 rounded-2"
+                  style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12.5px' }}
+                  value={gw.discountValue ?? ''}
+                  onChange={(e) =>
+                    setGatewayConfig({
+                      ...gatewayConfig,
+                      [gatewayKey]: { ...gw, discountValue: parseFloat(e.target.value) || 0 },
+                    })
+                  }
+                />
+              </div>
+            </div>
+            <div>
+              <label className="d-block mb-1 text-muted" style={{ fontSize: '12px' }}>Custom Promotional Badge (Optional)</label>
+              <input
+                type="text"
+                placeholder={`e.g. Save ${gw.discountType === 'fixed' ? 'LKR ' + (gw.discountValue || 0) : (gw.discountValue || 0) + '%'} with ${gatewayName}`}
+                className="w-100 p-2 rounded-2"
+                style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12.5px' }}
+                value={gw.discountBadge || ''}
+                onChange={(e) =>
+                  setGatewayConfig({
+                    ...gatewayConfig,
+                    [gatewayKey]: { ...gw, discountBadge: e.target.value },
+                  })
+                }
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -174,7 +314,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
       <div className="page-head">
         <div>
           <h1>Connected Integrations & Payment Gateways</h1>
-          <p>Configure credentials, secret keys, and API modes for Sri Lankan payment gateways and logistics.</p>
+          <p>Configure credentials, secret keys, bank accounts, and promotional discounts for Sri Lankan payment methods.</p>
         </div>
       </div>
 
@@ -187,7 +327,13 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                 <span className="thumb" style={{ background: 'var(--hover)', color: '#0284c7' }}>
                   <CreditCard size={22} />
                 </span>
-                <div className="d-flex align-items-center gap-2">
+                <div className="d-flex align-items-center gap-1.5 flex-wrap justify-content-end">
+                  {hasActiveDiscount('payhere') && (
+                    <span className="badge-x" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                      <Percent size={10} className="me-1" />
+                      {gatewayConfig.payhere.discountType === 'fixed' ? `LKR ${gatewayConfig.payhere.discountValue} OFF` : `${gatewayConfig.payhere.discountValue}% OFF`}
+                    </span>
+                  )}
                   {gatewayConfig?.payhere?.mode === 'sandbox' && (
                     <span className="badge-x s-Shipped" style={{ fontSize: '10px' }}>Sandbox</span>
                   )}
@@ -225,7 +371,13 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                 <span className="thumb" style={{ background: 'var(--hover)', color: '#8b5cf6' }}>
                   <Zap size={22} />
                 </span>
-                <div className="d-flex align-items-center gap-2">
+                <div className="d-flex align-items-center gap-1.5 flex-wrap justify-content-end">
+                  {hasActiveDiscount('koko') && (
+                    <span className="badge-x" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                      <Percent size={10} className="me-1" />
+                      {gatewayConfig.koko.discountType === 'fixed' ? `LKR ${gatewayConfig.koko.discountValue} OFF` : `${gatewayConfig.koko.discountValue}% OFF`}
+                    </span>
+                  )}
                   {gatewayConfig?.koko?.mode === 'test' && (
                     <span className="badge-x s-Shipped" style={{ fontSize: '10px' }}>Test Mode</span>
                   )}
@@ -263,7 +415,13 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                 <span className="thumb" style={{ background: 'var(--hover)', color: '#ec4899' }}>
                   <CreditCard size={22} />
                 </span>
-                <div className="d-flex align-items-center gap-2">
+                <div className="d-flex align-items-center gap-1.5 flex-wrap justify-content-end">
+                  {hasActiveDiscount('payzy') && (
+                    <span className="badge-x" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                      <Percent size={10} className="me-1" />
+                      {gatewayConfig.payzy.discountType === 'fixed' ? `LKR ${gatewayConfig.payzy.discountValue} OFF` : `${gatewayConfig.payzy.discountValue}% OFF`}
+                    </span>
+                  )}
                   {gatewayConfig?.payzy?.mode === 'test' && (
                     <span className="badge-x s-Shipped" style={{ fontSize: '10px' }}>Test Mode</span>
                   )}
@@ -293,7 +451,89 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
           </div>
         </div>
 
-        {/* 4. WhatsApp Business Gateway */}
+        {/* 4. Direct Bank Transfer / Deposit Card */}
+        <div className="col-12 col-md-6 col-xl-4">
+          <div className="card-x h-100 d-flex flex-column justify-content-between">
+            <div>
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <span className="thumb" style={{ background: 'var(--hover)', color: '#2563eb' }}>
+                  <Landmark size={22} />
+                </span>
+                <div className="d-flex align-items-center gap-1.5 flex-wrap justify-content-end">
+                  {hasActiveDiscount('bank') && (
+                    <span className="badge-x" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                      <Percent size={10} className="me-1" />
+                      {gatewayConfig.bank.discountType === 'fixed' ? `LKR ${gatewayConfig.bank.discountValue} OFF` : `${gatewayConfig.bank.discountValue}% OFF`}
+                    </span>
+                  )}
+                  <span
+                    className={`badge-x ${isConnected('bank') ? 's-Delivered' : 's-Cancelled'}`}
+                    style={{ fontSize: '11px' }}
+                  >
+                    {isConnected('bank') ? 'Active' : 'Disabled'}
+                  </span>
+                </div>
+              </div>
+              <h5 className="mb-1">Direct Bank Transfer / Deposit</h5>
+              <p className="text-muted mb-3" style={{ fontSize: '13px' }}>
+                Display your bank accounts (Commercial, Sampath, etc.) and instructions at checkout with custom discounts.
+              </p>
+            </div>
+            <div className="pt-2 border-top border-border">
+              <button
+                className="btn-dark-x w-100 d-flex align-items-center justify-content-center gap-2"
+                onClick={() => setActiveModal('bank')}
+                type="button"
+                style={{ fontSize: '13px' }}
+              >
+                <Settings size={15} /> Configure Bank Accounts & Discounts
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 5. Cash on Delivery (COD) Card */}
+        <div className="col-12 col-md-6 col-xl-4">
+          <div className="card-x h-100 d-flex flex-column justify-content-between">
+            <div>
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <span className="thumb" style={{ background: 'var(--hover)', color: '#059669' }}>
+                  <Banknote size={22} />
+                </span>
+                <div className="d-flex align-items-center gap-1.5 flex-wrap justify-content-end">
+                  {hasActiveDiscount('cod') && (
+                    <span className="badge-x" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                      <Percent size={10} className="me-1" />
+                      {gatewayConfig.cod.discountType === 'fixed' ? `LKR ${gatewayConfig.cod.discountValue} OFF` : `${gatewayConfig.cod.discountValue}% OFF`}
+                    </span>
+                  )}
+                  <span
+                    className={`badge-x ${isConnected('cod') ? 's-Delivered' : 's-Cancelled'}`}
+                    style={{ fontSize: '11px' }}
+                  >
+                    {isConnected('cod') ? 'Active' : 'Disabled'}
+                  </span>
+                </div>
+              </div>
+              <h5 className="mb-1">Cash on Delivery (COD)</h5>
+              <p className="text-muted mb-3" style={{ fontSize: '13px' }}>
+                Allow customers to pay cash directly to the courier rider upon package arrival, with optional promo discounts.
+              </p>
+            </div>
+            <div className="pt-2 border-top border-border">
+              <button
+                className="btn-dark-x w-100 d-flex align-items-center justify-content-center gap-2"
+                onClick={() => setActiveModal('cod')}
+                type="button"
+                style={{ fontSize: '13px' }}
+              >
+                <Settings size={15} /> Configure COD & Discounts
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 6. WhatsApp Business Gateway */}
         <div className="col-12 col-md-6 col-xl-4">
           <div className="card-x h-100 d-flex flex-column justify-content-between">
             <div>
@@ -331,7 +571,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
           </div>
         </div>
 
-        {/* 5. Koombiyo Courier API */}
+        {/* 7. Koombiyo Courier API */}
         <div className="col-12 col-md-6 col-xl-4">
           <div className="card-x h-100 d-flex flex-column justify-content-between">
             <div>
@@ -352,12 +592,12 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
           </div>
         </div>
 
-        {/* 6. Meta Pixel & GA4 */}
+        {/* 8. Marketing & Analytics (Meta & GA4) */}
         <div className="col-12 col-md-6 col-xl-4">
           <div className="card-x h-100 d-flex flex-column justify-content-between">
             <div>
               <div className="d-flex align-items-center justify-content-between mb-3">
-                <span className="thumb" style={{ background: 'var(--hover)', color: '#1877F2' }}>
+                <span className="thumb" style={{ background: 'var(--hover)', color: '#6366f1' }}>
                   <BarChart2 size={22} />
                 </span>
                 <span className="badge-x s-Delivered" style={{ fontSize: '11px' }}>Connected</span>
@@ -375,7 +615,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
       </div>
 
       {/* ========================================================================= */}
-      {/* WHATSAPP LINK & QR CODE MODAL */}
+      {/* WHATSAPP MODAL POPUP */}
       {/* ========================================================================= */}
       {whatsappModalOpen && (
         <div
@@ -383,12 +623,12 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
           style={{ background: 'rgba(0,0,0,0.7)', zIndex: 9999 }}
         >
           <div
-            className="card-x w-100 shadow-lg text-center"
+            className="card-x w-100 shadow-lg"
             style={{ maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto' }}
           >
-            <div className="d-flex align-items-center justify-content-between pb-3 border-bottom border-border mb-3 text-start">
+            <div className="d-flex align-items-center justify-content-between pb-3 border-bottom border-border mb-3">
               <h4 className="m-0 d-flex align-items-center gap-2">
-                <MessageCircle size={20} className="text-success" /> Link WhatsApp Business
+                <MessageCircle size={20} className="text-success" /> WhatsApp Business Gateway
               </h4>
               <button
                 type="button"
@@ -444,7 +684,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                   Open WhatsApp on your phone &gt; <b>Settings (or ⋮)</b> &gt; <b>Linked Devices</b> &gt; <b>Link a Device</b> and point camera here:
                 </div>
 
-                {/* High-contrast White QR Container for 100% reliable camera scanning */}
                 <div
                   className="p-3 rounded-3 mb-3 shadow-sm d-inline-block"
                   style={{ background: '#ffffff', border: '3px solid #25D366' }}
@@ -533,6 +772,9 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                   }
                 />
               </div>
+
+              {/* Promotional Discount */}
+              {renderDiscountSection('payhere', 'PayHere Card Payment')}
 
               {/* Mode Selection */}
               <div>
@@ -703,6 +945,9 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                   }
                 />
               </div>
+
+              {/* Promotional Discount */}
+              {renderDiscountSection('koko', 'Koko BNPL')}
 
               {/* Mode Selection */}
               <div>
@@ -882,6 +1127,9 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                 />
               </div>
 
+              {/* Promotional Discount */}
+              {renderDiscountSection('payzy', 'Payzy BNPL')}
+
               {/* Mode Selection */}
               <div>
                 <label className="d-block mb-1 text-muted" style={{ fontSize: '13px' }}>Environment Mode</label>
@@ -966,6 +1214,319 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                   onClick={() => handleSaveGateway('payzy')}
                 >
                   <Save size={15} /> {isSaving ? 'Saving...' : 'Save Payzy Settings'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* DIRECT BANK TRANSFER / DEPOSIT CONFIGURATION MODAL */}
+      {/* ========================================================================= */}
+      {activeModal === 'bank' && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
+          style={{ background: 'rgba(0,0,0,0.7)', zIndex: 9999 }}
+        >
+          <div
+            className="card-x w-100 shadow-lg"
+            style={{ maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            <div className="d-flex align-items-center justify-content-between pb-3 border-bottom border-border mb-3">
+              <h4 className="m-0 d-flex align-items-center gap-2">
+                <Landmark size={20} className="text-primary" /> Direct Bank Transfer / Deposit Settings
+              </h4>
+              <button
+                type="button"
+                className="btn-link-x p-1 border-0 bg-transparent text-muted"
+                onClick={() => setActiveModal(null)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="d-flex flex-column gap-3">
+              {/* Enable Toggle */}
+              <div className="d-flex align-items-center justify-content-between p-2 rounded-2" style={{ background: 'var(--hover)' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '14px' }}>Enable Direct Bank Transfer</div>
+                  <small className="text-muted">Display bank deposit option and account details at checkout</small>
+                </div>
+                <input
+                  type="checkbox"
+                  style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                  checked={gatewayConfig?.bank?.enabled !== false}
+                  onChange={(e) =>
+                    setGatewayConfig({
+                      ...gatewayConfig,
+                      bank: { ...gatewayConfig.bank, enabled: e.target.checked },
+                    })
+                  }
+                />
+              </div>
+
+              {/* Promotional Discount */}
+              {renderDiscountSection('bank', 'Direct Bank Transfer')}
+
+              {/* Bank Accounts List */}
+              <div>
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <label className="text-muted fw-bold" style={{ fontSize: '13px' }}>Bank Accounts *</label>
+                  <button
+                    type="button"
+                    className="btn-soft d-flex align-items-center gap-1 py-1 px-2.5"
+                    style={{ fontSize: '11.5px' }}
+                    onClick={() => {
+                      const accounts = gatewayConfig?.bank?.accounts || [];
+                      setGatewayConfig({
+                        ...gatewayConfig,
+                        bank: {
+                          ...gatewayConfig.bank,
+                          accounts: [
+                            ...accounts,
+                            {
+                              id: Date.now().toString(),
+                              bankName: '',
+                              accountName: '',
+                              accountNumber: '',
+                              branch: '',
+                            },
+                          ],
+                        },
+                      });
+                    }}
+                  >
+                    <Plus size={13} /> Add Another Bank Account
+                  </button>
+                </div>
+
+                <div className="d-flex flex-column gap-2.5">
+                  {(gatewayConfig?.bank?.accounts || []).map((acc: any, index: number) => (
+                    <div key={acc.id || index} className="p-3 rounded-2 border border-border" style={{ background: 'var(--hover)' }}>
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <span style={{ fontSize: '12.5px', fontWeight: 600 }} className="text-primary">
+                          Bank Account #{index + 1}
+                        </span>
+                        {(gatewayConfig?.bank?.accounts || []).length > 1 && (
+                          <button
+                            type="button"
+                            className="btn-link-x p-0 border-0 bg-transparent text-danger d-flex align-items-center gap-1"
+                            style={{ fontSize: '11px' }}
+                            onClick={() => {
+                              const accounts = gatewayConfig.bank.accounts.filter((_: any, i: number) => i !== index);
+                              setGatewayConfig({
+                                ...gatewayConfig,
+                                bank: { ...gatewayConfig.bank, accounts },
+                              });
+                            }}
+                          >
+                            <Trash2 size={13} /> Remove
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="row g-2">
+                        <div className="col-12 col-sm-6">
+                          <label className="d-block mb-1 text-muted" style={{ fontSize: '11px' }}>Bank Name *</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Commercial Bank of Ceylon"
+                            className="w-100 p-2 rounded-2"
+                            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12px' }}
+                            value={acc.bankName || ''}
+                            onChange={(e) => {
+                              const accounts = [...(gatewayConfig.bank.accounts || [])];
+                              accounts[index] = { ...accounts[index], bankName: e.target.value };
+                              setGatewayConfig({
+                                ...gatewayConfig,
+                                bank: { ...gatewayConfig.bank, accounts },
+                              });
+                            }}
+                          />
+                        </div>
+                        <div className="col-12 col-sm-6">
+                          <label className="d-block mb-1 text-muted" style={{ fontSize: '11px' }}>Account Name *</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. DWstore (Pvt) Ltd"
+                            className="w-100 p-2 rounded-2"
+                            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12px' }}
+                            value={acc.accountName || ''}
+                            onChange={(e) => {
+                              const accounts = [...(gatewayConfig.bank.accounts || [])];
+                              accounts[index] = { ...accounts[index], accountName: e.target.value };
+                              setGatewayConfig({
+                                ...gatewayConfig,
+                                bank: { ...gatewayConfig.bank, accounts },
+                              });
+                            }}
+                          />
+                        </div>
+                        <div className="col-12 col-sm-6">
+                          <label className="d-block mb-1 text-muted" style={{ fontSize: '11px' }}>Account Number *</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 8010023456"
+                            className="w-100 p-2 rounded-2"
+                            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12px' }}
+                            value={acc.accountNumber || ''}
+                            onChange={(e) => {
+                              const accounts = [...(gatewayConfig.bank.accounts || [])];
+                              accounts[index] = { ...accounts[index], accountNumber: e.target.value };
+                              setGatewayConfig({
+                                ...gatewayConfig,
+                                bank: { ...gatewayConfig.bank, accounts },
+                              });
+                            }}
+                          />
+                        </div>
+                        <div className="col-12 col-sm-6">
+                          <label className="d-block mb-1 text-muted" style={{ fontSize: '11px' }}>Branch</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Colombo / Borella"
+                            className="w-100 p-2 rounded-2"
+                            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12px' }}
+                            value={acc.branch || ''}
+                            onChange={(e) => {
+                              const accounts = [...(gatewayConfig.bank.accounts || [])];
+                              accounts[index] = { ...accounts[index], branch: e.target.value };
+                              setGatewayConfig({
+                                ...gatewayConfig,
+                                bank: { ...gatewayConfig.bank, accounts },
+                              });
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Instructions / Notes */}
+              <div>
+                <label className="d-block mb-1 text-muted" style={{ fontSize: '13px' }}>
+                  Deposit Instructions & WhatsApp Receipt Note
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="e.g. Please transfer the total amount and WhatsApp the deposit slip..."
+                  className="w-100 p-2 rounded-2"
+                  style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12px' }}
+                  value={gatewayConfig?.bank?.instructions || ''}
+                  onChange={(e) =>
+                    setGatewayConfig({
+                      ...gatewayConfig,
+                      bank: { ...gatewayConfig.bank, instructions: e.target.value },
+                    })
+                  }
+                />
+              </div>
+
+              <div className="d-flex justify-content-end gap-2 pt-2 border-top border-border">
+                <button
+                  type="button"
+                  className="btn-soft"
+                  onClick={() => setActiveModal(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-dark-x d-flex align-items-center gap-2"
+                  disabled={isSaving}
+                  onClick={() => handleSaveGateway('bank')}
+                >
+                  <Save size={15} /> {isSaving ? 'Saving...' : 'Save Bank Details'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* CASH ON DELIVERY (COD) CONFIGURATION MODAL */}
+      {/* ========================================================================= */}
+      {activeModal === 'cod' && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
+          style={{ background: 'rgba(0,0,0,0.7)', zIndex: 9999 }}
+        >
+          <div
+            className="card-x w-100 shadow-lg"
+            style={{ maxWidth: '540px', maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            <div className="d-flex align-items-center justify-content-between pb-3 border-bottom border-border mb-3">
+              <h4 className="m-0 d-flex align-items-center gap-2">
+                <Banknote size={20} className="text-success" /> Cash on Delivery (COD) Settings
+              </h4>
+              <button
+                type="button"
+                className="btn-link-x p-1 border-0 bg-transparent text-muted"
+                onClick={() => setActiveModal(null)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="d-flex flex-column gap-3">
+              {/* Enable Toggle */}
+              <div className="d-flex align-items-center justify-content-between p-2 rounded-2" style={{ background: 'var(--hover)' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '14px' }}>Enable Cash on Delivery</div>
+                  <small className="text-muted">Allow customers to pay cash to the rider upon delivery</small>
+                </div>
+                <input
+                  type="checkbox"
+                  style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                  checked={gatewayConfig?.cod?.enabled !== false}
+                  onChange={(e) =>
+                    setGatewayConfig({
+                      ...gatewayConfig,
+                      cod: { ...gatewayConfig.cod, enabled: e.target.checked },
+                    })
+                  }
+                />
+              </div>
+
+              {/* Promotional Discount */}
+              {renderDiscountSection('cod', 'Cash on Delivery')}
+
+              {/* Description */}
+              <div>
+                <label className="d-block mb-1 text-muted" style={{ fontSize: '13px' }}>Checkout Description Note</label>
+                <textarea
+                  rows={2}
+                  className="w-100 p-2 rounded-2"
+                  style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12px' }}
+                  value={gatewayConfig?.cod?.description || ''}
+                  onChange={(e) =>
+                    setGatewayConfig({
+                      ...gatewayConfig,
+                      cod: { ...gatewayConfig.cod, description: e.target.value },
+                    })
+                  }
+                />
+              </div>
+
+              <div className="d-flex justify-content-end gap-2 pt-2 border-top border-border">
+                <button
+                  type="button"
+                  className="btn-soft"
+                  onClick={() => setActiveModal(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-dark-x d-flex align-items-center gap-2"
+                  disabled={isSaving}
+                  onClick={() => handleSaveGateway('cod')}
+                >
+                  <Save size={15} /> {isSaving ? 'Saving...' : 'Save COD Settings'}
                 </button>
               </div>
             </div>
