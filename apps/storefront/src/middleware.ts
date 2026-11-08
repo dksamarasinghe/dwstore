@@ -90,7 +90,12 @@ export function middleware(req: NextRequest) {
   }
 
   // 3. LAYER 3: Rate Limiting
-  // Skip rate limiting for static assets (_next/static, images, media, favicon)
+  // Whitelist internal loopback / reverse proxy localhost requests
+  if (ip === '127.0.0.1' || ip === '::1' || ip === 'localhost') {
+    return NextResponse.next();
+  }
+
+  // Skip rate limiting for static assets (_next, images, media, favicon, fonts, icons)
   if (
     lowerPath.startsWith('/_next') ||
     lowerPath.startsWith('/media') ||
@@ -98,9 +103,13 @@ export function middleware(req: NextRequest) {
     lowerPath.endsWith('.svg') ||
     lowerPath.endsWith('.png') ||
     lowerPath.endsWith('.jpg') ||
+    lowerPath.endsWith('.jpeg') ||
     lowerPath.endsWith('.webp') ||
     lowerPath.endsWith('.css') ||
-    lowerPath.endsWith('.js')
+    lowerPath.endsWith('.js') ||
+    lowerPath.endsWith('.woff') ||
+    lowerPath.endsWith('.woff2') ||
+    req.nextUrl.searchParams.has('_rsc')
   ) {
     return NextResponse.next();
   }
@@ -110,13 +119,16 @@ export function middleware(req: NextRequest) {
   const now = Date.now();
   const WINDOW_MS = 60 * 1000; // 1 minute window
 
-  // Stricter limit on sensitive API routes (orders, upload, checkout) vs general browsing
-  const isSensitiveEndpoint =
-    lowerPath.startsWith('/api/orders') ||
-    lowerPath.startsWith('/api/upload') ||
-    lowerPath.startsWith('/checkout');
-
-  const MAX_REQUESTS = isSensitiveEndpoint ? 45 : 120; // 45 per min for checkout/orders, 120 for catalog
+  // Intelligent tiered limits:
+  // - High-risk write API endpoints (orders submit, file upload): 60 req/min
+  // - General API endpoints: 240 req/min
+  // - General storefront page browsing: 600 req/min (supports fast navigation & prefetching)
+  let MAX_REQUESTS = 600;
+  if (lowerPath.startsWith('/api/orders') || lowerPath.startsWith('/api/upload')) {
+    MAX_REQUESTS = 60;
+  } else if (lowerPath.startsWith('/api/')) {
+    MAX_REQUESTS = 240;
+  }
 
   const record = rateLimitCache.get(ip);
 
