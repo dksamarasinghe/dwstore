@@ -7,7 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PaymentInstallmentBoxes from '@/components/PaymentInstallmentBoxes';
 import productsData from '@/data/products.json';
-import { formatPriceLKR } from '@/lib/catalog';
+import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { 
@@ -190,13 +190,31 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     return null;
   }, [matchedVariation, product]);
 
-  // Stock status
+  // Check if product has variations
+  const isVariable = Boolean(product.variations && product.variations.length > 0);
+  const requiredAttributes = useMemo(() => attributeEntries.map((a) => a.name), [attributeEntries]);
+  const isAllAttributesSelected = useMemo(() => {
+    if (!isVariable || requiredAttributes.length === 0) return true;
+    return requiredAttributes.every((attrName) => Boolean(selectedAttributes[attrName]));
+  }, [isVariable, requiredAttributes, selectedAttributes]);
+
+  // Overall stock check for product (at least one variation or simple product in stock)
+  const hasAnyStock = useMemo(() => {
+    return isProductInStock(product);
+  }, [product]);
+
+  // Stock status of currently selected or general product
   const isOutOfStock = useMemo(() => {
-    if (matchedVariation) {
-      return matchedVariation.inStock === false;
+    if (isVariable) {
+      if (matchedVariation) {
+        return matchedVariation.inStock === false || (typeof matchedVariation.stockQty === 'number' && matchedVariation.stockQty <= 0);
+      }
+      return !hasAnyStock;
     }
-    return product.inStock === false;
-  }, [matchedVariation, product]);
+    return !hasAnyStock;
+  }, [isVariable, matchedVariation, hasAnyStock]);
+
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const discountPct = activeRegularPriceMinor && activePriceMinor < activeRegularPriceMinor
     ? Math.round(((activeRegularPriceMinor - activePriceMinor) / activeRegularPriceMinor) * 100)
@@ -221,6 +239,29 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     .slice(0, 4);
 
   const handleAddToCart = () => {
+    setValidationError(null);
+
+    // 1. If overall out of stock
+    if (!hasAnyStock) {
+      setValidationError('This product is currently Out of Stock.');
+      return;
+    }
+
+    // 2. If variable product and customer hasn\'t selected an option
+    if (isVariable && !isAllAttributesSelected) {
+      const missing = requiredAttributes.find((a) => !selectedAttributes[a]) || 'option';
+      setValidationError(`Please select a ${missing} before adding to cart.`);
+      const el = document.getElementById('variation-selector-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // 3. If selected variation is out of stock
+    if (isOutOfStock) {
+      setValidationError('The selected option is currently Out of Stock. Please choose another option.');
+      return;
+    }
+
     addToCart({
       productId: product.id,
       name: product.name,
@@ -241,6 +282,29 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   };
 
   const handleBuyNow = () => {
+    setValidationError(null);
+
+    // 1. If overall out of stock
+    if (!hasAnyStock) {
+      setValidationError('This product is currently Out of Stock.');
+      return;
+    }
+
+    // 2. If variable product and customer hasn\'t selected an option
+    if (isVariable && !isAllAttributesSelected) {
+      const missing = requiredAttributes.find((a) => !selectedAttributes[a]) || 'option';
+      setValidationError(`Please select a ${missing} before proceeding to checkout.`);
+      const el = document.getElementById('variation-selector-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // 3. If selected variation is out of stock
+    if (isOutOfStock) {
+      setValidationError('The selected option is currently Out of Stock. Please choose another option.');
+      return;
+    }
+
     addToCart({
       productId: product.id,
       name: product.name,
@@ -262,6 +326,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const handleClearAttributes = () => {
     setSelectedAttributes({});
     setUserImage(null);
+    setValidationError(null);
   };
 
   return (
@@ -385,7 +450,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             {/* Payment Method Price Boxes (Cash, Bank Transfer, Visa/Mastercard & Installments: Koko, Payzy) */}
             <PaymentInstallmentBoxes
               priceCents={activePriceMinor}
-              stockQty={product.stockQty}
+              stockQty={matchedVariation ? matchedVariation.stockQty : (hasAnyStock ? product.stockQty : 0)}
               inStock={!isOutOfStock}
               warranty={
                 product.warrantyPeriod !== undefined
@@ -406,44 +471,12 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               />
             )}
 
-            {/* Payment Method Banner Image (Replaces text boxes with Payment-Methods-1300x325.png) */}
-            <div className="py-2.5 border-y border-slate-100">
-              <img
-                src="/Payment-Methods-1300x325.png"
-                alt="Accepted Payment Methods: Visa, Mastercard, Koko, Payzy, PayHere, Cash On Delivery, Bank Transfer"
-                className="w-full max-w-md h-auto object-contain"
-              />
-            </div>
-
-            {/* "Check Availability" Notice Box (Exact replica of user's WP screenshot) */}
-            <div className="bg-amber-50/70 border-2 border-dashed border-amber-300 rounded-2xl p-4 text-center space-y-2">
-              <h4 className="text-xs font-black uppercase tracking-wider text-amber-900">
-                Check Availability
-              </h4>
-              <p className="text-[11px] text-slate-600 font-medium">
-                Please confirm stock &amp; colors via WhatsApp before ordering.
-              </p>
-              <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
-                පාරිභෝගික ඔබගේ පහසුව සඳහා: ඇණවුම් ලබා දීමට පෙර අදාල වර්ණ සහ තොග පිළිබඳව අපගේ WhatsApp අංකය හරහා විමසා දැනගන්න.
-              </p>
-              <div className="pt-1">
-                <a
-                  href={`https://wa.me/94756693358?text=Hello%20DWstore%2C%20I%20want%20to%20check%20availability%20for%3A%20${encodeURIComponent(product.name)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-xs transition"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Chat via WhatsApp</span>
-                </a>
-              </div>
-            </div>
-
-            {/* Dropdown Variation Selectors (Like WordPress site) */}
+            {/* Dropdown Variation Selectors (Positioned directly below Short Description) */}
             {attributeEntries.length > 0 && (
-              <div className="space-y-3 pt-2">
+              <div id="variation-selector-section" className="space-y-3 pt-3 pb-2 border-t border-slate-100">
                 {attributeEntries.map((attr) => {
                   const currentValue = selectedAttributes[attr.name] || '';
+                  const isMissing = validationError && !currentValue;
 
                   return (
                     <div key={attr.name} className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -459,8 +492,13 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                               [attr.name]: e.target.value,
                             }));
                             setUserImage(null);
+                            setValidationError(null);
                           }}
-                          className="border border-slate-300 rounded-xl px-4 py-2 text-xs font-semibold bg-white text-slate-800 pr-8 focus:outline-none focus:border-blue-600 cursor-pointer shadow-xs min-w-[200px]"
+                          className={`border rounded-xl px-4 py-2 text-xs font-semibold bg-white text-slate-800 pr-8 focus:outline-none cursor-pointer shadow-xs min-w-[200px] transition ${
+                            isMissing
+                              ? 'border-rose-400 ring-2 ring-rose-200'
+                              : 'border-slate-300 focus:border-blue-600'
+                          }`}
                         >
                           <option value="">Choose an option</option>
                           {attr.values.map((val: string) => (
@@ -484,33 +522,49 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                   );
                 })}
 
-                {/* Out of Stock warning badge (From screenshot 2 & 3) */}
+                {/* Stock status for selected variation */}
                 {matchedVariation && isOutOfStock && (
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs font-bold mt-1">
                     <span className="w-2 h-2 rounded-full bg-red-500"></span>
                     Out of stock
                   </div>
                 )}
+                {matchedVariation && !isOutOfStock && (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-xs font-bold mt-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    In stock
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Validation Error Message */}
+            {validationError && (
+              <div className="p-3 bg-rose-50 border-2 border-rose-300 rounded-xl text-rose-700 text-xs font-bold flex items-center gap-2">
+                <X className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                <span>{validationError}</span>
               </div>
             )}
 
             {/* Quantity, Add to Cart & Buy Now Buttons */}
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4 pt-1">
               <div className="flex items-center gap-4">
                 <span className="text-xs font-bold text-slate-700">Quantity:</span>
                 <div className="flex items-center border border-slate-300 rounded-xl bg-white overflow-hidden">
                   <button
                     type="button"
+                    disabled={isOutOfStock}
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 font-bold"
+                    className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 font-bold disabled:opacity-40"
                   >
                     -
                   </button>
                   <span className="px-4 py-1.5 text-xs font-bold text-slate-900">{quantity}</span>
                   <button
                     type="button"
+                    disabled={isOutOfStock}
                     onClick={() => setQuantity((q) => q + 1)}
-                    className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 font-bold"
+                    className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 font-bold disabled:opacity-40"
                   >
                     +
                   </button>
@@ -518,23 +572,36 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={handleAddToCart}
-                  className="flex-1 bg-[#3b4992] hover:bg-[#2e3a75] text-white font-bold text-xs sm:text-sm px-6 py-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  <span>ADD TO CART</span>
-                </button>
+                {isOutOfStock ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="flex-1 bg-slate-200 text-slate-500 font-bold text-xs sm:text-sm px-6 py-3.5 rounded-xl shadow-none cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <X className="w-4 h-4 text-rose-500" />
+                    <span>OUT OF STOCK</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleAddToCart}
+                      className="flex-1 bg-[#3b4992] hover:bg-[#2e3a75] text-white font-bold text-xs sm:text-sm px-6 py-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      <span>ADD TO CART</span>
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={handleBuyNow}
-                  className="flex-1 bg-[#5046e5] hover:bg-[#4338ca] text-white font-bold text-xs sm:text-sm px-6 py-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-center"
-                >
-                  <Zap className="w-4 h-4" />
-                  <span>BUY NOW</span>
-                </button>
+                    <button
+                      type="button"
+                      onClick={handleBuyNow}
+                      className="flex-1 bg-[#5046e5] hover:bg-[#4338ca] text-white font-bold text-xs sm:text-sm px-6 py-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-center cursor-pointer"
+                    >
+                      <Zap className="w-4 h-4" />
+                      <span>BUY NOW</span>
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Wishlist & Compare */}
@@ -584,6 +651,39 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                   Product added to cart! Proceed to checkout or order via WhatsApp.
                 </div>
               )}
+            </div>
+
+            {/* Payment Method Banner Image (Replaces text boxes with Payment-Methods-1300x325.png) */}
+            <div className="py-2.5 border-y border-slate-100">
+              <img
+                src="/Payment-Methods-1300x325.png"
+                alt="Accepted Payment Methods: Visa, Mastercard, Koko, Payzy, PayHere, Cash On Delivery, Bank Transfer"
+                className="w-full max-w-md h-auto object-contain"
+              />
+            </div>
+
+            {/* "Check Availability" Notice Box (Exact replica of user's WP screenshot) */}
+            <div className="bg-amber-50/70 border-2 border-dashed border-amber-300 rounded-2xl p-4 text-center space-y-2">
+              <h4 className="text-xs font-black uppercase tracking-wider text-amber-900">
+                Check Availability
+              </h4>
+              <p className="text-[11px] text-slate-600 font-medium">
+                Please confirm stock &amp; colors via WhatsApp before ordering.
+              </p>
+              <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
+                පාරිභෝගික ඔබගේ පහසුව සඳහා: ඇණවුම් ලබා දීමට පෙර අදාල වර්ණ සහ තොග පිළිබඳව අපගේ WhatsApp අංකය හරහා විමසා දැනගන්න.
+              </p>
+              <div className="pt-1">
+                <a
+                  href={`https://wa.me/94756693358?text=Hello%20DWstore%2C%20I%20want%20to%20check%20availability%20for%3A%20${encodeURIComponent(product.name)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-xs transition"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Chat via WhatsApp</span>
+                </a>
+              </div>
             </div>
 
             {/* Trust Badges */}

@@ -102,3 +102,18 @@ export function formatPriceLKR(minorCents: number): string {
     maximumFractionDigits: 2,
   });
 }
+
+/**
+ * Checks whether a product has active stock.
+ * For variable products: returns true if AT LEAST ONE variation is in stock.
+ * If all variations are out of stock, returns false.
+ */
+export function isProductInStock(product: any): boolean {
+  if (!product) return false;
+  if (product.variations && product.variations.length > 0) {
+    return product.variations.some(
+      (v: any) => v.inStock !== false && (v.stockQty === undefined || v.stockQty === null || v.stockQty > 0)
+    );
+  }
+  return product.inStock !== false && (product.stockQty === undefined || product.stockQty === null || product.stockQty > 0);
+}

@@ -8,7 +8,7 @@ import Footer from '@/components/Footer';
 import productsData from '@/data/products.json';
 import categoriesData from '@/data/categories.json';
 import brandsData from '@/data/brands.json';
-import { formatPriceLKR } from '@/lib/catalog';
+import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { Star, ShoppingCart, Heart, SlidersHorizontal, ChevronRight, X, Check, Filter } from 'lucide-react';
@@ -136,7 +136,7 @@ function ShopContent() {
     let inS = 0;
     let outS = 0;
     (productsData as any[]).forEach((p) => {
-      if (p.inStock !== false) inS++;
+      if (isProductInStock(p)) inS++;
       else outS++;
     });
     return { totalInStock: inS, totalOutOfStock: outS };
@@ -168,7 +168,7 @@ function ShopContent() {
         }
 
         // Stock filter (in-stock vs out-of-stock)
-        const isInStock = p.inStock !== false;
+        const isInStock = isProductInStock(p);
         if (stockFilter === 'in-stock' && !isInStock) {
           return false;
         }
@@ -660,7 +660,7 @@ function ShopContent() {
                       ? Math.round(((regularPrice - price) / regularPrice) * 100)
                       : 0;
 
-                  const isInStock = product.inStock !== false;
+                  const isInStock = isProductInStock(product);
                   const isFavorited = isInWishlist(product.id);
 
                   return (

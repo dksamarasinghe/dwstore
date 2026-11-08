@@ -7,7 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import productsData from '@/data/products.json';
 import categoriesData from '@/data/categories.json';
-import { formatPriceLKR } from '@/lib/catalog';
+import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
 import { Star, ShoppingCart, Heart, SlidersHorizontal, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
@@ -144,7 +144,7 @@ export default function CategoryPage() {
                         {product.brand || 'DWSTORE'}
                       </span>
                       <div className="flex items-center gap-1.5">
-                        {product.inStock !== false ? (
+                        {isProductInStock(product) ? (
                           <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200/80">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                             In Stock
