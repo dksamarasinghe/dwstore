@@ -7,6 +7,7 @@ import {
   Search,
   Plus,
   Download,
+  Upload,
   Eye,
   Trash2,
   Edit,
@@ -18,12 +19,15 @@ import {
   Zap
 } from 'lucide-react';
 import { BrandItem, ProductItem, TabType } from '../../types';
+import { CSVImportModal } from '../common/CSVImportModal';
+import { downloadCSV } from '../../utils/csv';
 
 interface ProductsViewProps {
   products: ProductItem[];
   brands?: BrandItem[];
   onDeleteProduct: (id: string) => void;
   onUpdateProduct: (product: ProductItem) => void;
+  onImportProducts?: (importedProducts: ProductItem[]) => void;
   onStartEditProduct?: (product: ProductItem) => void;
   onOpenAddProduct?: () => void;
   setActiveTab: (tab: TabType) => void;
@@ -35,6 +39,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   brands = [],
   onDeleteProduct,
   onUpdateProduct,
+  onImportProducts,
   onStartEditProduct,
   onOpenAddProduct,
   setActiveTab,
@@ -48,6 +53,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [inspectProduct, setInspectProduct] = useState<ProductItem | null>(null);
   const [quickEditProduct, setQuickEditProduct] = useState<ProductItem | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
 
@@ -137,23 +143,78 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     const rows = filtered.map((p) => [
       p.id,
       p.sku,
-      `"${p.name.replace(/"/g, '""')}"`,
+      p.name,
       p.brand,
-      `"${p.category.replace(/"/g, '""')}"`,
+      p.category,
       p.regularPrice,
       p.salePrice,
       p.stock,
       p.status,
     ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `dwstore-products-catalog-${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadCSV(`dwstore-products-catalog-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
     showNotification('Product catalog exported to CSV successfully!');
+  };
+
+  const handleImportCSVData = (rows: string[][], headers: string[]) => {
+    const lowerHeaders = headers.map((h) => h.trim().toLowerCase());
+    const idIdx = lowerHeaders.findIndex((h) => h === 'id');
+    const skuIdx = lowerHeaders.findIndex((h) => h === 'sku');
+    const nameIdx = lowerHeaders.findIndex((h) => h.includes('title') || h.includes('name'));
+    const brandIdx = lowerHeaders.findIndex((h) => h.includes('brand'));
+    const catIdx = lowerHeaders.findIndex((h) => h.includes('category'));
+    const regPriceIdx = lowerHeaders.findIndex((h) => h.includes('regular'));
+    const salePriceIdx = lowerHeaders.findIndex((h) => h.includes('sale') || (h.includes('price') && !h.includes('regular')));
+    const stockIdx = lowerHeaders.findIndex((h) => h.includes('stock'));
+    const statusIdx = lowerHeaders.findIndex((h) => h.includes('status'));
+
+    const imported: ProductItem[] = [];
+    rows.forEach((row, idx) => {
+      const name = nameIdx >= 0 && row[nameIdx] ? row[nameIdx].trim() : '';
+      if (!name) return; // skip rows without name
+      const id = idIdx >= 0 && row[idIdx]?.trim() ? row[idIdx].trim() : `prod-${Date.now()}-${idx}`;
+      const sku = skuIdx >= 0 && row[skuIdx]?.trim() ? row[skuIdx].trim() : `SKU-${Date.now().toString().slice(-4)}-${idx}`;
+      const brand = brandIdx >= 0 && row[brandIdx]?.trim() ? row[brandIdx].trim() : 'DWstore';
+      const category = catIdx >= 0 && row[catIdx]?.trim() ? row[catIdx].trim() : 'General';
+      const regPrice = regPriceIdx >= 0 ? parseFloat(row[regPriceIdx]?.replace(/[^0-9.]/g, '') || '0') || 0 : 0;
+      const salePrice = salePriceIdx >= 0 ? parseFloat(row[salePriceIdx]?.replace(/[^0-9.]/g, '') || '0') || regPrice : regPrice;
+      const stock = stockIdx >= 0 ? parseInt(row[stockIdx]?.replace(/[^0-9]/g, '') || '0', 10) : 10;
+      const rawStatus = statusIdx >= 0 && row[statusIdx] ? row[statusIdx].trim() : '';
+      const status: 'Active' | 'Low stock' | 'Out of stock' | 'Draft' =
+        ['Active', 'Low stock', 'Out of stock', 'Draft'].includes(rawStatus)
+          ? (rawStatus as any)
+          : stock > 0
+          ? 'Active'
+          : 'Out of stock';
+
+      const existing = products.find((p) => p.id === id || p.sku.toLowerCase() === sku.toLowerCase());
+      imported.push({
+        id,
+        name,
+        sku,
+        brand,
+        category,
+        productType: existing?.productType || 'simple',
+        regularPrice: regPrice > 0 ? regPrice : salePrice,
+        salePrice,
+        stock,
+        status,
+        salesCount: existing?.salesCount || 0,
+        image: existing?.image || existing?.displayImage || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=800',
+        displayImage: existing?.displayImage || existing?.image || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=800',
+        rating: existing?.rating ?? 5.0,
+        warrantyPeriod: existing?.warrantyPeriod || '6 Months Warranty',
+        variations: existing?.variations,
+        attributes: existing?.attributes,
+      });
+    });
+
+    if (imported.length === 0) {
+      throw new Error('No valid products found in CSV. Please verify column headers.');
+    }
+
+    if (onImportProducts) {
+      onImportProducts(imported);
+    }
   };
 
   return (
@@ -165,8 +226,15 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           <p>Real-time WooCommerce product catalog with prices in LKR, stock levels, and SKUs.</p>
         </div>
         <div className="d-flex gap-2">
-          <button className="btn-soft" onClick={handleExportCSV} type="button">
+          <button className="btn-soft d-flex align-items-center gap-1.5" onClick={handleExportCSV} type="button">
             <Download size={16} /> Export CSV
+          </button>
+          <button
+            className="btn-soft d-flex align-items-center gap-1.5"
+            onClick={() => setIsImportModalOpen(true)}
+            type="button"
+          >
+            <Upload size={16} /> Import CSV
           </button>
           <button
             className="btn-dark-x"
@@ -959,6 +1027,23 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* CSV Import Modal */}
+      <CSVImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Import Products Catalog CSV"
+        description="Upload a CSV spreadsheet to bulk import or update products in DWstore catalog."
+        expectedColumns={['SKU', 'Title', 'Brand', 'Category', 'Regular Price', 'Sale Price', 'Stock', 'Status']}
+        sampleFilename="dwstore-sample-products.csv"
+        sampleHeaders={['SKU', 'Title', 'Brand', 'Category', 'Regular Price (LKR)', 'Sale Price (LKR)', 'Stock', 'Status']}
+        sampleRows={[
+          ['SKU-WATCH-01', 'T800 Ultra Smartwatch', 'DWstore', 'SmartWatches', 2500, 1990, 50, 'Active'],
+          ['SKU-PODS-02', 'Airpods Pro 2nd Gen Type C', 'Apple', 'Bluetooth Handfree', 3950, 3250, 25, 'Active'],
+          ['SKU-PB-03', 'Aspor A323 10000mAh Power Bank', 'Aspor', 'Power Banks', 2400, 1850, 0, 'Out of stock'],
+        ]}
+        onImport={handleImportCSVData}
+      />
     </div>
   );
 };

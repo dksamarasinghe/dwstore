@@ -65,7 +65,13 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Main entity states with 100% Real WooCommerce Database & Koombiyo Logistics
-  const [products, setProducts] = useState<ProductItem[]>(realProducts);
+  const [products, setProducts] = useState<ProductItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('dwstore_admin_products_v1');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return realProducts;
+  });
   const [orders, setOrders] = useState<OrderItem[]>(() => {
     try {
       const saved = localStorage.getItem('dwstore_admin_orders_v3');
@@ -105,6 +111,12 @@ export default function App() {
     } catch (e) {}
     return realBrands;
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dwstore_admin_products_v1', JSON.stringify(products));
+    } catch (e) {}
+  }, [products]);
 
   useEffect(() => {
     try {
@@ -205,7 +217,19 @@ export default function App() {
   }, []);
 
   const [abandonedCarts, setAbandonedCarts] = useState<AbandonedCartItem[]>(initialAbandonedCarts);
-  const [customers, setCustomers] = useState<CustomerItem[]>(realCustomers);
+  const [customers, setCustomers] = useState<CustomerItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('dwstore_admin_customers_v1');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return realCustomers;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dwstore_admin_customers_v1', JSON.stringify(customers));
+    } catch (e) {}
+  }, [customers]);
   const [editingProductForForm, setEditingProductForForm] = useState<ProductItem | null>(null);
 
   const handleStartEditProduct = (prod: ProductItem) => {
@@ -624,6 +648,55 @@ export default function App() {
     showNotification('Brand deleted.');
   };
 
+  // Bulk CSV Import Handlers
+  const handleImportProducts = (importedProducts: ProductItem[]) => {
+    setProducts((prev) => {
+      const map = new Map(prev.map((p) => [p.id, p]));
+      importedProducts.forEach((ip) => {
+        const existingBySku = prev.find((p) => p.sku && p.sku.toLowerCase() === ip.sku.toLowerCase());
+        if (existingBySku) {
+          map.set(existingBySku.id, { ...existingBySku, ...ip, id: existingBySku.id });
+        } else {
+          map.set(ip.id, ip);
+        }
+      });
+      return Array.from(map.values());
+    });
+    showNotification(`Imported ${importedProducts.length} products to catalog successfully!`);
+  };
+
+  const handleImportOrders = (importedOrders: OrderItem[]) => {
+    setOrders((prev) => {
+      const map = new Map(prev.map((o) => [o.orderId.toLowerCase(), o]));
+      importedOrders.forEach((io) => {
+        const existing = map.get(io.orderId.toLowerCase());
+        if (existing) {
+          map.set(io.orderId.toLowerCase(), { ...existing, ...io });
+        } else {
+          map.set(io.orderId.toLowerCase(), io);
+        }
+      });
+      return Array.from(map.values());
+    });
+    showNotification(`Imported ${importedOrders.length} orders successfully!`);
+  };
+
+  const handleImportCustomers = (importedCustomers: CustomerItem[]) => {
+    setCustomers((prev) => {
+      const map = new Map(prev.map((c) => [c.id, c]));
+      importedCustomers.forEach((ic) => {
+        const existingByPhone = prev.find((c) => c.phone && c.phone === ic.phone);
+        if (existingByPhone) {
+          map.set(existingByPhone.id, { ...existingByPhone, ...ic, id: existingByPhone.id });
+        } else {
+          map.set(ic.id, ic);
+        }
+      });
+      return Array.from(map.values());
+    });
+    showNotification(`Imported ${importedCustomers.length} customers successfully!`);
+  };
+
   // Coupon handlers with API persistence
   const handleAddCoupon = async (cp: CouponItem) => {
     setCoupons((prev) => [cp, ...prev]);
@@ -748,6 +821,7 @@ export default function App() {
               onUpdateStatus={handleUpdateOrderStatus}
               onUpdateOrder={handleUpdateFullOrder}
               onDispatchOrder={handleDispatchOrder}
+              onImportOrders={handleImportOrders}
               selectedOrder={selectedOrder}
               setSelectedOrder={setSelectedOrder}
               showNotification={showNotification}
@@ -762,6 +836,7 @@ export default function App() {
               brands={brands}
               onDeleteProduct={handleDeleteProduct}
               onUpdateProduct={handleUpdateProduct}
+              onImportProducts={handleImportProducts}
               onStartEditProduct={handleStartEditProduct}
               onOpenAddProduct={handleOpenAddProduct}
               setActiveTab={(tab) => {
@@ -826,7 +901,11 @@ export default function App() {
           )}
 
           {activeTab === 'customers' && (
-            <CustomersView customers={customers} />
+            <CustomersView
+              customers={customers}
+              onImportCustomers={handleImportCustomers}
+              showNotification={showNotification}
+            />
           )}
 
           {activeTab === 'reviews' && (

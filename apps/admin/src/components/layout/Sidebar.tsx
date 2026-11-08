@@ -291,19 +291,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </a>
 
           <a
-            className={`sb-link ${activeTab === 'discounts' ? 'active' : ''}`}
-            href="#discounts"
-            onClick={(e) => {
-              e.preventDefault();
-              handleNavClick('discounts');
-            }}
-            title="Discounts & Coupons"
-          >
-            <Percent size={18} />
-            {!collapsed && <span>Discounts</span>}
-          </a>
-
-          <a
             className={`sb-link ${activeTab === 'payments' ? 'active' : ''}`}
             href="#payments"
             onClick={(e) => {

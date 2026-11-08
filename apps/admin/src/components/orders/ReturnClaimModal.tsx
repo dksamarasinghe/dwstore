@@ -212,7 +212,7 @@ export const ReturnClaimModal: React.FC<ReturnClaimModalProps> = ({
             <div className="p-3 rounded-2 border border-danger-subtle" style={{ background: 'rgba(244, 63, 94, 0.04)' }}>
               <div className="d-flex align-items-center justify-content-between mb-2">
                 <span className="fw-bold text-danger d-flex align-items-center gap-1.5" style={{ fontSize: '13px' }}>
-                  <ShieldAlert size={16} /> Financial Loss Recorded (පාඩුව ගණනය)
+                  <ShieldAlert size={16} /> Financial Loss Recorded
                 </span>
                 <span className="badge-x bg-danger text-white font-monospace" style={{ fontSize: '12px' }}>
                   Total Loss: Rs. {totalLoss.toLocaleString()}

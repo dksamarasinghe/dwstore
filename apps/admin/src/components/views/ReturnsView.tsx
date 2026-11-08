@@ -149,7 +149,7 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
           <div className="card-x h-100 p-3" style={{ borderLeft: '4px solid #f43f5e' }}>
             <div className="d-flex align-items-center justify-content-between mb-1">
               <span className="text-muted" style={{ fontSize: '12px', fontWeight: 600 }}>
-                Total Return Losses (පාඩුව)
+                Total Return Losses
               </span>
               <span
                 className="p-1.5 rounded-2"

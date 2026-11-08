@@ -12,6 +12,7 @@ import {
   Truck,
   XCircle,
   Download,
+  Upload,
   ChevronLeft,
   ChevronRight,
   X,
@@ -29,12 +30,15 @@ import { WaybillSlipModal } from '../orders/WaybillSlipModal';
 import { EditOrderModal } from '../orders/EditOrderModal';
 import { DispatchOrderModal } from '../orders/DispatchOrderModal';
 import { ReturnClaimModal } from '../orders/ReturnClaimModal';
+import { CSVImportModal } from '../common/CSVImportModal';
+import { downloadCSV } from '../../utils/csv';
 
 interface OrdersViewProps {
   orders: OrderItem[];
   onUpdateStatus: (orderId: string, newStatus: string) => Promise<void>;
   onUpdateOrder: (updatedOrder: OrderItem) => Promise<void>;
   onDispatchOrder: (orderId: string, carrier: string, trackingNumber: string, dispatchedDate: string) => Promise<void>;
+  onImportOrders?: (importedOrders: OrderItem[]) => void;
   selectedOrder: OrderItem | null;
   setSelectedOrder: (order: OrderItem | null) => void;
   showNotification: (msg: string) => void;
@@ -47,6 +51,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   onUpdateStatus,
   onUpdateOrder,
   onDispatchOrder,
+  onImportOrders,
   selectedOrder,
   setSelectedOrder,
   showNotification,
@@ -62,6 +67,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   const [editingOrder, setEditingOrder] = useState<OrderItem | null>(null);
   const [dispatchingOrder, setDispatchingOrder] = useState<OrderItem | null>(null);
   const [claimingReturnOrder, setClaimingReturnOrder] = useState<OrderItem | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
 
@@ -137,24 +143,86 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
     const rows = filteredOrders.map((o) => [
       o.orderId,
       o.createdAt,
-      `"${(o.customerName || '').replace(/"/g, '""')}"`,
+      o.customerName || '',
       o.customerPhone,
-      `"${(o.shippingAddress || '').replace(/"/g, '""')}"`,
+      o.shippingAddress || '',
       o.city,
       o.status,
-      `"${(o.paymentMethod || '').replace(/"/g, '""')}"`,
+      o.paymentMethod || '',
       o.paymentStatus,
       o.total,
     ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `dwstore-orders-export-${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadCSV(`dwstore-orders-export-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
     showNotification(`Exported ${filteredOrders.length} orders to CSV successfully!`);
+  };
+
+  const handleImportCSVData = (rows: string[][], headers: string[]) => {
+    const lowerHeaders = headers.map((h) => h.trim().toLowerCase());
+    const idIdx = lowerHeaders.findIndex((h) => h.includes('order') || h === 'id');
+    const dateIdx = lowerHeaders.findIndex((h) => h.includes('date') || h.includes('created'));
+    const nameIdx = lowerHeaders.findIndex((h) => h.includes('customer') || h.includes('name'));
+    const phoneIdx = lowerHeaders.findIndex((h) => h.includes('phone'));
+    const addrIdx = lowerHeaders.findIndex((h) => h.includes('address'));
+    const cityIdx = lowerHeaders.findIndex((h) => h.includes('city'));
+    const statusIdx = lowerHeaders.findIndex((h) => h.includes('status') && !h.includes('payment'));
+    const methodIdx = lowerHeaders.findIndex((h) => h.includes('method') || h.includes('payment method'));
+    const payStatusIdx = lowerHeaders.findIndex((h) => h.includes('payment status'));
+    const totalIdx = lowerHeaders.findIndex((h) => h.includes('total') || h.includes('amount') || h.includes('price'));
+
+    const imported: OrderItem[] = [];
+    rows.forEach((row, idx) => {
+      const orderId = idIdx >= 0 && row[idIdx]?.trim() ? row[idIdx].trim() : `DWS-${Date.now().toString().slice(-5)}${idx}`;
+      const customerName = nameIdx >= 0 && row[nameIdx] ? row[nameIdx].trim() : 'Customer';
+      const customerPhone = phoneIdx >= 0 && row[phoneIdx] ? row[phoneIdx].trim() : '';
+      const shippingAddress = addrIdx >= 0 && row[addrIdx] ? row[addrIdx].trim() : '';
+      const city = cityIdx >= 0 && row[cityIdx] ? row[cityIdx].trim() : 'Colombo';
+      const rawStatus = (statusIdx >= 0 && row[statusIdx]?.trim().toLowerCase()) || 'pending';
+      const status = rawStatus as any;
+      const paymentMethod = methodIdx >= 0 && row[methodIdx] ? row[methodIdx].trim() : 'Cash on Delivery';
+      const paymentStatus = (payStatusIdx >= 0 && (row[payStatusIdx]?.trim().toLowerCase() as any)) ||
+        (paymentMethod.includes('Direct') || paymentMethod.includes('COD') ? 'unpaid' : 'paid');
+      const total = totalIdx >= 0 ? parseFloat(row[totalIdx]?.replace(/[^0-9.]/g, '') || '0') || 0 : 0;
+      const createdAt = (dateIdx >= 0 && row[dateIdx]?.trim()) || new Date().toISOString().slice(0, 10);
+
+      const existing = orders.find((o) => o.orderId.toLowerCase() === orderId.toLowerCase());
+      imported.push({
+        orderId,
+        customerName,
+        customerPhone,
+        customerEmail: existing?.customerEmail || `${customerPhone || 'cust'}@dwstore.lk`,
+        shippingAddress,
+        city,
+        postalCode: existing?.postalCode || '10100',
+        items: existing?.items && existing.items.length > 0 ? existing.items : [
+          {
+            productId: `prod-imp-${idx}`,
+            productTitle: 'DWstore Imported Item',
+            productSku: 'IMP-001',
+            quantity: 1,
+            price: total,
+          },
+        ],
+        subtotal: existing?.subtotal || total,
+        shippingCost: existing?.shippingCost || 0,
+        total,
+        status,
+        paymentStatus,
+        paymentMethod,
+        createdAt,
+        carrier: existing?.carrier || 'Koombiyo Delivery',
+        trackingNumber: existing?.trackingNumber || '',
+        dispatchedDate: existing?.dispatchedDate || '',
+        returnRecord: existing?.returnRecord,
+      });
+    });
+
+    if (imported.length === 0) {
+      throw new Error('No valid orders found in CSV.');
+    }
+
+    if (onImportOrders) {
+      onImportOrders(imported);
+    }
   };
 
   const openOrderDetail = (order: OrderItem) => {
@@ -184,8 +252,15 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               <span>{syncingCourier ? 'Syncing...' : 'Sync Koombiyo Status'}</span>
             </button>
           )}
-          <button className="btn-soft" onClick={handleExportCSV} type="button">
+          <button className="btn-soft d-flex align-items-center gap-1.5" onClick={handleExportCSV} type="button">
             <Download size={16} /> Export CSV ({filteredOrders.length})
+          </button>
+          <button
+            className="btn-soft d-flex align-items-center gap-1.5"
+            onClick={() => setIsImportModalOpen(true)}
+            type="button"
+          >
+            <Upload size={16} /> Import CSV
           </button>
         </div>
       </div>
@@ -850,6 +925,22 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
           }}
         />
       )}
+
+      {/* CSV Import Modal */}
+      <CSVImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Import Orders CSV"
+        description="Upload a CSV file to bulk import new orders or update existing order records."
+        expectedColumns={['Order ID', 'Date', 'Customer Name', 'Phone', 'Address', 'City', 'Status', 'Payment Method', 'Payment Status', 'Total LKR']}
+        sampleFilename="dwstore-sample-orders.csv"
+        sampleHeaders={['Order ID', 'Date', 'Customer Name', 'Phone', 'Address', 'City', 'Status', 'Payment Method', 'Payment Status', 'Total LKR']}
+        sampleRows={[
+          ['DWS-35257', '2026-11-08', 'Abdul Muheed', '0721359138', '320, Ue Perera Mawatha, Obeysekarapura', 'Rajagiriya', 'pending', 'Direct Bank Transfer / Deposit', 'unpaid', 4850],
+          ['DWS-35258', '2026-11-08', 'Kamal Perera', '0771234567', 'No. 45 Galle Road', 'Colombo', 'delivered', 'Cash on Delivery (COD)', 'paid', 2950],
+        ]}
+        onImport={handleImportCSVData}
+      />
     </div>
   );
 };

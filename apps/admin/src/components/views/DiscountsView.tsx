@@ -42,7 +42,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     <div className="content">
       <div className="page-head">
         <div>
-          <h1>Discounts & Promo Coupons</h1>
+          <h1>Promo Coupons</h1>
           <p>Create promotional vouchers, percentage discounts, and free shipping codes.</p>
         </div>
         <button className="btn-dark-x" onClick={() => setIsModalOpen(true)} type="button">
