@@ -305,7 +305,8 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
       return;
     }
 
-    addToCart({
+    const directBuyItem = {
+      id: matchedVariation?.id ? `${product.id}-${matchedVariation.id}` : product.id,
       productId: product.id,
       name: product.name,
       slug: product.slug,
@@ -319,8 +320,13 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             attributes: matchedVariation.attributes || selectedAttributes,
           }
         : null,
-    }, false);
-    router.push('/checkout');
+    };
+
+    try {
+      sessionStorage.setItem('dwstore_direct_checkout', JSON.stringify(directBuyItem));
+    } catch (e) {}
+
+    router.push('/checkout?buyNow=1');
   };
 
   const handleClearAttributes = () => {

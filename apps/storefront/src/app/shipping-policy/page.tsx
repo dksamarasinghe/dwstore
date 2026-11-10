@@ -39,7 +39,7 @@ export default function ShippingPolicyPage() {
               </div>
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
                 <strong className="text-slate-900 block font-bold mb-1">Outstation / All Other Districts</strong>
-                <span className="text-slate-600">Delivered within <strong>2 – 3 Working Days</strong> via certified courier partners (Prompt, Koombiyo, Domex).</span>
+                <span className="text-slate-600">Delivered within <strong>2 – 3 Working Days</strong> via certified courier partners (Koombiyo Delivery, Prompt, Domex).</span>
               </div>
             </div>
           </div>
@@ -51,8 +51,8 @@ export default function ShippingPolicyPage() {
               <span>2. Delivery Charges</span>
             </h2>
             <ul className="list-disc pl-5 space-y-2 text-slate-600">
-              <li><strong>Flat Standard Rate:</strong> LKR 350 across all island-wide locations.</li>
-              <li><strong>FREE Delivery:</strong> Available on all orders with a cart total of LKR 15,000 or above!</li>
+              <li><strong>Koombiyo Delivery Standard Rate:</strong> Flat rate of <strong>LKR 450</strong> across all island-wide locations in Sri Lanka.</li>
+              <li><strong>Free Delivery Arrangements:</strong> Free delivery can be arranged for selected products and specific delivery areas. Please contact our support team via WhatsApp (+94 75 669 3358) or check individual product offers for eligibility.</li>
             </ul>
           </div>
 

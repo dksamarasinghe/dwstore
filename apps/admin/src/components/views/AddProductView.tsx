@@ -309,7 +309,14 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
     initialProduct?.shipping?.height ? String(initialProduct.shipping.height) : ''
   );
   const [shippingClass, setShippingClass] = useState(
-    initialProduct?.shipping?.shippingClass || 'Standard Islandwide Delivery (Rs. 350)'
+    initialProduct?.shipping?.shippingClass || 'Standard Islandwide Delivery (Rs. 450)'
+  );
+  const [productShippingFee, setProductShippingFee] = useState(
+    initialProduct?.shipping?.shippingFee !== undefined
+      ? String(initialProduct.shipping.shippingFee)
+      : (initialProduct as any)?.shippingFee !== undefined
+      ? String((initialProduct as any).shippingFee)
+      : ''
   );
 
   // Custom Shipping Classes state
@@ -690,7 +697,8 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       length: parseFloat(dimLength) || 0,
       width: parseFloat(dimWidth) || 0,
       height: parseFloat(dimHeight) || 0,
-      shippingClass
+      shippingClass,
+      shippingFee: productShippingFee !== '' ? parseFloat(productShippingFee) || 0 : undefined,
     };
 
     // Formatted attributes list
@@ -2350,6 +2358,24 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Custom Product Shipping Fee */}
+                <div className="col-12 col-md-6 mt-3">
+                  <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
+                    Product Custom Shipping Fee (LKR)
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    placeholder="Leave empty for standard (Rs. 450)"
+                    value={productShippingFee}
+                    onChange={(e) => setProductShippingFee(e.target.value)}
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '14px' }}
+                  />
+                  <small className="text-muted" style={{ fontSize: '11px' }}>
+                    Leave blank to use default Islandwide rate (LKR 450). Enter <b>0</b> for Free Shipping on this item.
+                  </small>
                 </div>
               </div>
             </div>

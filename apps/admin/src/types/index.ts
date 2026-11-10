@@ -46,6 +46,7 @@ export interface ShippingDetails {
   width?: number;
   height?: number;
   shippingClass?: string;
+  shippingFee?: number;
 }
 
 export interface ProductItem {

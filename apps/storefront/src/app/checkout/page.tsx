@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
 import { formatPriceLKR } from '@/lib/catalog';
+import productsData from '@/data/products.json';
 import {
   ShieldCheck,
   Truck,
@@ -21,6 +22,9 @@ import {
   AlertCircle,
   Sparkles,
   Tag,
+  Trash2,
+  Plus,
+  Minus,
 } from 'lucide-react';
 
 const SRI_LANKA_DISTRICTS = [
@@ -51,12 +55,76 @@ const SRI_LANKA_DISTRICTS = [
   'Vavuniya',
 ];
 
-const FREE_SHIPPING_THRESHOLD_MINOR = 1500000;
-const STANDARD_SHIPPING_FEE_MINOR = 35000;
+const STANDARD_SHIPPING_FEE_MINOR = 45000;
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter();
-  const { cart, subtotalMinor, clearCart } = useCart();
+  const searchParams = useSearchParams();
+  const isBuyNow = searchParams.get('buyNow') === '1';
+
+  const { cart, clearCart, updateQuantity, removeFromCart } = useCart();
+
+  const [directItem, setDirectItem] = useState<any | null>(null);
+  const [directLoaded, setDirectLoaded] = useState(false);
+
+  useEffect(() => {
+    if (isBuyNow) {
+      try {
+        const stored = sessionStorage.getItem('dwstore_direct_checkout');
+        if (stored) {
+          setDirectItem(JSON.parse(stored));
+        }
+      } catch (e) {}
+    }
+    setDirectLoaded(true);
+  }, [isBuyNow]);
+
+  const activeCart = useMemo(() => {
+    if (isBuyNow) {
+      return directItem ? [directItem] : [];
+    }
+    return cart;
+  }, [isBuyNow, directItem, cart]);
+
+  const subtotalMinor = useMemo(() => {
+    return activeCart.reduce((sum, item) => sum + item.priceMinor * item.quantity, 0);
+  }, [activeCart]);
+
+  const handleUpdateQuantity = (itemId: string, newQty: number) => {
+    if (isBuyNow && directItem) {
+      if (newQty <= 0) {
+        setDirectItem(null);
+        try { sessionStorage.removeItem('dwstore_direct_checkout'); } catch (e) {}
+      } else {
+        const updated = { ...directItem, quantity: newQty };
+        setDirectItem(updated);
+        try { sessionStorage.setItem('dwstore_direct_checkout', JSON.stringify(updated)); } catch (e) {}
+      }
+    } else {
+      if (newQty <= 0) {
+        removeFromCart(itemId);
+      } else {
+        updateQuantity(itemId, newQty);
+      }
+    }
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+    if (isBuyNow && directItem) {
+      setDirectItem(null);
+      try { sessionStorage.removeItem('dwstore_direct_checkout'); } catch (e) {}
+    } else {
+      removeFromCart(itemId);
+    }
+  };
+
+  const cleanupCheckout = () => {
+    if (isBuyNow) {
+      try { sessionStorage.removeItem('dwstore_direct_checkout'); } catch (e) {}
+    } else {
+      clearCart();
+    }
+  };
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -199,9 +267,29 @@ export default function CheckoutPage() {
     return Math.min(fixedMinor, subtotalMinor);
   }, [appliedCoupon, subtotalMinor]);
 
-  const shippingFeeMinor = subtotalMinor >= FREE_SHIPPING_THRESHOLD_MINOR || subtotalMinor === 0
-    ? 0
-    : STANDARD_SHIPPING_FEE_MINOR;
+  const shippingFeeMinor = useMemo(() => {
+    if (activeCart.length === 0 || subtotalMinor === 0) return 0;
+
+    let customFeeMinor: number | null = null;
+    for (const item of activeCart) {
+      const prod = (productsData as any[]).find((p) => p.id === item.productId || p.slug === item.slug);
+      const fee = prod?.shipping?.shippingFee !== undefined
+        ? prod.shipping.shippingFee
+        : prod?.shippingFee;
+      if (fee !== undefined && fee !== null && fee !== '') {
+        const converted = Math.round(Number(fee) * 100);
+        if (customFeeMinor === null || converted > customFeeMinor) {
+          customFeeMinor = converted;
+        }
+      }
+    }
+
+    if (customFeeMinor !== null) {
+      return customFeeMinor;
+    }
+
+    return STANDARD_SHIPPING_FEE_MINOR;
+  }, [activeCart, subtotalMinor]);
 
   // Base total after coupon & payment method discounts, before installment surcharge
   const baseTotalMinor = Math.max(0, subtotalMinor + shippingFeeMinor - paymentDiscountMinor - couponDiscountMinor);
@@ -256,7 +344,7 @@ export default function CheckoutPage() {
     // Store order in session for success screen
     const orderData = {
       orderId,
-      items: cart,
+      items: activeCart,
       subtotalMinor,
       shippingFeeMinor,
       paymentDiscountMinor,
@@ -277,7 +365,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           orderId,
           customer: formData,
-          items: cart,
+          items: activeCart,
           subtotalMinor,
           shippingFeeMinor,
           paymentDiscountMinor,
@@ -317,7 +405,7 @@ export default function CheckoutPage() {
             amount: totalAmountRs,
             currency: 'LKR',
             customer: formData,
-            items: cart.map((i) => i.name).join(', ') || 'DWstore Electronics Order',
+            items: activeCart.map((i) => i.name).join(', ') || 'DWstore Electronics Order',
           }),
         });
 
@@ -338,7 +426,7 @@ export default function CheckoutPage() {
           }
 
           document.body.appendChild(form);
-          clearCart();
+          cleanupCheckout();
           form.submit();
           return;
         } else {
@@ -355,7 +443,7 @@ export default function CheckoutPage() {
     }
 
     setTimeout(() => {
-      clearCart();
+      cleanupCheckout();
       router.push(`/order-success?orderId=${orderId}`);
     }, 800);
   };
@@ -372,7 +460,7 @@ export default function CheckoutPage() {
       body: JSON.stringify({
         orderId,
         customer: formData,
-        items: cart,
+        items: activeCart,
         subtotalMinor,
         shippingFeeMinor,
         installmentFeeMinor,
@@ -380,6 +468,7 @@ export default function CheckoutPage() {
         paymentMethod: 'whatsapp',
       }),
     }).catch(console.error);
+
     let message = `*📦 New Order - DWstore.lk*\n`;
     message += `*Order ID:* #${orderId}\n\n`;
     message += `*Customer Details:*\n`;
@@ -391,7 +480,7 @@ export default function CheckoutPage() {
     }
 
     message += `\n*Ordered Items:*\n`;
-    cart.forEach((item, index) => {
+    activeCart.forEach((item, index) => {
       const varText = item.variation
         ? ` (${Object.entries(item.variation.attributes).map(([k, v]) => `${k}: ${v}`).join(', ')})`
         : '';
@@ -407,7 +496,7 @@ export default function CheckoutPage() {
     }
     message += `*Delivery Fee:* ${shippingFeeMinor === 0 ? 'FREE' : `LKR ${formatPriceLKR(shippingFeeMinor)}`}\n`;
     if (installmentFeeMinor > 0) {
-      const planName = paymentMethod === 'koko' ? 'KOKO Installment Surcharge (+10%)' : 'Payzy Installment Surcharge (+13%)';
+      const planName = 'Bank Chargers + Convenience Fee';
       message += `*${planName}:* +LKR ${formatPriceLKR(installmentFeeMinor)}\n`;
       message += `*Installment Plan:* ${installmentMonths} x LKR ${formatPriceLKR(monthlyInstallmentMinor)} / month\n`;
     }
@@ -419,7 +508,7 @@ export default function CheckoutPage() {
     window.open(waUrl, '_blank');
   };
 
-  if (cart.length === 0) {
+  if (activeCart.length === 0) {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50">
         <Header />
@@ -718,6 +807,14 @@ export default function CheckoutPage() {
                         <p className="text-[11px] text-slate-500 mt-1">
                           {gatewaysConfig?.bank?.description || 'Transfer directly into our bank account and WhatsApp the deposit slip.'}
                         </p>
+                        {paymentMethod === 'bank' && (
+                          <div className="mt-3 p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2.5 animate-in fade-in duration-200 shadow-xs">
+                            <Sparkles className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                            <p className="leading-relaxed font-medium">
+                              Pay via Direct Bank Transfer and enjoy an extra discount on your order! Please WhatsApp your Order ID to <strong className="font-bold text-blue-700">0756693358</strong> &amp; get our bank details.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </label>
 
@@ -849,11 +946,11 @@ export default function CheckoutPage() {
                     Order Summary
                   </h3>
 
-                  {/* Product items mini list */}
-                  <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                    {cart.map((item) => (
-                      <div key={item.id} className="flex gap-3 items-center text-xs">
-                        <div className="w-12 h-12 bg-slate-50 rounded-lg p-1 border border-slate-100 flex-shrink-0 flex items-center justify-center">
+                  {/* Product items mini list with interactive Quantity +/- and Delete */}
+                  <div className="space-y-3.5 max-h-80 overflow-y-auto pr-1 divide-y divide-slate-100">
+                    {activeCart.map((item) => (
+                      <div key={item.id} className="pt-2 first:pt-0 flex gap-3 items-center text-xs group">
+                        <div className="w-12 h-12 bg-slate-50 rounded-xl p-1 border border-slate-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
                           <img
                             src={item.image || '/placeholder-product.png'}
                             alt={item.name}
@@ -861,14 +958,57 @@ export default function CheckoutPage() {
                           />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-slate-800 truncate">{item.name}</h4>
-                          <div className="text-[10px] text-slate-400">
-                            Qty: {item.quantity} x LKR {formatPriceLKR(item.priceMinor)}
+                          <h4 className="font-bold text-slate-800 truncate leading-tight" title={item.name}>{item.name}</h4>
+                          {item.variation && (
+                            <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                              {Object.entries(item.variation.attributes || {}).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-1.5">
+                            {/* Quantity buttons */}
+                            <div className="flex items-center border border-slate-200 rounded-lg bg-slate-50 overflow-hidden shadow-xs">
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                                className="px-2 py-0.5 text-slate-600 hover:bg-slate-200 font-bold text-xs transition cursor-pointer"
+                                aria-label="Decrease quantity"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </button>
+                              <span className="px-2 py-0.5 text-[11px] font-bold text-slate-800 min-w-[20px] text-center">
+                                {item.quantity}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                                className="px-2 py-0.5 text-slate-600 hover:bg-slate-200 font-bold text-xs transition cursor-pointer"
+                                aria-label="Increase quantity"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
+
+                            {/* Delete button */}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItem(item.id)}
+                              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition cursor-pointer"
+                              title="Remove item"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
-                        <span className="font-bold text-slate-900 flex-shrink-0">
-                          LKR {formatPriceLKR(item.priceMinor * item.quantity)}
-                        </span>
+                        <div className="text-right flex-shrink-0">
+                          <span className="font-bold text-slate-900 block">
+                            LKR {formatPriceLKR(item.priceMinor * item.quantity)}
+                          </span>
+                          {item.quantity > 1 && (
+                            <span className="text-[10px] text-slate-400">
+                              LKR {formatPriceLKR(item.priceMinor)} ea
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -959,7 +1099,7 @@ export default function CheckoutPage() {
                     {paymentMethod === 'koko' && (
                       <div className="space-y-2 pt-2 border-t border-purple-100">
                         <div className="flex justify-between text-purple-800 bg-purple-50 px-2.5 py-1.5 rounded-lg border border-purple-200 items-center font-bold">
-                          <span>KOKO Installment Surcharge (+10%)</span>
+                          <span>Bank Chargers + Convenience Fee</span>
                           <span>+LKR {formatPriceLKR(installmentFeeMinor)}</span>
                         </div>
                         <div className="p-3 bg-purple-50/70 rounded-xl border border-purple-200 space-y-1.5 text-xs text-purple-950">
@@ -979,7 +1119,7 @@ export default function CheckoutPage() {
                     {paymentMethod === 'payzy' && (
                       <div className="space-y-2 pt-2 border-t border-teal-100">
                         <div className="flex justify-between text-teal-800 bg-teal-50 px-2.5 py-1.5 rounded-lg border border-teal-200 items-center font-bold">
-                          <span>Payzy Installment Surcharge (+13%)</span>
+                          <span>Bank Chargers + Convenience Fee</span>
                           <span>+LKR {formatPriceLKR(installmentFeeMinor)}</span>
                         </div>
                         <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-200 space-y-1.5 text-xs text-teal-950">
@@ -1049,5 +1189,19 @@ export default function CheckoutPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-sm text-slate-500">
+          Loading checkout...
+        </div>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
   );
 }
