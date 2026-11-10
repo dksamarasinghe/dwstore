@@ -112,7 +112,7 @@ const DEFAULT_CONFIG: PaymentGatewaysConfig = {
   bank: {
     enabled: true,
     title: 'Direct Bank Transfer / Deposit',
-    description: 'Transfer directly into our Commercial Bank or Sampath Bank account and WhatsApp the slip.',
+    description: 'Transfer directly into our bank account and WhatsApp the slip.',
     accounts: [
       {
         id: '1',

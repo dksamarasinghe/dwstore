@@ -24,13 +24,15 @@ import {
   Edit3,
   RotateCw,
   RotateCcw,
+  Plus,
 } from 'lucide-react';
-import { OrderItem } from '../../types';
+import { OrderItem, ProductItem, CustomerItem } from '../../types';
 import { WaybillSlipModal } from '../orders/WaybillSlipModal';
 import { EditOrderModal } from '../orders/EditOrderModal';
 import { DispatchOrderModal } from '../orders/DispatchOrderModal';
 import { ReturnClaimModal } from '../orders/ReturnClaimModal';
 import { CSVImportModal } from '../common/CSVImportModal';
+import { CreateOrderModal } from '../orders/CreateOrderModal';
 import { downloadCSV } from '../../utils/csv';
 
 interface OrdersViewProps {
@@ -38,7 +40,10 @@ interface OrdersViewProps {
   onUpdateStatus: (orderId: string, newStatus: string) => Promise<void>;
   onUpdateOrder: (updatedOrder: OrderItem) => Promise<void>;
   onDispatchOrder: (orderId: string, carrier: string, trackingNumber: string, dispatchedDate: string) => Promise<void>;
+  onCreateOrder?: (newOrder: OrderItem) => Promise<void> | void;
   onImportOrders?: (importedOrders: OrderItem[]) => void;
+  products?: ProductItem[];
+  customers?: CustomerItem[];
   selectedOrder: OrderItem | null;
   setSelectedOrder: (order: OrderItem | null) => void;
   showNotification: (msg: string) => void;
@@ -51,7 +56,10 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   onUpdateStatus,
   onUpdateOrder,
   onDispatchOrder,
+  onCreateOrder,
   onImportOrders,
+  products = [],
+  customers = [],
   selectedOrder,
   setSelectedOrder,
   showNotification,
@@ -68,6 +76,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   const [dispatchingOrder, setDispatchingOrder] = useState<OrderItem | null>(null);
   const [claimingReturnOrder, setClaimingReturnOrder] = useState<OrderItem | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
 
@@ -239,6 +248,14 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
           <p>Full order database with customer names, delivery addresses, phones & direct WhatsApp fulfillment.</p>
         </div>
         <div className="d-flex align-items-center gap-2">
+          <button
+            className="btn btn-primary d-flex align-items-center gap-1.5 shadow-sm"
+            onClick={() => setIsCreateModalOpen(true)}
+            type="button"
+            style={{ fontSize: '13px', borderRadius: '10px', height: '36px', fontWeight: 600 }}
+          >
+            <Plus size={16} /> Create Order
+          </button>
           {onSyncCourier && (
             <button
               className="btn btn-outline-primary d-flex align-items-center gap-1.5"
@@ -941,6 +958,17 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         ]}
         onImport={handleImportCSVData}
       />
+
+      {/* Manual / Custom Order Creation Modal */}
+      {isCreateModalOpen && (
+        <CreateOrderModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onCreateOrder={onCreateOrder || (async () => {})}
+          products={products}
+          customers={customers}
+        />
+      )}
     </div>
   );
 };

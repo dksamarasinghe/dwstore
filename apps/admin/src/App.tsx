@@ -540,6 +540,69 @@ export default function App() {
     }
   };
 
+  // Create custom manual order
+  const handleCreateOrder = async (newOrder: OrderItem) => {
+    setOrders((prev) => [newOrder, ...prev]);
+
+    if (newOrder.carrier && newOrder.trackingNumber) {
+      const newShipment: ShipmentItem = {
+        id: `shp-${newOrder.orderId}`,
+        orderId: newOrder.orderId,
+        customerName: newOrder.customerName,
+        carrier: newOrder.carrier,
+        trackingNumber: newOrder.trackingNumber,
+        dispatchedDate: newOrder.dispatchedDate || new Date().toISOString().split('T')[0],
+        status: newOrder.status === 'delivered' ? 'Delivered' : 'In Transit',
+        destinationCity: newOrder.city,
+      };
+      setShipments((prev) => [newShipment, ...prev]);
+    }
+
+    if (newOrder.customerPhone || newOrder.customerName) {
+      setCustomers((prev) => {
+        const existingIdx = prev.findIndex(
+          (c) =>
+            (c.phone && newOrder.customerPhone && c.phone === newOrder.customerPhone) ||
+            (c.email && newOrder.customerEmail && c.email.toLowerCase() === newOrder.customerEmail.toLowerCase())
+        );
+        if (existingIdx >= 0) {
+          const updated = [...prev];
+          const curr = updated[existingIdx];
+          updated[existingIdx] = {
+            ...curr,
+            totalOrders: (curr.totalOrders || 0) + 1,
+            totalSpent: (curr.totalSpent || 0) + (newOrder.total || 0),
+            lastOrderDate: newOrder.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+          };
+          return updated;
+        } else {
+          const newCust: CustomerItem = {
+            id: `cust-${Date.now().toString().slice(-5)}`,
+            name: newOrder.customerName,
+            phone: newOrder.customerPhone,
+            email: newOrder.customerEmail || '',
+            city: newOrder.city,
+            totalOrders: 1,
+            totalSpent: newOrder.total || 0,
+            lastOrderDate: newOrder.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+            status: 'New',
+          };
+          return [newCust, ...prev];
+        }
+      });
+    }
+
+    try {
+      await fetch(`${getStorefrontUrl()}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOrder),
+      });
+    } catch (e) {
+      console.warn('Sync custom order error:', e);
+    }
+  };
+
   // Add review POST API
   const handleAddReview = async (reviewPayload: any) => {
     try {
@@ -856,7 +919,10 @@ export default function App() {
               onUpdateStatus={handleUpdateOrderStatus}
               onUpdateOrder={handleUpdateFullOrder}
               onDispatchOrder={handleDispatchOrder}
+              onCreateOrder={handleCreateOrder}
               onImportOrders={handleImportOrders}
+              products={products}
+              customers={customers}
               selectedOrder={selectedOrder}
               setSelectedOrder={setSelectedOrder}
               showNotification={showNotification}
