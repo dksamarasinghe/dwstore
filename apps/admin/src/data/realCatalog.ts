@@ -7359,7 +7359,8 @@ export const realProducts: ProductItem[] = [
 ];
 
 export const realCategories: CategoryItem[] = [
-{
+
+  {
     "id": "electronics-accessories",
     "name": "Electronics Accessories",
     "slug": "electronics-accessories",
@@ -7368,7 +7369,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": true,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/electronics-accessories-5-5.jpg",
+    "imageUrl": "/media/categories/electronics-accessories-5-5.jpg"
   },
   {
     "id": "smartwatches",
@@ -7379,7 +7382,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": false,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/smartwatches-T800-Ultra-Smart-Watch-1.jpg",
+    "imageUrl": "/media/categories/smartwatches-T800-Ultra-Smart-Watch-1.jpg"
   },
   {
     "id": "bluetooth-handfree",
@@ -7390,7 +7395,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": false,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/bluetooth-handfree-m-8.jpg",
+    "imageUrl": "/media/categories/bluetooth-handfree-m-8.jpg"
   },
   {
     "id": "headphone-and-headset",
@@ -7401,7 +7408,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": false,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/headphone-and-headset-m-8.jpg",
+    "imageUrl": "/media/categories/headphone-and-headset-m-8.jpg"
   },
   {
     "id": "power-banks",
@@ -7412,7 +7421,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": false,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/power-banks-1.jpg",
+    "imageUrl": "/media/categories/power-banks-1.jpg"
   },
   {
     "id": "phone-accessories",
@@ -7423,7 +7434,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": true,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/phone-accessories-m-6.jpg",
+    "imageUrl": "/media/categories/phone-accessories-m-6.jpg"
   },
   {
     "id": "temperd-glass",
@@ -7434,7 +7447,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": false,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/temperd-glass-14pro_max_2_.jpg",
+    "imageUrl": "/media/categories/temperd-glass-14pro_max_2_.jpg"
   },
   {
     "id": "photography-and-studio-lighting",
@@ -7445,7 +7460,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": true,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/photography-and-studio-lighting-Wide-Angle-Mobile-Phone-Camera-Lens-Fish-Eye-Macro-Lens-for-Iphone-7-8-12.jpg",
+    "imageUrl": "/media/categories/photography-and-studio-lighting-Wide-Angle-Mobile-Phone-Camera-Lens-Fish-Eye-Macro-Lens-for-Iphone-7-8-12.jpg"
   },
   {
     "id": "backcovers",
@@ -7456,7 +7473,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": false,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/backcovers-M-9.jpg",
+    "imageUrl": "/media/categories/backcovers-M-9.jpg"
   },
   {
     "id": "cable-and-adaptors",
@@ -7467,7 +7486,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": false,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/cable-and-adaptors-3-2.jpg",
+    "imageUrl": "/media/categories/cable-and-adaptors-3-2.jpg"
   },
   {
     "id": "personal-care",
@@ -7478,7 +7499,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": true,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/personal-care-JYYewatch6.jpg",
+    "imageUrl": "/media/categories/personal-care-JYYewatch6.jpg"
   },
   {
     "id": "bluetooth-speakers",
@@ -7489,7 +7512,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": false,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/bluetooth-speakers-M-10.jpg",
+    "imageUrl": "/media/categories/bluetooth-speakers-M-10.jpg"
   },
   {
     "id": "computer-accessories",
@@ -7500,7 +7525,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": true,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/computer-accessories-1.1-1.jpg",
+    "imageUrl": "/media/categories/computer-accessories-1.1-1.jpg"
   },
   {
     "id": "network-tools-and-accessories",
@@ -7511,7 +7538,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": true,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/network-tools-and-accessories-1.1-1.jpg",
+    "imageUrl": "/media/categories/network-tools-and-accessories-1.1-1.jpg"
   },
   {
     "id": "phone-holders",
@@ -7522,7 +7551,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": false,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/phone-holders-Metal-Strong-Lazy-Holder-Long-Arm-Flexible-Bed-Lazy-Bracket-Desk-Phone-6.jpg",
+    "imageUrl": "/media/categories/phone-holders-Metal-Strong-Lazy-Holder-Long-Arm-Flexible-Bed-Lazy-Bracket-Desk-Phone-6.jpg"
   },
   {
     "id": "cleaning-products",
@@ -7533,7 +7564,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": true,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/cleaning-products-clean-agent.jpg",
+    "imageUrl": "/media/categories/cleaning-products-clean-agent.jpg"
   },
   {
     "id": "wall-chargers",
@@ -7544,7 +7577,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": false,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/wall-chargers-m-6.jpg",
+    "imageUrl": "/media/categories/wall-chargers-m-6.jpg"
   },
   {
     "id": "car-accessories",
@@ -7555,7 +7590,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": true,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/car-accessories-Untitled-1-Recovered.jpg",
+    "imageUrl": "/media/categories/car-accessories-Untitled-1-Recovered.jpg"
   },
   {
     "id": "fashion",
@@ -7566,7 +7603,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": true,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/fashion-TmIzMen-s-Multifunction-Anti-theft-USB-Shoulder-Bag-Man-Crossbody-Cross-Body-Travel-Sling-Chest-Bags.jpg",
+    "imageUrl": "/media/categories/fashion-TmIzMen-s-Multifunction-Anti-theft-USB-Shoulder-Bag-Man-Crossbody-Cross-Body-Travel-Sling-Chest-Bags.jpg"
   },
   {
     "id": "optical-mouse",
@@ -7577,7 +7616,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": false,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/optical-mouse-Meetion-r547.jpg",
+    "imageUrl": "/media/categories/optical-mouse-Meetion-r547.jpg"
   },
   {
     "id": "keybord",
@@ -7588,7 +7629,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": false,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/keybord-Main-2.jpg",
+    "imageUrl": "/media/categories/keybord-Main-2.jpg"
   },
   {
     "id": "security-camera-and-accessories",
@@ -7599,7 +7642,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": true,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/security-camera-and-accessories-61pF93XmDxL._SL1500.jpg",
+    "imageUrl": "/media/categories/security-camera-and-accessories-61pF93XmDxL._SL1500.jpg"
   },
   {
     "id": "smart-devices",
@@ -7610,7 +7655,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": true,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/smart-devices-M.jpg",
+    "imageUrl": "/media/categories/smart-devices-M.jpg"
   },
   {
     "id": "storage",
@@ -7621,7 +7668,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": true,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/storage-download-2025-11-16T140459.365.webp",
+    "imageUrl": "/media/categories/storage-download-2025-11-16T140459.365.webp"
   },
   {
     "id": "mobile-phones",
@@ -7632,6 +7681,9 @@ export const realCategories: CategoryItem[] = [
     "icon": "layers",
     "status": "Active",
     "featured": true,
-    "description": ""
+    "description": "",
+    "image": "/media/categories/mobile-phones-8d117c015982b0e25f5626c5f220fe38-scaled.webp",
+    "imageUrl": "/media/categories/mobile-phones-8d117c015982b0e25f5626c5f220fe38-scaled.webp"
   }
+
 ];

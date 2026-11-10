@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { getStorefrontUrl } from '../../config';
 import {
   Layers,
   Plus,
@@ -10,7 +11,9 @@ import {
   CornerDownRight,
   X,
   Check,
-  ChevronRight
+  ChevronRight,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { CategoryItem } from '../../types';
 
@@ -19,6 +22,7 @@ interface CategoriesViewProps {
   onAddCategory: (cat: CategoryItem) => void;
   onUpdateCategory: (cat: CategoryItem) => void;
   onDeleteCategory: (id: string) => void;
+  showNotification?: (msg: string) => void;
 }
 
 interface TreeCategory {
@@ -33,6 +37,7 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
   onAddCategory,
   onUpdateCategory,
   onDeleteCategory,
+  showNotification,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,6 +49,42 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
   const [formParentId, setFormParentId] = useState<string>('');
   const [formDescription, setFormDescription] = useState('');
   const [formStatus, setFormStatus] = useState<'Active' | 'Hidden'>('Active');
+  const [formIcon, setFormIcon] = useState<string>('');
+  const [isUploadingIcon, setIsUploadingIcon] = useState<boolean>(false);
+
+  // Handle uploading category icon to dedicated VPS folder (/media/categories/)
+  const handleUploadCategoryIcon = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingIcon(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder', 'categories');
+      const res = await fetch(`${getStorefrontUrl()}/api/upload`, {
+        method: 'POST',
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        setFormIcon(data.url);
+        if (showNotification) {
+          showNotification('Category icon uploaded to VPS (/media/categories/) successfully!');
+        }
+      } else {
+        if (showNotification) {
+          showNotification(data.error || 'Failed to upload icon');
+        }
+      }
+    } catch (err: any) {
+      if (showNotification) {
+        showNotification('Error uploading category icon: ' + err.message);
+      }
+    } finally {
+      setIsUploadingIcon(false);
+      e.target.value = '';
+    }
+  };
 
   // Build hierarchical tree
   const treeList = useMemo(() => {
@@ -138,6 +179,8 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
     setFormParentId(parentId);
     setFormDescription('');
     setFormStatus('Active');
+    setFormIcon('');
+    setIsUploadingIcon(false);
     setIsModalOpen(true);
   };
 
@@ -149,6 +192,9 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
     setFormParentId(cat.parentId || '');
     setFormDescription(cat.description || '');
     setFormStatus(cat.status || 'Active');
+    const existingImg = cat.imageUrl || cat.image || (cat.icon && (cat.icon.startsWith('/') || cat.icon.startsWith('http')) ? cat.icon : '');
+    setFormIcon(existingImg);
+    setIsUploadingIcon(false);
     setIsModalOpen(true);
   };
 
@@ -170,6 +216,8 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
     if (!formName.trim()) return;
 
     const slug = (formSlug.trim() || formName.trim().toLowerCase().replace(/\s+/g, '-'));
+    const image = formIcon.trim() || undefined;
+    const imageUrl = formIcon.trim() || undefined;
 
     if (editingCategory) {
       // Update
@@ -179,6 +227,9 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
         slug,
         parentId: formParentId.trim() ? formParentId.trim() : null,
         description: formDescription.trim(),
+        image,
+        imageUrl,
+        icon: image || editingCategory.icon || 'layers',
         status: formStatus,
       };
       onUpdateCategory(updated);
@@ -191,7 +242,9 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
         parentId: formParentId.trim() ? formParentId.trim() : null,
         description: formDescription.trim(),
         productCount: 0,
-        icon: 'layers',
+        image,
+        imageUrl,
+        icon: image || 'layers',
         status: formStatus,
         featured: !formParentId,
       };
@@ -311,22 +364,41 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
                           </span>
                         )}
 
-                        <span
-                          className="thumb"
-                          style={{
-                            width: depth === 0 ? '36px' : '30px',
-                            height: depth === 0 ? '36px' : '30px',
-                            background: depth === 0 ? '#1e293b' : '#0f172a',
-                            color: depth === 0 ? '#38bdf8' : '#94a3b8',
-                            borderRadius: '8px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                          }}
-                        >
-                          <Layers size={depth === 0 ? 18 : 14} />
-                        </span>
+                        {(() => {
+                          const iconSrc = item.imageUrl || item.image || (item.icon && (item.icon.startsWith('/') || item.icon.startsWith('http')) ? item.icon : '');
+                          const resolvedSrc = iconSrc ? (iconSrc.startsWith('http') ? iconSrc : `${getStorefrontUrl()}${iconSrc}`) : '';
+
+                          return (
+                            <span
+                              className="thumb overflow-hidden"
+                              style={{
+                                width: depth === 0 ? '38px' : '32px',
+                                height: depth === 0 ? '38px' : '32px',
+                                background: '#ffffff',
+                                border: '1px solid var(--border, rgba(255,255,255,0.12))',
+                                borderRadius: '8px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                                padding: '2px',
+                              }}
+                            >
+                              {resolvedSrc ? (
+                                <img
+                                  src={resolvedSrc}
+                                  alt={item.name}
+                                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                  onError={(e) => {
+                                    (e.target as HTMLElement).style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <Layers size={depth === 0 ? 18 : 14} style={{ color: '#38bdf8' }} />
+                              )}
+                            </span>
+                          );
+                        })()}
 
                         <div>
                           <span
@@ -571,6 +643,110 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
                 <small className="text-muted d-block mt-1" style={{ fontSize: '11px' }}>
                   Assign a parent category to create a subcategory (e.g. Electronics &gt; SmartWatches).
                 </small>
+              </div>
+
+              {/* Category Icon / Image Upload with Size Recommendation */}
+              <div
+                className="p-3 rounded-3"
+                style={{
+                  background: 'var(--hover, #f8fafc)',
+                  border: '1px solid var(--border, #e2e8f0)',
+                }}
+              >
+                <div className="d-flex align-items-center justify-content-between mb-2">
+                  <label className="form-label fw-bold mb-0" style={{ fontSize: '13px' }}>
+                    Category Icon / Image
+                  </label>
+                  <span
+                    className="badge"
+                    style={{
+                      background: 'rgba(37, 99, 235, 0.1)',
+                      color: '#2563eb',
+                      border: '1px solid rgba(37, 99, 235, 0.2)',
+                      fontSize: '10px',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    Recommended: 200 × 200 px (1:1 Square)
+                  </span>
+                </div>
+
+                <div className="d-flex align-items-center gap-3">
+                  {/* Icon Thumbnail Preview Box */}
+                  <div
+                    style={{
+                      width: '68px',
+                      height: '68px',
+                      borderRadius: '12px',
+                      border: '2px dashed #94a3b8',
+                      background: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                    }}
+                  >
+                    {formIcon ? (
+                      <img
+                        src={formIcon.startsWith('http') ? formIcon : `${getStorefrontUrl()}${formIcon}`}
+                        alt="Category Icon Preview"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }}
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <Upload size={22} className="text-muted opacity-50" />
+                    )}
+                  </div>
+
+                  <div className="flex-grow-1">
+                    <div className="d-flex gap-2 mb-1.5 flex-wrap">
+                      <label
+                        className="btn btn-sm btn-outline-primary fw-semibold d-inline-flex align-items-center gap-1.5 cursor-pointer mb-0"
+                        style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '8px' }}
+                      >
+                        <Upload size={14} />
+                        {isUploadingIcon ? 'Uploading to /media/categories/...' : formIcon ? 'Change Icon' : 'Upload Icon'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={handleUploadCategoryIcon}
+                          disabled={isUploadingIcon}
+                        />
+                      </label>
+                      {formIcon && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger"
+                          style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '8px' }}
+                          onClick={() => setFormIcon('')}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <small className="text-muted d-block" style={{ fontSize: '11px', lineHeight: 1.4 }}>
+                      Directly saved on VPS folder: <code>/media/categories/</code>. Format: PNG (transparent), WebP, SVG, or JPG.
+                    </small>
+                  </div>
+                </div>
+
+                {/* Direct Image URL input */}
+                <div className="mt-2.5 pt-2 border-top" style={{ borderColor: 'var(--border, #e2e8f0)' }}>
+                  <input
+                    type="text"
+                    className="form-control font-monospace"
+                    style={{ fontSize: '12px', padding: '6px 10px', borderRadius: '8px' }}
+                    placeholder="Or paste image URL (e.g. /media/categories/icon.jpg or https://...)"
+                    value={formIcon}
+                    onChange={(e) => setFormIcon(e.target.value)}
+                  />
+                </div>
               </div>
 
               {/* Description */}

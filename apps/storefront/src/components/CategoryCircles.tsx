@@ -136,7 +136,7 @@ export default function CategoryCircles({ initialConfig }: CategoryCirclesProps)
         >
           {displayCategories.map((cat: any) => {
             const Icon = CATEGORY_ICONS[cat.slug] || Smartphone;
-            const imgSrc = cat.imageUrl || null;
+            const imgSrc = cat.imageUrl || cat.image || (typeof cat.icon === 'string' && (cat.icon.startsWith('/') || cat.icon.startsWith('http')) ? cat.icon : null);
 
             return (
               <Link

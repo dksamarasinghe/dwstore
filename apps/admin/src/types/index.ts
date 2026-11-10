@@ -165,9 +165,12 @@ export interface CategoryItem {
   name: string;
   slug: string;
   parentId?: string | null;
+  parentSlug?: string | null;
   description?: string;
   productCount: number;
   icon?: string;
+  image?: string;
+  imageUrl?: string;
   status: 'Active' | 'Hidden';
   featured?: boolean;
 }

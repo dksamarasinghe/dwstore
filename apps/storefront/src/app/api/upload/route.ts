@@ -15,7 +15,7 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
 
-const ALLOWED_FOLDERS = ['products', 'brands', 'home-customizer', 'gallery', 'general'];
+const ALLOWED_FOLDERS = ['categories', 'category-icons', 'products', 'brands', 'home-customizer', 'gallery', 'general'];
 
 export async function GET(req: NextRequest) {
   try {

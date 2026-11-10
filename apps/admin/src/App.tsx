@@ -147,6 +147,16 @@ export default function App() {
         }
       })
       .catch((err) => console.warn('Failed to load coupons from API:', err));
+
+    // Sync categories with Storefront API
+    fetch(`${getStorefrontUrl()}/api/categories`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.success && Array.isArray(data.categories) && data.categories.length > 0) {
+          setCategories(data.categories);
+        }
+      })
+      .catch((err) => console.warn('Failed to load categories from API:', err));
   }, []);
   const [shipments, setShipments] = useState<ShipmentItem[]>(() => {
     try {
@@ -619,19 +629,44 @@ export default function App() {
   };
 
   // Category handlers
-  const handleAddCategory = (cat: CategoryItem) => {
+  const handleAddCategory = async (cat: CategoryItem) => {
     setCategories((prev) => [...prev, cat]);
     showNotification(`Category "${cat.name}" created!`);
+    try {
+      await fetch(`${getStorefrontUrl()}/api/categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cat),
+      });
+    } catch (e) {
+      console.warn('Failed to sync category create with API:', e);
+    }
   };
 
-  const handleUpdateCategory = (cat: CategoryItem) => {
+  const handleUpdateCategory = async (cat: CategoryItem) => {
     setCategories((prev) => prev.map((c) => (c.id === cat.id ? cat : c)));
     showNotification(`Category "${cat.name}" updated!`);
+    try {
+      await fetch(`${getStorefrontUrl()}/api/categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cat),
+      });
+    } catch (e) {
+      console.warn('Failed to sync category update with API:', e);
+    }
   };
 
-  const handleDeleteCategory = (id: string) => {
+  const handleDeleteCategory = async (id: string) => {
     setCategories((prev) => prev.filter((c) => c.id !== id));
     showNotification('Category removed.');
+    try {
+      await fetch(`${getStorefrontUrl()}/api/categories?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+    } catch (e) {
+      console.warn('Failed to sync category delete with API:', e);
+    }
   };
 
   // Brand handlers
@@ -870,6 +905,7 @@ export default function App() {
               onAddCategory={handleAddCategory}
               onUpdateCategory={handleUpdateCategory}
               onDeleteCategory={handleDeleteCategory}
+              showNotification={showNotification}
             />
           )}
 
