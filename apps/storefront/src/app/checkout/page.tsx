@@ -203,7 +203,23 @@ export default function CheckoutPage() {
     ? 0
     : STANDARD_SHIPPING_FEE_MINOR;
 
-  const totalMinor = Math.max(0, subtotalMinor + shippingFeeMinor - paymentDiscountMinor - couponDiscountMinor);
+  // Base total after coupon & payment method discounts, before installment surcharge
+  const baseTotalMinor = Math.max(0, subtotalMinor + shippingFeeMinor - paymentDiscountMinor - couponDiscountMinor);
+
+  // Installment surcharge for Koko (+10%) and Payzy (+13%)
+  const installmentFeeMinor = useMemo(() => {
+    if (paymentMethod === 'koko') {
+      return Math.round(baseTotalMinor * 0.10);
+    }
+    if (paymentMethod === 'payzy') {
+      return Math.round(baseTotalMinor * 0.13);
+    }
+    return 0;
+  }, [paymentMethod, baseTotalMinor]);
+
+  const finalTotalMinor = baseTotalMinor + installmentFeeMinor;
+  const installmentMonths = paymentMethod === 'koko' ? 3 : paymentMethod === 'payzy' ? 4 : 1;
+  const monthlyInstallmentMinor = installmentMonths > 1 ? Math.round(finalTotalMinor / installmentMonths) : 0;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -246,7 +262,8 @@ export default function CheckoutPage() {
       paymentDiscountMinor,
       couponDiscountMinor,
       couponCode: appliedCoupon?.code || '',
-      totalMinor,
+      installmentFeeMinor,
+      totalMinor: finalTotalMinor,
       shippingAddress: formData,
       paymentMethod,
       createdAt: new Date().toISOString(),
@@ -266,7 +283,8 @@ export default function CheckoutPage() {
           paymentDiscountMinor,
           couponDiscountMinor,
           couponCode: appliedCoupon?.code || '',
-          totalMinor,
+          installmentFeeMinor,
+          totalMinor: finalTotalMinor,
           paymentMethod,
         }),
       });
@@ -290,7 +308,7 @@ export default function CheckoutPage() {
           : '/api/payments/payzy/initiate';
 
       try {
-        const totalAmountRs = (totalMinor / 100).toFixed(2);
+        const totalAmountRs = (finalTotalMinor / 100).toFixed(2);
         const res = await fetch(gatewayEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -357,7 +375,8 @@ export default function CheckoutPage() {
         items: cart,
         subtotalMinor,
         shippingFeeMinor,
-        totalMinor,
+        installmentFeeMinor,
+        totalMinor: finalTotalMinor,
         paymentMethod: 'whatsapp',
       }),
     }).catch(console.error);
@@ -387,8 +406,13 @@ export default function CheckoutPage() {
       message += `*Payment Method Discount:* -LKR ${formatPriceLKR(paymentDiscountMinor)}\n`;
     }
     message += `*Delivery Fee:* ${shippingFeeMinor === 0 ? 'FREE' : `LKR ${formatPriceLKR(shippingFeeMinor)}`}\n`;
-    message += `*Total Amount:* LKR ${formatPriceLKR(totalMinor)}\n`;
-    message += `*Payment Method:* ${paymentMethod.toUpperCase()}\n\n`;
+    if (installmentFeeMinor > 0) {
+      const planName = paymentMethod === 'koko' ? 'KOKO Installment Surcharge (+10%)' : 'Payzy Installment Surcharge (+13%)';
+      message += `*${planName}:* +LKR ${formatPriceLKR(installmentFeeMinor)}\n`;
+      message += `*Installment Plan:* ${installmentMonths} x LKR ${formatPriceLKR(monthlyInstallmentMinor)} / month\n`;
+    }
+    message += `*Total Amount:* LKR ${formatPriceLKR(finalTotalMinor)}\n`;
+    message += `*Payment Method:* ${paymentMethod.toUpperCase()}${installmentMonths > 1 ? ` (${installmentMonths} Installments)` : ''}\n\n`;
     message += `Please confirm my order and send tracking details!`;
 
     const waUrl = `https://wa.me/94756693358?text=${encodeURIComponent(message)}`;
@@ -694,40 +718,6 @@ export default function CheckoutPage() {
                         <p className="text-[11px] text-slate-500 mt-1">
                           {gatewaysConfig?.bank?.description || 'Transfer directly into our bank account and WhatsApp the deposit slip.'}
                         </p>
-
-                        {paymentMethod === 'bank' && (
-                          <div className="mt-3 p-3.5 bg-white rounded-xl border border-slate-200 text-[11px] space-y-2.5 text-slate-700 shadow-xs">
-                            {(gatewaysConfig?.bank?.accounts || [
-                              {
-                                bankName: 'Commercial Bank of Ceylon',
-                                accountName: 'DWstore (Pvt) Ltd',
-                                accountNumber: '8010023456',
-                                branch: 'Colombo',
-                              },
-                            ]).map((acc: any, i: number) => (
-                              <div key={acc.id || i} className="pb-2.5 border-b border-slate-100 last:border-b-0 last:pb-0">
-                                <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5 mb-1">
-                                  <Building2 className="w-3.5 h-3.5 text-blue-600" />
-                                  {acc.bankName}
-                                </div>
-                                <div className="text-slate-600">
-                                  Account Name: <span className="font-semibold text-slate-800">{acc.accountName}</span>
-                                </div>
-                                <div className="text-slate-600 flex items-center gap-1 flex-wrap mt-0.5">
-                                  <span>Account Number:</span>
-                                  <span className="font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 select-all">
-                                    {acc.accountNumber}
-                                  </span>
-                                  {acc.branch && <span className="text-slate-500">| Branch: {acc.branch}</span>}
-                                </div>
-                              </div>
-                            ))}
-                            <div className="text-slate-500 pt-1 text-[10px] border-t border-slate-100 italic">
-                              {gatewaysConfig?.bank?.instructions ||
-                                '* Please send the deposit receipt / screenshot to our WhatsApp after placing the order.'}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </label>
 
@@ -750,7 +740,7 @@ export default function CheckoutPage() {
                       <div className="flex-1">
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <span className="text-xs font-black text-slate-900 flex items-center gap-2">
-                            <span className="w-3.5 h-3.5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[9px] font-bold">K</span>
+                            <img src="/koko.png" alt="Koko" className="h-5 w-auto object-contain" />
                             KOKO - Pay in 3 Installments (BNPL)
                           </span>
                           <div className="flex items-center gap-1.5">
@@ -760,7 +750,7 @@ export default function CheckoutPage() {
                               </span>
                             )}
                             <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                              3 X LKR {formatPriceLKR(Math.round((totalMinor * 1.10) / 3))}
+                              3 X LKR {formatPriceLKR(Math.round((baseTotalMinor * 1.10) / 3))}
                             </span>
                           </div>
                         </div>
@@ -814,7 +804,7 @@ export default function CheckoutPage() {
                     <label
                       className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition ${
                         paymentMethod === 'payzy'
-                          ? 'border-pink-600 bg-pink-50/40 ring-1 ring-pink-600'
+                          ? 'border-teal-600 bg-teal-50/40 ring-1 ring-teal-600'
                           : 'border-slate-200 hover:border-slate-300 bg-white'
                       }`}
                     >
@@ -824,12 +814,12 @@ export default function CheckoutPage() {
                         value="payzy"
                         checked={paymentMethod === 'payzy'}
                         onChange={() => setPaymentMethod('payzy')}
-                        className="mt-0.5 text-pink-600 focus:ring-pink-500"
+                        className="mt-0.5 text-teal-600 focus:ring-teal-500"
                       />
                       <div className="flex-1">
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <span className="text-xs font-black text-slate-900 flex items-center gap-2">
-                            <span className="w-3.5 h-3.5 rounded-full bg-pink-600 text-white flex items-center justify-center text-[9px] font-bold">P</span>
+                            <img src="/payzy.png" alt="Payzy" className="h-5 w-auto object-contain" />
                             Payzy - Flexible Installments (BNPL)
                           </span>
                           <div className="flex items-center gap-1.5">
@@ -838,13 +828,13 @@ export default function CheckoutPage() {
                                 <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('payzy')}
                               </span>
                             )}
-                            <span className="text-[10px] font-bold bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full">
-                              Up to 4 Months
+                            <span className="text-[10px] font-bold bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full">
+                              4 X LKR {formatPriceLKR(Math.round((baseTotalMinor * 1.13) / 4))}
                             </span>
                           </div>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-1">
-                          Split your purchase into interest-free installments using your Debit or Credit card.
+                          Split your purchase into interest-free installments using your Debit or Credit card (+13% installment rate).
                         </p>
                       </div>
                     </label>
@@ -965,10 +955,50 @@ export default function CheckoutPage() {
                       )}
                     </div>
 
+                    {/* KOKO Installment Breakdown in Order Summary */}
+                    {paymentMethod === 'koko' && (
+                      <div className="space-y-2 pt-2 border-t border-purple-100">
+                        <div className="flex justify-between text-purple-800 bg-purple-50 px-2.5 py-1.5 rounded-lg border border-purple-200 items-center font-bold">
+                          <span>KOKO Installment Surcharge (+10%)</span>
+                          <span>+LKR {formatPriceLKR(installmentFeeMinor)}</span>
+                        </div>
+                        <div className="p-3 bg-purple-50/70 rounded-xl border border-purple-200 space-y-1.5 text-xs text-purple-950">
+                          <div className="flex justify-between font-bold">
+                            <span>Monthly Installment:</span>
+                            <span className="text-purple-700">3 × LKR {formatPriceLKR(monthlyInstallmentMinor)} / month</span>
+                          </div>
+                          <div className="flex justify-between text-[11px] text-purple-600">
+                            <span>Total Payable (over 3 months):</span>
+                            <span className="font-bold">LKR {formatPriceLKR(finalTotalMinor)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Payzy Installment Breakdown in Order Summary */}
+                    {paymentMethod === 'payzy' && (
+                      <div className="space-y-2 pt-2 border-t border-teal-100">
+                        <div className="flex justify-between text-teal-800 bg-teal-50 px-2.5 py-1.5 rounded-lg border border-teal-200 items-center font-bold">
+                          <span>Payzy Installment Surcharge (+13%)</span>
+                          <span>+LKR {formatPriceLKR(installmentFeeMinor)}</span>
+                        </div>
+                        <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-200 space-y-1.5 text-xs text-teal-950">
+                          <div className="flex justify-between font-bold">
+                            <span>Monthly Installment:</span>
+                            <span className="text-teal-700">4 × LKR {formatPriceLKR(monthlyInstallmentMinor)} / month</span>
+                          </div>
+                          <div className="flex justify-between text-[11px] text-teal-600">
+                            <span>Total Payable (over 4 months):</span>
+                            <span className="font-bold">LKR {formatPriceLKR(finalTotalMinor)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="pt-3 border-t border-slate-200 flex justify-between items-baseline">
                       <span className="text-sm font-black text-slate-900">Total</span>
                       <span className="text-xl font-black text-blue-600">
-                        LKR {formatPriceLKR(totalMinor)}
+                        LKR {formatPriceLKR(finalTotalMinor)}
                       </span>
                     </div>
                   </div>

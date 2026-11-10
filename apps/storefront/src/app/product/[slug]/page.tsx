@@ -398,9 +398,11 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             <div>
               {/* Brand & Stock Status */}
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                  {product.brand || 'DWSTORE ORIGINAL'}
-                </span>
+                {product.brand && !['dwstore', 'dwstore original', 'unbranded', 'generic', 'no brand', 'none', ''].includes(product.brand.trim().toLowerCase()) ? (
+                  <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                    {product.brand}
+                  </span>
+                ) : <span />}
                 {isOutOfStock ? (
                   <span className="text-xs font-bold text-rose-600 flex items-center gap-1.5 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200">
                     <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>

@@ -137,11 +137,13 @@ export default function PaymentInstallmentBoxes({
           {/* KOKO Box (Pay in 3) */}
           <div className="bg-purple-50/50 border border-purple-200 rounded-xl p-3 sm:p-3.5 flex items-center justify-between hover:border-purple-400 transition shadow-2xs">
             <div className="flex items-center gap-3">
-              {/* KOKO Badge */}
-              <div className="w-12 h-10 flex items-center justify-center flex-shrink-0 bg-white rounded-lg border border-purple-100 shadow-2xs px-1">
-                <span className="text-sm font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-500 to-indigo-600 italic">
-                  KOKO
-                </span>
+              {/* KOKO Badge with real logo */}
+              <div className="w-16 h-10 flex items-center justify-center flex-shrink-0 bg-white rounded-lg border border-purple-100 shadow-2xs p-1">
+                <img
+                  src="/koko.png"
+                  alt="Koko"
+                  className="max-h-full max-w-full object-contain"
+                />
               </div>
               <div>
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
@@ -160,11 +162,13 @@ export default function PaymentInstallmentBoxes({
           {/* PAYZY Box (Pay in 4) */}
           <div className="bg-teal-50/50 border border-teal-200 rounded-xl p-3 sm:p-3.5 flex items-center justify-between hover:border-teal-400 transition shadow-2xs">
             <div className="flex items-center gap-3">
-              {/* PAYZY Badge */}
-              <div className="w-12 h-10 flex items-center justify-center flex-shrink-0 bg-white rounded-lg border border-teal-100 shadow-2xs px-1">
-                <span className="text-sm font-black tracking-tight text-cyan-600">
-                  Pay<span className="text-blue-600">zy</span>
-                </span>
+              {/* PAYZY Badge with real logo */}
+              <div className="w-16 h-10 flex items-center justify-center flex-shrink-0 bg-white rounded-lg border border-teal-100 shadow-2xs p-1">
+                <img
+                  src="/payzy.png"
+                  alt="Payzy"
+                  className="max-h-full max-w-full object-contain"
+                />
               </div>
               <div>
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
