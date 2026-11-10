@@ -52,7 +52,61 @@ function ShopContent() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [cartNotice, setCartNotice] = useState<string | null>(null);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const itemsPerPage = 20;
+
+  // Lock body scroll when mobile filter drawer is open
+  useEffect(() => {
+    if (mobileFilterOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileFilterOpen]);
+
+  // Listen for bottom navigation bar "Filter" tap
+  useEffect(() => {
+    const handleOpenFilter = () => setMobileFilterOpen(true);
+    window.addEventListener('dwstore_open_filter_drawer', handleOpenFilter);
+    return () => window.removeEventListener('dwstore_open_filter_drawer', handleOpenFilter);
+  }, []);
+
+  // Left-edge swipe to open filter drawer on mobile
+  useEffect(() => {
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.changedTouches.length === 1) {
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const diffX = touchEndX - touchStartX;
+        const diffY = touchEndY - touchStartY;
+
+        // If swiping right starting from left edge (< 40px)
+        if (Math.abs(diffX) > Math.abs(diffY) && diffX > 50 && touchStartX < 40) {
+          setMobileFilterOpen(true);
+        }
+      }
+    };
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, []);
 
   // Synchronize filter state whenever searchParams in the URL changes
   useEffect(() => {
@@ -251,6 +305,241 @@ function ShopContent() {
     setTimeout(() => setCartNotice(null), 3000);
   };
 
+  const renderFilterSections = () => (
+    <>
+      {/* Special Deals Toggle */}
+      <div>
+        <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={onlyDeals}
+            onChange={(e) => {
+              updateFilters({ deals: e.target.checked });
+            }}
+            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+          />
+          <span>Show Discounted Deals Only</span>
+        </label>
+      </div>
+
+      {/* Stock Availability Filter */}
+      <div>
+        <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 mb-2">
+          Stock Availability
+        </h4>
+        <div className="space-y-1 text-xs">
+          <button
+            type="button"
+            onClick={() => updateFilters({ stock: 'all' })}
+            className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
+              stockFilter === 'all'
+                ? 'bg-blue-600 text-white font-bold'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <span>All Availability</span>
+            <span>{productsData.length}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => updateFilters({ stock: 'in-stock' })}
+            className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
+              stockFilter === 'in-stock'
+                ? 'bg-emerald-600 text-white font-bold'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              In Stock
+            </span>
+            <span>{totalInStock}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => updateFilters({ stock: 'out-of-stock' })}
+            className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
+              stockFilter === 'out-of-stock'
+                ? 'bg-rose-600 text-white font-bold'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+              Out of Stock
+            </span>
+            <span>{totalOutOfStock}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Price Range Filter (LKR) */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-xs font-black uppercase tracking-wider text-slate-900">
+            Price Range (LKR)
+          </h4>
+          {(minPrice || maxPrice) && (
+            <button
+              type="button"
+              onClick={handleClearPrice}
+              className="text-[10px] text-blue-600 hover:underline font-bold cursor-pointer"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <div>
+            <label className="text-[10px] text-slate-500 font-medium block mb-1">Min (LKR)</label>
+            <input
+              type="number"
+              placeholder="e.g. 500"
+              value={inputMinPrice}
+              onChange={(e) => setInputMinPrice(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleApplyPrice()}
+              className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-slate-500 font-medium block mb-1">Max (LKR)</label>
+            <input
+              type="number"
+              placeholder="e.g. 5000"
+              value={inputMaxPrice}
+              onChange={(e) => setInputMaxPrice(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleApplyPrice()}
+              className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+            />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleApplyPrice}
+          className="w-full py-1.5 bg-slate-900 hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+        >
+          <Filter className="w-3 h-3" />
+          Apply Price Filter
+        </button>
+
+        {/* Quick Price Preset Chips */}
+        <div className="flex flex-wrap gap-1 mt-2.5">
+          {[
+            { label: '< 2.5K', min: '', max: '2500' },
+            { label: '2.5K - 10K', min: '2500', max: '10000' },
+            { label: '10K - 30K', min: '10000', max: '30000' },
+            { label: '> 30K', min: '30000', max: '' },
+          ].map((preset) => {
+            const isSelected = minPrice === preset.min && maxPrice === preset.max;
+            return (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => {
+                  setInputMinPrice(preset.min);
+                  setInputMaxPrice(preset.max);
+                  updateFilters({ minPrice: preset.min, maxPrice: preset.max });
+                }}
+                className={`text-[10px] px-2 py-1 rounded-md border transition cursor-pointer ${
+                  isSelected
+                    ? 'bg-blue-50 border-blue-500 text-blue-600 font-bold'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                }`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Category Filter */}
+      <div>
+        <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 mb-2">
+          Categories ({categoriesData.length})
+        </h4>
+        <div className="max-h-56 overflow-y-auto space-y-1 text-xs pr-1">
+          <button
+            type="button"
+            onClick={() => {
+              updateFilters({ category: 'all' });
+            }}
+            className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
+              selectedCategory === 'all'
+                ? 'bg-blue-600 text-white font-bold'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <span>All Categories</span>
+            <span>{productsData.length}</span>
+          </button>
+          {(categoriesData as any[])
+            .filter((c) => c.productCount > 0)
+            .map((c) => (
+              <button
+                key={c.slug}
+                type="button"
+                onClick={() => {
+                  updateFilters({ category: c.slug });
+                }}
+                className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
+                  selectedCategory.toLowerCase() === c.slug.toLowerCase()
+                    ? 'bg-blue-600 text-white font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <span className="truncate">{c.name}</span>
+                <span className="text-[10px] opacity-80">({c.productCount})</span>
+              </button>
+            ))}
+        </div>
+      </div>
+
+      {/* Brand Filter */}
+      <div>
+        <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 mb-2">
+          Brands ({brandsData.length})
+        </h4>
+        <div className="max-h-56 overflow-y-auto space-y-1 text-xs pr-1">
+          <button
+            type="button"
+            onClick={() => {
+              updateFilters({ brand: 'all' });
+            }}
+            className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
+              selectedBrand === 'all'
+                ? 'bg-blue-600 text-white font-bold'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <span>All Brands</span>
+          </button>
+          {(brandsData as any[])
+            .filter((b) => b.productCount > 0)
+            .map((b) => (
+              <button
+                key={b.slug}
+                type="button"
+                onClick={() => {
+                  updateFilters({ brand: b.slug });
+                }}
+                className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
+                  selectedBrand.toLowerCase() === b.slug.toLowerCase()
+                    ? 'bg-blue-600 text-white font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <span className="truncate">{b.name}</span>
+                <span className="text-[10px] opacity-80">({b.productCount})</span>
+              </button>
+            ))}
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <>
       {/* Floating Cart Notice */}
@@ -340,8 +629,8 @@ function ShopContent() {
       {/* Main Catalog Layout */}
       <div className="page-container py-8 flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Sidebar Filters */}
-          <aside className="lg:col-span-3 space-y-6">
+          {/* Left Sidebar Filters (Desktop only) */}
+          <aside className="hidden lg:block lg:col-span-3 space-y-6">
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-6">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <span className="font-black text-sm text-slate-900 flex items-center gap-2">
@@ -368,242 +657,36 @@ function ShopContent() {
                   </button>
                 )}
               </div>
-
-              {/* Special Deals Toggle */}
-              <div>
-                <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={onlyDeals}
-                    onChange={(e) => {
-                      updateFilters({ deals: e.target.checked });
-                    }}
-                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  />
-                  <span>Show Discounted Deals Only</span>
-                </label>
-              </div>
-
-              {/* Stock Availability Filter */}
-              <div>
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 mb-2">
-                  Stock Availability
-                </h4>
-                <div className="space-y-1 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => updateFilters({ stock: 'all' })}
-                    className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
-                      stockFilter === 'all'
-                        ? 'bg-blue-600 text-white font-bold'
-                        : 'text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span>All Availability</span>
-                    <span>{productsData.length}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateFilters({ stock: 'in-stock' })}
-                    className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
-                      stockFilter === 'in-stock'
-                        ? 'bg-emerald-600 text-white font-bold'
-                        : 'text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      In Stock
-                    </span>
-                    <span>{totalInStock}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateFilters({ stock: 'out-of-stock' })}
-                    className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
-                      stockFilter === 'out-of-stock'
-                        ? 'bg-rose-600 text-white font-bold'
-                        : 'text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                      Out of Stock
-                    </span>
-                    <span>{totalOutOfStock}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Price Range Filter (LKR) */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-900">
-                    Price Range (LKR)
-                  </h4>
-                  {(minPrice || maxPrice) && (
-                    <button
-                      type="button"
-                      onClick={handleClearPrice}
-                      className="text-[10px] text-blue-600 hover:underline font-bold"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  <div>
-                    <label className="text-[10px] text-slate-500 font-medium block mb-1">Min (LKR)</label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 500"
-                      value={inputMinPrice}
-                      onChange={(e) => setInputMinPrice(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleApplyPrice()}
-                      className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-500 font-medium block mb-1">Max (LKR)</label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 5000"
-                      value={inputMaxPrice}
-                      onChange={(e) => setInputMaxPrice(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleApplyPrice()}
-                      className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleApplyPrice}
-                  className="w-full py-1.5 bg-slate-900 hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <Filter className="w-3 h-3" />
-                  Apply Price Filter
-                </button>
-
-                {/* Quick Price Preset Chips */}
-                <div className="flex flex-wrap gap-1 mt-2.5">
-                  {[
-                    { label: '< 2.5K', min: '', max: '2500' },
-                    { label: '2.5K - 10K', min: '2500', max: '10000' },
-                    { label: '10K - 30K', min: '10000', max: '30000' },
-                    { label: '> 30K', min: '30000', max: '' },
-                  ].map((preset) => {
-                    const isSelected = minPrice === preset.min && maxPrice === preset.max;
-                    return (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        onClick={() => {
-                          setInputMinPrice(preset.min);
-                          setInputMaxPrice(preset.max);
-                          updateFilters({ minPrice: preset.min, maxPrice: preset.max });
-                        }}
-                        className={`text-[10px] px-2 py-1 rounded-md border transition cursor-pointer ${
-                          isSelected
-                            ? 'bg-blue-50 border-blue-500 text-blue-600 font-bold'
-                            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
-                        }`}
-                      >
-                        {preset.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Category Filter */}
-              <div>
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 mb-2">
-                  Categories ({categoriesData.length})
-                </h4>
-                <div className="max-h-56 overflow-y-auto space-y-1 text-xs pr-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      updateFilters({ category: 'all' });
-                    }}
-                    className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
-                      selectedCategory === 'all'
-                        ? 'bg-blue-600 text-white font-bold'
-                        : 'text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span>All Categories</span>
-                    <span>{productsData.length}</span>
-                  </button>
-                  {(categoriesData as any[])
-                    .filter((c) => c.productCount > 0)
-                    .map((c) => (
-                      <button
-                        key={c.slug}
-                        type="button"
-                        onClick={() => {
-                          updateFilters({ category: c.slug });
-                        }}
-                        className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
-                          selectedCategory.toLowerCase() === c.slug.toLowerCase()
-                            ? 'bg-blue-600 text-white font-bold'
-                            : 'text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        <span className="truncate">{c.name}</span>
-                        <span className="text-[10px] opacity-80">({c.productCount})</span>
-                      </button>
-                    ))}
-                </div>
-              </div>
-
-              {/* Brand Filter */}
-              <div>
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 mb-2">
-                  Brands ({brandsData.length})
-                </h4>
-                <div className="max-h-56 overflow-y-auto space-y-1 text-xs pr-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      updateFilters({ brand: 'all' });
-                    }}
-                    className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
-                      selectedBrand === 'all'
-                        ? 'bg-blue-600 text-white font-bold'
-                        : 'text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span>All Brands</span>
-                  </button>
-                  {(brandsData as any[])
-                    .filter((b) => b.productCount > 0)
-                    .map((b) => (
-                      <button
-                        key={b.slug}
-                        type="button"
-                        onClick={() => {
-                          updateFilters({ brand: b.slug });
-                        }}
-                        className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer transition ${
-                          selectedBrand.toLowerCase() === b.slug.toLowerCase()
-                            ? 'bg-blue-600 text-white font-bold'
-                            : 'text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        <span className="truncate">{b.name}</span>
-                        <span className="text-[10px] opacity-80">({b.productCount})</span>
-                      </button>
-                    ))}
-                </div>
-              </div>
+              {renderFilterSections()}
             </div>
           </aside>
 
           {/* Right Product Grid */}
           <main className="lg:col-span-9 space-y-6">
+            {/* Mobile Filter Trigger Bar (Mobile only) */}
+            <div className="lg:hidden flex items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setMobileFilterOpen(true)}
+                className="flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Filter Catalog</span>
+                {hasActiveFilters && (
+                  <span className="bg-white text-blue-600 text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                    Active
+                  </span>
+                )}
+              </button>
+              <div className="text-right">
+                <div className="text-xs font-bold text-slate-800">
+                  {filteredProducts.length} Products
+                </div>
+                <div className="text-[10px] text-slate-400">
+                  Swipe right to filter
+                </div>
+              </div>
+            </div>
             <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
               <span className="text-xs text-slate-600">
                 Page <span className="font-bold text-slate-900">{currentPage}</span> of{' '}
@@ -866,6 +949,85 @@ function ShopContent() {
           </main>
         </div>
       </div>
+
+      {/* ── Mobile Left Slide-out Drawer (Swipeable & Toggable) ────────── */}
+      {mobileFilterOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Dark Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-950/65 backdrop-blur-xs transition-opacity animate-in fade-in"
+            onClick={() => setMobileFilterOpen(false)}
+          />
+
+          {/* Drawer panel (slides from left) */}
+          <div
+            className="relative z-10 w-[86%] max-w-[340px] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-left duration-300"
+            onTouchStart={(e) => {
+              (window as any)._drawerTouchStartX = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
+              const startX = (window as any)._drawerTouchStartX || 0;
+              const endX = e.changedTouches[0].clientX;
+              if (startX - endX > 50) {
+                setMobileFilterOpen(false); // swipe left closes
+              }
+            }}
+          >
+            {/* Drawer Header */}
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-blue-600" />
+                <h3 className="font-black text-sm text-slate-900">Filter Catalog</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateFilters({
+                        category: 'all',
+                        brand: 'all',
+                        q: '',
+                        deals: false,
+                        stock: 'all',
+                        minPrice: '',
+                        maxPrice: '',
+                      });
+                    }}
+                    className="text-[11px] font-bold text-rose-600 hover:underline flex items-center gap-0.5 cursor-pointer"
+                  >
+                    <X className="w-3 h-3" /> Reset
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setMobileFilterOpen(false)}
+                  className="w-8 h-8 rounded-lg bg-slate-200/70 hover:bg-slate-300 text-slate-600 flex items-center justify-center transition cursor-pointer"
+                  aria-label="Close filters"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable Filters */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {renderFilterSections()}
+            </div>
+
+            {/* Sticky Bottom Action */}
+            <div className="p-3.5 border-t border-slate-200 bg-white flex items-center gap-2 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+              <button
+                type="button"
+                onClick={() => setMobileFilterOpen(false)}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Show {filteredProducts.length} Products</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

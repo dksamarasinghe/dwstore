@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -19,8 +19,10 @@ import {
   Sparkles,
   X,
   Store,
+  SlidersHorizontal,
 } from 'lucide-react';
 import categoriesData from '@/data/categories.json';
+import productsData from '@/data/products.json';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { formatPriceLKR } from '@/lib/catalog';
@@ -38,6 +40,10 @@ export default function Header() {
   // Mobile Drawer State
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<'menu' | 'categories'>('menu');
+
+  // Mobile Bottom Bar Search Modal State
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [mobileSearchQuery, setMobileSearchQuery] = useState('');
 
   const { openCart, itemCount, subtotalMinor } = useCart();
   const { itemCount: wishlistCount } = useWishlist();
@@ -62,9 +68,9 @@ export default function Header() {
     return () => window.removeEventListener('dwstore_compare_updated', updateCompare);
   }, []);
 
-  // Lock body scroll when mobile drawer is open
+  // Lock body scroll when mobile drawer or mobile search modal is open
   useEffect(() => {
-    if (mobileMenuOpen) {
+    if (mobileMenuOpen || mobileSearchOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -72,12 +78,36 @@ export default function Header() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [mobileMenuOpen]);
+  }, [mobileMenuOpen, mobileSearchOpen]);
 
-  // Close mobile drawer on route change
+  // Close mobile drawer and search modal on route change
   useEffect(() => {
     setMobileMenuOpen(false);
+    setMobileSearchOpen(false);
   }, [pathname]);
+
+  // Live matching products for mobile search popup
+  const matchingProducts = useMemo(() => {
+    const q = mobileSearchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return (productsData as any[])
+      .filter((p) => {
+        const name = (p.name || '').toLowerCase();
+        const sku = (p.sku || '').toLowerCase();
+        const cat = (p.category || '').toLowerCase();
+        const brand = (p.brand || '').toLowerCase();
+        return name.includes(q) || sku.includes(q) || cat.includes(q) || brand.includes(q);
+      })
+      .slice(0, 6);
+  }, [mobileSearchQuery]);
+
+  const handleMobileSearchModalSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (mobileSearchQuery.trim()) {
+      setMobileSearchOpen(false);
+      router.push(`/shop?q=${encodeURIComponent(mobileSearchQuery.trim())}`);
+    }
+  };
 
   // Filter top categories with products
   const topCategories = (categoriesData as any[])
@@ -590,12 +620,147 @@ export default function Header() {
         </div>
       )}
 
+      {/* ── Mobile Search Popup Modal (md:hidden) ────────────────────────── */}
+      {mobileSearchOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-start animate-in fade-in duration-200">
+          {/* Dark Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-950/65 backdrop-blur-xs transition-opacity"
+            onClick={() => setMobileSearchOpen(false)}
+          />
+
+          {/* Search Box & Dropdown Container */}
+          <div className="relative z-10 bg-white rounded-b-3xl shadow-2xl p-4 flex flex-col max-h-[85vh] border-b border-slate-200 animate-in slide-in-from-top duration-250">
+            <div className="flex items-center gap-2 pb-1">
+              <form
+                onSubmit={handleMobileSearchModalSubmit}
+                className="flex-1 relative flex items-center"
+              >
+                <Search className="w-4 h-4 text-blue-600 absolute left-3.5 pointer-events-none" />
+                <input
+                  type="text"
+                  value={mobileSearchQuery}
+                  onChange={(e) => setMobileSearchQuery(e.target.value)}
+                  placeholder="Search 400+ products, watches, audio..."
+                  className="w-full pl-10 pr-9 py-2.5 text-xs bg-slate-100/80 border border-slate-200 rounded-2xl focus:outline-none focus:border-blue-600 focus:bg-white text-slate-900 placeholder:text-slate-400 font-medium transition"
+                  autoFocus
+                />
+                {mobileSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setMobileSearchQuery('')}
+                    className="absolute right-3 text-slate-400 hover:text-slate-700 p-0.5"
+                    aria-label="Clear input"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </form>
+              <button
+                type="button"
+                onClick={() => setMobileSearchOpen(false)}
+                className="px-2.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition flex-shrink-0 cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+
+            {/* Popular quick tags if input is empty */}
+            {!mobileSearchQuery.trim() ? (
+              <div className="mt-4 pt-1">
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5 text-orange-500" />
+                  Trending Searches
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'Smart Watches',
+                    'Airpods',
+                    'Power Banks',
+                    'Bluetooth Speakers',
+                    'Fast Chargers',
+                    'Cables',
+                    'Aspor',
+                    'Haino Teko',
+                  ].map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => {
+                        setMobileSearchOpen(false);
+                        router.push(`/shop?q=${encodeURIComponent(tag)}`);
+                      }}
+                      className="text-xs px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 text-slate-700 rounded-xl border border-transparent transition cursor-pointer font-medium"
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* Instant Live Search Results */
+              <div className="mt-3 overflow-y-auto max-h-[55vh] divide-y divide-slate-100 no-scrollbar pr-1">
+                {matchingProducts.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-slate-500">
+                    No products found matching &quot;{mobileSearchQuery}&quot;
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                      Found {matchingProducts.length} Products
+                    </div>
+                    {matchingProducts.map((item) => (
+                      <Link
+                        key={item.id}
+                        href={`/product/${item.slug}`}
+                        onClick={() => setMobileSearchOpen(false)}
+                        className="flex items-center gap-3 py-2.5 px-1 hover:bg-slate-50 rounded-xl transition group"
+                      >
+                        <img
+                          src={item.image || item.images?.[0] || '/dwstore_logo.png'}
+                          alt={item.name}
+                          className="w-11 h-11 object-contain rounded-lg border border-slate-100 bg-slate-50 p-1 flex-shrink-0 group-hover:border-blue-300"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-slate-900 group-hover:text-blue-600 truncate transition">
+                            {item.name}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs font-black text-blue-600">
+                              {formatPriceLKR(item.salePriceMinor || item.minPriceMinor || item.regularPriceMinor || 0)}
+                            </span>
+                            {item.brand && (
+                              <span className="text-[10px] text-slate-400 uppercase font-semibold">
+                                • {item.brand}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => handleMobileSearchModalSubmit()}
+                        className="w-full py-2.5 text-center text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition cursor-pointer"
+                      >
+                        View all results for &quot;{mobileSearchQuery}&quot; &rarr;
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── Fixed Mobile Bottom Navigation Bar (md:hidden) ────────────────── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] px-2 py-1.5 flex items-center justify-around">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] px-1 py-1.5 flex items-center justify-around">
         {/* 1. Shop */}
         <Link
           href="/shop"
-          className={`flex flex-col items-center justify-center py-1 px-3 text-center transition ${
+          className={`flex flex-col items-center justify-center py-1 px-1.5 text-center transition flex-1 ${
             pathname === '/shop' ? 'text-blue-600 font-bold' : 'text-slate-600 hover:text-blue-600'
           }`}
         >
@@ -603,10 +768,40 @@ export default function Header() {
           <span className="text-[10px] font-medium mt-0.5">Shop</span>
         </Link>
 
-        {/* 2. Wishlist */}
+        {/* 2. Filter Button (ONLY when on Shop page /shop) */}
+        {pathname === '/shop' && (
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('dwstore_open_filter_drawer'));
+            }}
+            className="flex flex-col items-center justify-center py-1 px-1.5 text-center text-blue-600 hover:text-blue-700 cursor-pointer relative flex-1 animate-in fade-in duration-200"
+            aria-label="Filter Catalog"
+          >
+            <SlidersHorizontal className="w-5 h-5 text-blue-600" />
+            <span className="text-[10px] font-bold mt-0.5 text-blue-600">Filter</span>
+          </button>
+        )}
+
+        {/* 3. Search Button (Tapping opens mobile search popup) */}
+        <button
+          type="button"
+          onClick={() => {
+            setMobileSearchOpen(true);
+          }}
+          className={`flex flex-col items-center justify-center py-1 px-1.5 text-center cursor-pointer transition flex-1 ${
+            mobileSearchOpen ? 'text-blue-600 font-bold' : 'text-slate-600 hover:text-blue-600'
+          }`}
+          aria-label="Search"
+        >
+          <Search className="w-5 h-5" />
+          <span className="text-[10px] font-medium mt-0.5">Search</span>
+        </button>
+
+        {/* 4. Wishlist */}
         <Link
           href="/wishlist"
-          className={`flex flex-col items-center justify-center py-1 px-3 text-center relative transition ${
+          className={`flex flex-col items-center justify-center py-1 px-1.5 text-center relative transition flex-1 ${
             pathname === '/wishlist' ? 'text-blue-600 font-bold' : 'text-slate-600 hover:text-blue-600'
           }`}
         >
@@ -621,11 +816,11 @@ export default function Header() {
           <span className="text-[10px] font-medium mt-0.5">Wishlist</span>
         </Link>
 
-        {/* 3. Cart */}
+        {/* 5. Cart */}
         <button
           type="button"
           onClick={openCart}
-          className="flex flex-col items-center justify-center py-1 px-3 text-center text-slate-600 hover:text-blue-600 relative cursor-pointer"
+          className="flex flex-col items-center justify-center py-1 px-1.5 text-center text-slate-600 hover:text-blue-600 relative cursor-pointer flex-1"
           aria-label="Cart"
         >
           <div className="relative">
@@ -637,10 +832,10 @@ export default function Header() {
           <span className="text-[10px] font-medium mt-0.5">Cart</span>
         </button>
 
-        {/* 4. My account */}
+        {/* 6. My account */}
         <Link
           href="/account"
-          className={`flex flex-col items-center justify-center py-1 px-3 text-center transition ${
+          className={`flex flex-col items-center justify-center py-1 px-1.5 text-center transition flex-1 ${
             pathname === '/account' ? 'text-blue-600 font-bold' : 'text-slate-600 hover:text-blue-600'
           }`}
         >
