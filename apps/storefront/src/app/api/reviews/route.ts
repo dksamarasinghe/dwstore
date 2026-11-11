@@ -1,37 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { readDataJson, writeDataJson } from '@/lib/data-paths';
 
-const REVIEWS_FILE = path.join(process.cwd(), 'src', 'data', 'reviews.json');
+export const dynamic = 'force-dynamic';
 
-function getReviewsData() {
-  try {
-    if (fs.existsSync(REVIEWS_FILE)) {
-      const content = fs.readFileSync(REVIEWS_FILE, 'utf-8');
-      return JSON.parse(content);
-    }
-  } catch (err) {
-    console.error('Error reading reviews:', err);
-  }
-  return {
+function getReviewsData(): any {
+  return readDataJson<any>('reviews.json', {
     stats: {
       storeName: 'DWStore',
       rating: 4.9,
       totalReviews: 111,
       mapsUrl: 'https://maps.google.com/?q=DWStore+No.55/1/2+Borella+Rd+Pannipitiya',
     },
-    reviews: [],
-  };
+    reviews: [] as any[],
+  });
 }
 
 function saveReviewsData(data: any) {
-  try {
-    fs.writeFileSync(REVIEWS_FILE, JSON.stringify(data, null, 2), 'utf-8');
-    return true;
-  } catch (err) {
-    console.error('Error writing reviews:', err);
-    return false;
-  }
+  return writeDataJson('reviews.json', data);
 }
 
 const CORS_HEADERS = {

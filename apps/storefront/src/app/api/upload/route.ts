@@ -17,22 +17,38 @@ export async function OPTIONS() {
 
 const ALLOWED_FOLDERS = ['categories', 'category-icons', 'products', 'brands', 'home-customizer', 'gallery', 'general'];
 
+function getMediaDirs(targetFolder: string): string[] {
+  const dirs: string[] = [];
+  const p1 = path.join(process.cwd(), 'apps', 'storefront', 'public', 'media', targetFolder);
+  const p2 = path.join(process.cwd(), 'public', 'media', targetFolder);
+  
+  if (fs.existsSync(path.join(process.cwd(), 'apps', 'storefront'))) {
+    dirs.push(p1);
+    dirs.push(p2);
+  } else {
+    dirs.push(p2);
+    dirs.push(p1);
+  }
+  return Array.from(new Set(dirs));
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const folder = searchParams.get('folder') || 'products';
     const targetFolder = ALLOWED_FOLDERS.includes(folder) ? folder : 'products';
 
-    const dirPath = path.join(process.cwd(), 'public', 'media', targetFolder);
-    if (!fs.existsSync(dirPath)) {
+    const dirs = getMediaDirs(targetFolder);
+    const existingDir = dirs.find((d) => fs.existsSync(d));
+    if (!existingDir) {
       return NextResponse.json({ success: true, files: [] }, { headers: CORS_HEADERS });
     }
 
-    const fileNames = fs.readdirSync(dirPath);
+    const fileNames = fs.readdirSync(existingDir);
     const files = fileNames
       .filter((name) => /\.(jpg|jpeg|png|webp|svg|gif|avif)$/i.test(name))
       .map((name) => {
-        const filePath = path.join(dirPath, name);
+        const filePath = path.join(existingDir, name);
         const stats = fs.statSync(filePath);
         return {
           name,
@@ -67,12 +83,6 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Ensure directory exists
-    const uploadDir = path.join(process.cwd(), 'public', 'media', targetFolder);
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
     // Sanitize and create unique filename
     const originalName = file.name || 'image.jpg';
     const ext = path.extname(originalName).toLowerCase() || '.jpg';
@@ -101,9 +111,17 @@ export async function POST(req: NextRequest) {
       .slice(0, 40) || 'media';
 
     const uniqueName = `${baseName}-${Date.now()}${ext}`;
-    const filePath = path.join(uploadDir, uniqueName);
 
-    fs.writeFileSync(filePath, buffer);
+    // Ensure written to both storefront public/media and monorepo public/media if applicable
+    const targetDirs = getMediaDirs(targetFolder);
+    for (const dir of targetDirs) {
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(path.join(dir, uniqueName), buffer);
+      } catch (writeErr) {
+        console.warn(`[Upload API] Could not write to ${dir}:`, writeErr);
+      }
+    }
 
     const relativeUrl = `/media/${targetFolder}/${uniqueName}`;
 

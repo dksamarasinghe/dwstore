@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { readDataJson, writeDataJson } from '@/lib/data-paths';
 import { globalMemoryCache } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const HOMEPAGE_FILE = path.join(process.cwd(), 'src', 'data', 'homepage.json');
 const HOMEPAGE_CACHE_KEY = 'dwstore_homepage';
-const HOMEPAGE_CACHE_TTL = 60 * 1000;
+const HOMEPAGE_CACHE_TTL = 10 * 1000; // 10 seconds max memory cache
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Allow-Private-Network': 'true',
-  'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
 };
 
 export async function OPTIONS() {
@@ -26,17 +24,11 @@ function getHomepageConfig() {
   const cached = globalMemoryCache.get(HOMEPAGE_CACHE_KEY, HOMEPAGE_CACHE_TTL);
   if (cached) return cached;
 
-  try {
-    if (fs.existsSync(HOMEPAGE_FILE)) {
-      const content = fs.readFileSync(HOMEPAGE_FILE, 'utf-8');
-      const data = JSON.parse(content);
-      globalMemoryCache.set(HOMEPAGE_CACHE_KEY, data);
-      return data;
-    }
-  } catch (err) {
-    console.error('Error reading homepage.json:', err);
+  const data = readDataJson('homepage.json', null);
+  if (data) {
+    globalMemoryCache.set(HOMEPAGE_CACHE_KEY, data);
   }
-  return null;
+  return data;
 }
 
 export async function GET() {
@@ -73,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     const config = body.config || body;
 
-    const existing = getHomepageConfig() || {};
+    const existing: any = getHomepageConfig() || {};
     const mergedConfig = {
       ...existing,
       ...config,
@@ -115,7 +107,7 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    fs.writeFileSync(HOMEPAGE_FILE, JSON.stringify(mergedConfig, null, 2), 'utf-8');
+    writeDataJson('homepage.json', mergedConfig);
     globalMemoryCache.set(HOMEPAGE_CACHE_KEY, mergedConfig);
 
     return NextResponse.json(

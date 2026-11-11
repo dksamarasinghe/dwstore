@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { readDataJson, writeDataJson } from '@/lib/data-paths';
 
 export const dynamic = 'force-dynamic';
-
-const CATEGORIES_FILE = path.join(process.cwd(), 'src', 'data', 'categories.json');
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -18,25 +15,11 @@ export async function OPTIONS() {
 }
 
 function getCategories(): any[] {
-  try {
-    if (fs.existsSync(CATEGORIES_FILE)) {
-      const content = fs.readFileSync(CATEGORIES_FILE, 'utf-8');
-      return JSON.parse(content);
-    }
-  } catch (err) {
-    console.error('Error reading categories.json:', err);
-  }
-  return [];
+  return readDataJson('categories.json', []);
 }
 
 function saveCategories(categories: any[]): boolean {
-  try {
-    fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(categories, null, 2), 'utf-8');
-    return true;
-  } catch (err) {
-    console.error('Error saving categories.json:', err);
-    return false;
-  }
+  return writeDataJson('categories.json', categories);
 }
 
 export async function GET() {

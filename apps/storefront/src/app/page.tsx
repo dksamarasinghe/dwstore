@@ -16,19 +16,13 @@ import GoogleReviewsSlider from '@/components/GoogleReviewsSlider';
 import StoreVideoBanner from '@/components/StoreVideoBanner';
 import Footer from '@/components/Footer';
 
+import { readDataJson } from '@/lib/data-paths';
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-function getHomepageConfig() {
-  try {
-    const filePath = path.join(process.cwd(), 'src', 'data', 'homepage.json');
-    if (fs.existsSync(filePath)) {
-      return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    }
-  } catch (err) {
-    console.error('Error reading homepage.json in page.tsx:', err);
-  }
-  return null;
+function getHomepageConfig(): any {
+  return readDataJson<any>('homepage.json', null);
 }
 
 export default function HomePage() {

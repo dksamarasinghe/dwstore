@@ -135,6 +135,18 @@ export default function App() {
       localStorage.setItem('dwstore_admin_brands', JSON.stringify(brands));
     } catch (e) {}
   }, [brands]);
+  // Sync brands with Storefront API
+  useEffect(() => {
+    fetch(`${getStorefrontUrl()}/api/brands`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.success && Array.isArray(data.brands) && data.brands.length > 0) {
+          setBrands(data.brands);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const [coupons, setCoupons] = useState<CouponItem[]>(initialCoupons);
 
   // Sync coupons with Storefront API
@@ -732,18 +744,43 @@ export default function App() {
     }
   };
 
-  // Brand handlers
-  const handleAddBrand = (brand: BrandItem) => {
+  // Brand handlers with Storefront API sync
+  const handleAddBrand = async (brand: BrandItem) => {
     setBrands((prev) => [brand, ...prev]);
+    try {
+      await fetch(`${getStorefrontUrl()}/api/brands`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(brand),
+      });
+    } catch (e) {
+      console.warn('Failed to sync brand with API:', e);
+    }
   };
 
-  const handleUpdateBrand = (brand: BrandItem) => {
+  const handleUpdateBrand = async (brand: BrandItem) => {
     setBrands((prev) => prev.map((b) => (b.id === brand.id ? brand : b)));
+    try {
+      await fetch(`${getStorefrontUrl()}/api/brands`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(brand),
+      });
+    } catch (e) {
+      console.warn('Failed to sync brand update with API:', e);
+    }
   };
 
-  const handleDeleteBrand = (id: string) => {
+  const handleDeleteBrand = async (id: string) => {
     setBrands((prev) => prev.filter((b) => b.id !== id));
     showNotification('Brand deleted.');
+    try {
+      await fetch(`${getStorefrontUrl()}/api/brands?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+    } catch (e) {
+      console.warn('Failed to sync brand delete with API:', e);
+    }
   };
 
   // Bulk CSV Import Handlers
@@ -991,6 +1028,7 @@ export default function App() {
               categories={categories}
               brands={brands}
               showNotification={showNotification}
+              setActiveTab={setActiveTab}
             />
           )}
 

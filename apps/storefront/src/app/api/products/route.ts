@@ -1,40 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { readDataJson, writeDataJson } from '@/lib/data-paths';
 import { globalMemoryCache } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
-const PRODUCTS_FILE = path.join(process.cwd(), 'src', 'data', 'products.json');
 const CACHE_KEY = 'dwstore_products';
-const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+const CACHE_TTL_MS = 30 * 1000;
 
 function getProducts(): any[] {
   const cached = globalMemoryCache.get<any[]>(CACHE_KEY, CACHE_TTL_MS);
   if (cached) return cached;
 
-  try {
-    if (fs.existsSync(PRODUCTS_FILE)) {
-      const content = fs.readFileSync(PRODUCTS_FILE, 'utf-8');
-      const products = JSON.parse(content);
-      globalMemoryCache.set(CACHE_KEY, products);
-      return products;
-    }
-  } catch (err) {
-    console.error('Error reading products:', err);
+  const products = readDataJson('products.json', []);
+  if (products && products.length > 0) {
+    globalMemoryCache.set(CACHE_KEY, products);
   }
-  return [];
+  return products;
 }
 
 function saveProducts(products: any[]) {
-  try {
-    fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2), 'utf-8');
+  const ok = writeDataJson('products.json', products);
+  if (ok) {
     globalMemoryCache.set(CACHE_KEY, products);
-    return true;
-  } catch (err) {
-    console.error('Error saving products:', err);
-    return false;
   }
+  return ok;
 }
 
 const CORS_HEADERS = {

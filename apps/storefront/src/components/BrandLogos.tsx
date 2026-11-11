@@ -7,25 +7,23 @@ export interface BrandDisplayItem {
   id?: string;
   name: string;
   slug: string;
-  tag?: string;
-  description?: string;
   logo?: string;
   featured?: boolean;
 }
 
-const DEFAULT_BRANDS: BrandDisplayItem[] = [
-  { name: 'Anker', slug: 'anker', tag: 'Sound & Power', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Anker_logo.svg/512px-Anker_logo.svg.png' },
-  { name: 'Baseus', slug: 'baseus', tag: 'Charging & Audio', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Baseus_logo.svg/512px-Baseus_logo.svg.png' },
-  { name: 'JBL', slug: 'jbl', tag: 'Signature Sound', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/JBL_logo.svg/512px-JBL_logo.svg.png' },
-  { name: 'Remax', slug: 'remax', tag: 'Life Accessories', logo: 'https://seeklogo.com/images/R/remax-logo-F91A8CF3BA-seeklogo.com.png' },
-  { name: 'Joyroom', slug: 'joyroom', tag: 'Fast Charging', logo: 'https://cdn.worldvectorlogo.com/logos/joyroom.svg' },
-  { name: 'Lenovo', slug: 'lenovo', tag: 'Audio & Tech', logo: '/media/brands/lenovo-logo.svg' },
-  { name: 'SONY', slug: 'sony', tag: 'Audio & Imaging', logo: '/media/brands/sony-logo.svg' },
-  { name: 'SAMSUNG', slug: 'samsung', tag: 'Original Accessories', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Samsung_Logo.svg/512px-Samsung_Logo.svg.png' },
-  { name: 'SanDisk', slug: 'sandisk', tag: 'Storage & Flash', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/SanDisk_Logo.svg/512px-SanDisk_Logo.svg.png' },
-  { name: 'UGREEN', slug: 'ugreen', tag: 'Adapters & Hubs', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/UGREEN_logo.svg/512px-UGREEN_logo.svg.png' },
-  { name: 'Hikvision', slug: 'hikvision', tag: 'Security & Cam', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Hikvision_logo.svg/512px-Hikvision_logo.svg.png' },
-  { name: 'Aspor', slug: 'aspor', tag: 'Power Banks', logo: 'https://aspor.com.pk/wp-content/uploads/2021/04/aspor-logo.png' },
+const FALLBACK_BRANDS: BrandDisplayItem[] = [
+  { name: 'Apple', slug: 'apple', logo: '/media/brands/apple-logo.svg', featured: true },
+  { name: 'JBL', slug: 'jbl', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/JBL_logo.svg/512px-JBL_logo.svg.png', featured: true },
+  { name: 'Xiaomi', slug: 'xiaomi', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Xiaomi_logo_%282021-%29.svg/512px-Xiaomi_logo_%282021-%29.svg.png', featured: true },
+  { name: 'Sony', slug: 'sony', logo: '/media/brands/sony-logo.svg', featured: true },
+  { name: 'Anker', slug: 'anker', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Anker_logo.svg/512px-Anker_logo.svg.png', featured: true },
+  { name: 'Baseus', slug: 'baseus', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Baseus_logo.svg/512px-Baseus_logo.svg.png', featured: true },
+  { name: 'Remax', slug: 'remax', logo: 'https://seeklogo.com/images/R/remax-logo-F91A8CF3BA-seeklogo.com.png', featured: true },
+  { name: 'Joyroom', slug: 'joyroom', logo: 'https://cdn.worldvectorlogo.com/logos/joyroom.svg', featured: true },
+  { name: 'Lenovo', slug: 'lenovo', logo: '/media/brands/lenovo-logo.svg', featured: true },
+  { name: 'Samsung', slug: 'samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Samsung_Logo.svg/512px-Samsung_Logo.svg.png', featured: true },
+  { name: 'SanDisk', slug: 'sandisk', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/SanDisk_Logo.svg/512px-SanDisk_Logo.svg.png', featured: true },
+  { name: 'UGREEN', slug: 'ugreen', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/UGREEN_logo.svg/512px-UGREEN_logo.svg.png', featured: true },
 ];
 
 interface BrandLogosProps {
@@ -38,80 +36,109 @@ interface BrandLogosProps {
 export default function BrandLogos({ initialConfig }: BrandLogosProps) {
   const [brands, setBrands] = useState<BrandDisplayItem[]>(() => {
     if (initialConfig?.selectedBrands && initialConfig.selectedBrands.length > 0) {
-      return initialConfig.selectedBrands;
+      const filtered = initialConfig.selectedBrands.filter((b) => Boolean(b.logo));
+      if (filtered.length > 0) return filtered;
     }
-    return DEFAULT_BRANDS;
+    return FALLBACK_BRANDS;
   });
 
   const isEnabled = initialConfig?.enabled !== false;
 
   useEffect(() => {
-    if (initialConfig?.selectedBrands && initialConfig.selectedBrands.length > 0) {
-      setBrands(initialConfig.selectedBrands);
-      return;
-    }
+    // 1. Fetch live brands from /api/brands
+    const fetchBrands = async () => {
+      try {
+        const res = await fetch('/api/brands?t=' + Date.now(), { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data?.brands) && data.brands.length > 0) {
+            // Filter brands that have a logo and are marked featured (or default featured !== false)
+            const withLogos = data.brands.filter(
+              (b: any) => Boolean(b.logo) && b.featured !== false
+            );
+            if (withLogos.length > 0) {
+              setBrands(withLogos);
+              return;
+            }
+          }
+        }
+      } catch {}
 
-    // Fallback sync with API or localStorage
-    const fetchConfig = async () => {
+      // Fallback: check /api/homepage
       try {
         const res = await fetch('/api/homepage?t=' + Date.now(), { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (data?.config?.brandsBar?.selectedBrands?.length > 0) {
-            setBrands(data.config.brandsBar.selectedBrands);
-            return;
-          }
-        }
-      } catch {}
-
-      try {
-        const saved = localStorage.getItem('dwstore_homepage_config');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed?.brandsBar?.selectedBrands?.length > 0) {
-            setBrands(parsed.brandsBar.selectedBrands);
+            const list = data.config.brandsBar.selectedBrands.filter((b: any) => Boolean(b.logo));
+            if (list.length > 0) {
+              setBrands(list);
+              return;
+            }
           }
         }
       } catch {}
     };
 
-    fetchConfig();
-  }, [initialConfig]);
+    fetchBrands();
+    const interval = setInterval(fetchBrands, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  if (!isEnabled) return null;
+  if (!isEnabled || brands.length === 0) return null;
+
+  // Duplicate items 3x to ensure uninterrupted infinite marquee loop
+  const loopList = [...brands, ...brands, ...brands];
 
   return (
-    <section className="w-full bg-white border-y border-slate-100">
-      <div className="page-container py-3 flex items-center gap-8 overflow-x-auto no-scrollbar">
-        {brands.map((brand) => (
+    <section className="w-full bg-slate-50/60 py-6 sm:py-8 border-y border-slate-100 overflow-hidden relative">
+      {/* Edge gradient fades for seamless appearance */}
+      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
+
+      {/* Marquee Animation Styles */}
+      <style jsx>{`
+        @keyframes brandMarquee {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-33.333333%);
+          }
+        }
+        .marquee-track {
+          display: flex;
+          width: max-content;
+          animation: brandMarquee 38s linear infinite;
+        }
+        .marquee-track:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+
+      {/* Continuous Auto-Slide Marquee Track */}
+      <div className="marquee-track flex items-center">
+        {loopList.map((brand, idx) => (
           <Link
-            key={brand.slug || brand.name}
-            href={`/brand/${brand.slug}`}
-            className="flex items-center gap-2.5 flex-shrink-0 px-2 py-1.5 rounded-lg group opacity-85 hover:opacity-100 transition-all hover:bg-slate-50"
+            key={`${brand.slug || brand.name}-${idx}`}
+            href={`/brand/${brand.slug || brand.name.toLowerCase()}`}
+            title={`View ${brand.name} official products`}
+            className="w-32 h-20 sm:w-44 sm:h-26 bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-lg hover:border-blue-400 hover:-translate-y-0.5 flex items-center justify-center p-3 sm:p-4 transition-all duration-300 flex-shrink-0 group mx-2 sm:mx-3 cursor-pointer"
           >
             {brand.logo ? (
-              <div className="w-8 h-8 flex items-center justify-center bg-white rounded border border-slate-200 p-1 flex-shrink-0 shadow-2xs group-hover:border-blue-300 transition">
-                <img
-                  src={brand.logo}
-                  alt={brand.name}
-                  className="max-h-full max-w-full object-contain"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
-              </div>
-            ) : null}
-
-            <div className="flex flex-col">
-              <span className="text-xs font-bold tracking-wider text-slate-800 uppercase group-hover:text-blue-600 transition whitespace-nowrap">
+              <img
+                src={brand.logo}
+                alt={brand.name}
+                className="max-h-10 sm:max-h-12 max-w-[85%] object-contain opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
+            ) : (
+              <span className="text-sm font-bold text-slate-700 tracking-wider uppercase group-hover:text-blue-600">
                 {brand.name}
               </span>
-              {(brand.tag || brand.description) && (
-                <span className="text-[10px] text-slate-400 font-medium group-hover:text-blue-500 transition whitespace-nowrap">
-                  {brand.tag || brand.description}
-                </span>
-              )}
-            </div>
+            )}
           </Link>
         ))}
       </div>

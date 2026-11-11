@@ -38,6 +38,7 @@ interface HomeCustomizerViewProps {
   categories: CategoryItem[];
   brands: BrandItem[];
   showNotification: (msg: string) => void;
+  setActiveTab?: (tab: any) => void;
 }
 
 export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
@@ -45,6 +46,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
   categories,
   brands,
   showNotification,
+  setActiveTab,
 }) => {
   const [activeSection, setActiveSection] = useState<'hero' | 'brands' | 'banners' | 'categories' | 'deals' | 'bento'>('hero');
   const [activeHeroBox, setActiveHeroBox] = useState<'mainBox' | 'sideBox1' | 'sideBox2'>('mainBox');
@@ -1397,16 +1399,45 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
 
               {/* Image URL & Live Preview */}
               <div className="col-12 col-md-6">
-                <label className="form-label fw-semibold mb-1" style={{ fontSize: '13px' }}>
-                  Main Showcase Image URL
-                </label>
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <label className="form-label fw-semibold mb-0" style={{ fontSize: '13px' }}>
+                    Main Showcase Image
+                  </label>
+                  <label
+                    className="btn btn-link p-0 text-decoration-none fw-semibold"
+                    style={{ fontSize: '11px', color: 'var(--primary, #2563eb)', cursor: 'pointer' }}
+                  >
+                    <Upload size={11} className="me-1 inline" /> Upload from PC
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="d-none"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const url = await uploadBannerFile(file);
+                        if (url) {
+                          setConfig((prev: any) => ({
+                            ...prev,
+                            hero: {
+                              ...prev.hero,
+                              [activeHeroBox]: { ...prev.hero[activeHeroBox], image: url },
+                            },
+                          }));
+                          showNotification('Hero box image uploaded successfully!');
+                        }
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
                 <div className="d-flex gap-2 align-items-center">
                   <input
                     type="text"
                     className="form-control"
                     style={{ borderRadius: '10px', fontSize: '12px' }}
                     value={currentBoxConfig.image || ''}
-                    placeholder="https://... image link"
+                    placeholder="/media/home-customizer/... or https://..."
                     onChange={(e) => {
                       const val = e.target.value;
                       setConfig((prev: any) => ({
@@ -1446,16 +1477,45 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
               {/* Secondary floating image for Main Box */}
               {activeHeroBox === 'mainBox' && (
                 <div className="col-12 col-md-6">
-                  <label className="form-label fw-semibold mb-1" style={{ fontSize: '13px' }}>
-                    Secondary Floating Badge Image URL (Optional)
-                  </label>
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <label className="form-label fw-semibold mb-0" style={{ fontSize: '13px' }}>
+                      Secondary Floating Badge Image (Optional)
+                    </label>
+                    <label
+                      className="btn btn-link p-0 text-decoration-none fw-semibold"
+                      style={{ fontSize: '11px', color: 'var(--primary, #2563eb)', cursor: 'pointer' }}
+                    >
+                      <Upload size={11} className="me-1 inline" /> Upload from PC
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="d-none"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const url = await uploadBannerFile(file);
+                          if (url) {
+                            setConfig((prev: any) => ({
+                              ...prev,
+                              hero: {
+                                ...prev.hero,
+                                mainBox: { ...prev.hero.mainBox, secondaryImage: url },
+                              },
+                            }));
+                            showNotification('Secondary hero badge image uploaded successfully!');
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </div>
                   <div className="d-flex gap-2 align-items-center">
                     <input
                       type="text"
                       className="form-control"
                       style={{ borderRadius: '10px', fontSize: '12px' }}
                       value={currentBoxConfig.secondaryImage || ''}
-                      placeholder="https://... secondary image link"
+                      placeholder="/media/home-customizer/... or https://..."
                       onChange={(e) => {
                         const val = e.target.value;
                         setConfig((prev: any) => ({
@@ -2361,11 +2421,11 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
               <div className="d-flex align-items-center gap-2">
                 <Award size={20} className="text-primary" />
                 <h3 className="m-0" style={{ fontSize: '16px', fontWeight: 700 }}>
-                  Brand Logos Bar (Below Hero Section)
+                  Brand Logos Slider (Storefront Homepage)
                 </h3>
               </div>
               <p className="m-0 text-muted mt-1" style={{ fontSize: '13px' }}>
-                Select and order which brand logos appear on the homepage bar, with custom taglines and logos.
+                Featured brand logos appear in the modern auto-sliding cards ticker below the hero section.
               </p>
             </div>
             <div className="d-flex align-items-center gap-2">
@@ -2396,6 +2456,48 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
             </div>
           </div>
 
+          {/* Centralized Brand Management Notice */}
+          <div
+            className="p-3 rounded-3 border d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 shadow-2xs"
+            style={{ background: '#f0fdf4', borderColor: '#bbf7d0' }}
+          >
+            <div className="d-flex align-items-center gap-2.5">
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: '#dcfce7',
+                  color: '#16a34a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <CheckCircle2 size={18} />
+              </div>
+              <div>
+                <b className="d-block text-success-emphasis" style={{ fontSize: '13px' }}>
+                  Brand Logos are Centralized in the Brands Page
+                </b>
+                <small className="text-success-emphasis opacity-75" style={{ fontSize: '12px' }}>
+                  To add new brands or upload / replace brand logos, please use the dedicated <b>Brands</b> page. Uploaded brand logos automatically sync to the homepage auto-sliding ticker.
+                </small>
+              </div>
+            </div>
+            {setActiveTab && (
+              <button
+                type="button"
+                className="btn btn-sm btn-success d-inline-flex align-items-center gap-1.5 flex-shrink-0"
+                style={{ borderRadius: '8px', fontWeight: 600, fontSize: '12px', padding: '6px 14px' }}
+                onClick={() => setActiveTab('brands')}
+              >
+                <ExternalLink size={13} /> Manage Brands &amp; Logos
+              </button>
+            )}
+          </div>
+
           {/* Active Brands List */}
           <div className="card-x p-3">
             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -2404,7 +2506,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                   Active Brand Logos ({config?.brandsBar?.selectedBrands?.length || 0})
                 </h4>
                 <small className="text-muted" style={{ fontSize: '12px' }}>
-                  These logos appear horizontally on the storefront. Use the arrow buttons to reorder them.
+                  These brands appear in the continuous auto-sliding card ticker. Use the arrows to reorder.
                 </small>
               </div>
               <button
@@ -2430,13 +2532,19 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
             <div className="d-flex flex-column gap-2 mb-4">
               {(config?.brandsBar?.selectedBrands || []).map((brandItem: any, index: number) => {
                 const total = config?.brandsBar?.selectedBrands?.length || 0;
+                // Match brand with live catalog to get live logo
+                const liveBrand = brands.find(
+                  (b) => b.slug === brandItem.slug || b.id === brandItem.slug || b.name.toLowerCase() === brandItem.name.toLowerCase()
+                );
+                const currentLogo = liveBrand?.logo || brandItem.logo;
+
                 return (
                   <div
                     key={brandItem.slug + '-' + index}
                     className="p-3 rounded-3 border d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 bg-white hover-bg transition"
                     style={{ borderColor: 'var(--border)' }}
                   >
-                    {/* Left: Reorder & Logo Preview */}
+                    {/* Left: Reorder & Logo Card Preview */}
                     <div className="d-flex align-items-center gap-3">
                       <div className="d-flex flex-column align-items-center gap-1">
                         <button
@@ -2464,23 +2572,25 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                         </button>
                       </div>
 
+                      {/* Storefront Style Logo Card Preview */}
                       <div
                         style={{
-                          width: '48px',
-                          height: '48px',
-                          borderRadius: '8px',
-                          background: '#f8fafc',
-                          border: '1px solid var(--border)',
+                          width: '80px',
+                          height: '52px',
+                          borderRadius: '12px',
+                          background: '#fff',
+                          border: '1px solid #e2e8f0',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          padding: '4px',
+                          padding: '6px',
                           flexShrink: 0,
                         }}
                       >
-                        {brandItem.logo ? (
+                        {currentLogo ? (
                           <img
-                            src={brandItem.logo}
+                            src={currentLogo}
                             alt={brandItem.name}
                             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                             onError={(e) => {
@@ -2488,7 +2598,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                             }}
                           />
                         ) : (
-                          <Award size={20} className="text-muted" />
+                          <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600 }}>No Logo</span>
                         )}
                       </div>
 
@@ -2502,61 +2612,38 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Middle: Tagline & Logo URL inputs */}
-                    <div className="d-flex flex-grow-1 flex-column flex-sm-row gap-2 align-items-center">
-                      <div className="w-100">
-                        <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
-                          Sub-Tagline / Description:
-                        </label>
-                        <input
-                          type="text"
-                          className="input-x"
-                          value={brandItem.tag || ''}
-                          placeholder="e.g. Sound & Power, Fast Charging..."
-                          onChange={(e) => handleUpdateBrandTag(index, e.target.value)}
-                          style={{ height: '34px', fontSize: '12px' }}
-                        />
-                      </div>
-                      <div className="w-100">
-                        <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
-                          Logo Image URL / Path:
-                        </label>
-                        <input
-                          type="text"
-                          className="input-x"
-                          value={brandItem.logo || ''}
-                          placeholder="e.g. /media/brands/logo.svg"
-                          onChange={(e) => handleUpdateBrandLogo(index, e.target.value)}
-                          style={{ height: '34px', fontSize: '12px' }}
-                        />
-                      </div>
+                    {/* Middle: Brand Status info */}
+                    <div className="d-flex flex-grow-1 align-items-center px-2">
+                      {currentLogo ? (
+                        <span
+                          className="badge bg-success-subtle text-success border border-success-subtle py-1 px-2.5 d-inline-flex align-items-center gap-1"
+                          style={{ fontSize: '11px' }}
+                        >
+                          <CheckCircle2 size={12} /> Live Logo in Brands
+                        </span>
+                      ) : (
+                        <span
+                          className="badge bg-warning-subtle text-warning border border-warning-subtle py-1 px-2.5 d-inline-flex align-items-center gap-1"
+                          style={{ fontSize: '11px' }}
+                        >
+                          ⚠️ Missing Logo (Upload in Brands page)
+                        </span>
+                      )}
                     </div>
 
                     {/* Right: Actions */}
                     <div className="d-flex align-items-center gap-2">
-                      <label
-                        className="btn-soft d-inline-flex align-items-center gap-1 cursor-pointer"
-                        style={{ height: '34px', fontSize: '12px', padding: '0 10px', cursor: 'pointer' }}
-                        title="Upload Logo from PC"
-                      >
-                        <Upload size={13} />
-                        <span className="d-none d-sm-inline">Upload</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="d-none"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const uploadedUrl = await uploadBannerFile(file);
-                              if (uploadedUrl) {
-                                handleUpdateBrandLogo(index, uploadedUrl);
-                                showNotification(`Logo uploaded for ${brandItem.name}!`);
-                              }
-                            }
-                          }}
-                        />
-                      </label>
+                      {setActiveTab && (
+                        <button
+                          type="button"
+                          className="btn-soft d-inline-flex align-items-center gap-1"
+                          style={{ height: '34px', fontSize: '12px', padding: '0 10px' }}
+                          onClick={() => setActiveTab('brands')}
+                          title="Open Brands page to edit logo"
+                        >
+                          <ExternalLink size={12} /> Edit Logo in Brands
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="icon-btn text-danger"
