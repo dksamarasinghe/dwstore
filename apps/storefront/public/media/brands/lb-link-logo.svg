@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+      <circle cx="26" cy="30" r="14" fill="#0D9488"/>
+      <path d="M19 25 A10 10 0 0 1 33 25 M22 29 A6 6 0 0 1 30 29 M26 34 A1 1 0 1 1 26 33" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+      <text x="48" y="37" font-family="Arial Black, sans-serif" font-size="21" font-weight="900" fill="#0F172A">LB-LINK</text>
+    </svg>

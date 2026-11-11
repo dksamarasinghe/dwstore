@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+      <rect x="12" y="14" width="32" height="32" rx="4" fill="#000000"/>
+      <text x="28" y="37" font-family="Arial Black, sans-serif" font-size="18" font-weight="900" fill="#EAB308" text-anchor="middle">V</text>
+      <text x="54" y="38" font-family="Arial Black, Impact, sans-serif" font-size="26" font-weight="900" fill="#0F172A" letter-spacing="2">VGR</text>
+    </svg>

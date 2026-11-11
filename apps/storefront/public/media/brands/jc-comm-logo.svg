@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+      <circle cx="28" cy="30" r="16" fill="#0284C7"/>
+      <path d="M20 30 Q28 18 36 30 Q28 42 20 30" fill="none" stroke="#ffffff" stroke-width="3"/>
+      <circle cx="28" cy="30" r="3.5" fill="#ffffff"/>
+      <text x="52" y="37" font-family="Arial, sans-serif" font-size="21" font-weight="900" fill="#0F172A">JC COMM</text>
+    </svg>

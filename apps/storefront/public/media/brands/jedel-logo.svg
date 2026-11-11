@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+      <path d="M15 15 L32 15 L38 30 L32 45 L15 45 Z" fill="#DC2626"/>
+      <text x="24" y="35" font-family="Arial, sans-serif" font-size="14" font-weight="900" fill="#FFFFFF">J</text>
+      <text x="48" y="38" font-family="Arial Black, Impact, sans-serif" font-size="23" font-weight="900" fill="#0F172A" letter-spacing="1.5">JEDEL</text>
+    </svg>

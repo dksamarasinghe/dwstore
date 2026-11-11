@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+      <circle cx="26" cy="30" r="14" fill="#0284C7"/>
+      <path d="M22 26 L31 30 L22 34 Z" fill="#FFFFFF"/>
+      <text x="48" y="38" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="800" fill="#0284C7">Kisonli</text>
+    </svg>

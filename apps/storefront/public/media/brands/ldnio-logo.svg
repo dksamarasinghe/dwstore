@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+      <rect x="10" y="14" width="34" height="32" rx="6" fill="#DC2626"/>
+      <path d="M26 18 L20 31 L26 31 L24 41 L34 27 L28 27 Z" fill="#FFFFFF"/>
+      <text x="52" y="38" font-family="Arial Black, Impact, sans-serif" font-size="26" font-weight="900" fill="#DC2626" letter-spacing="1.5">LDNIO</text>
+    </svg>

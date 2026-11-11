@@ -3,338 +3,448 @@
     "id": "aspor",
     "name": "Aspor",
     "slug": "aspor",
-    "productCount": 36
+    "productCount": 36,
+    "logo": "/media/brands/aspor-logo.svg",
+    "featured": true
   },
   {
     "id": "jc-comm",
     "name": "JC COMM",
     "slug": "jc-comm",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/jc-comm-logo.svg",
+    "featured": false
   },
   {
     "id": "remax",
     "name": "Remax",
     "slug": "remax",
-    "productCount": 15
+    "productCount": 15,
+    "logo": "/media/brands/remax-logo.svg",
+    "featured": true
   },
   {
     "id": "tandg",
     "name": "T&G",
     "slug": "tandg",
-    "productCount": 4
+    "productCount": 4,
+    "logo": "/media/brands/tandg-logo.svg",
+    "featured": false
   },
   {
     "id": "jedel",
     "name": "JEDEL",
     "slug": "jedel",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/jedel-logo.svg",
+    "featured": false
   },
   {
     "id": "lenovo",
     "name": "Lenovo",
     "slug": "lenovo",
     "productCount": 4,
-    "logo": "/media/brands/lenovo-logo.svg"
+    "logo": "/media/brands/lenovo-logo.svg",
+    "featured": true
   },
   {
     "id": "qkz",
     "name": "QKZ",
     "slug": "qkz",
-    "productCount": 2
+    "productCount": 2,
+    "logo": "/media/brands/qkz-logo.svg",
+    "featured": false
   },
   {
     "id": "celebrat",
     "name": "Celebrat",
     "slug": "celebrat",
-    "productCount": 10
+    "productCount": 10,
+    "logo": "/media/brands/celebrat-logo.svg",
+    "featured": true
   },
   {
     "id": "bwoo",
     "name": "BWOO",
     "slug": "bwoo",
-    "productCount": 23
+    "productCount": 23,
+    "logo": "/media/brands/bwoo-logo.svg",
+    "featured": true
   },
   {
     "id": "jbl",
     "name": "JBL",
     "slug": "jbl",
-    "productCount": 4
+    "productCount": 4,
+    "logo": "/media/brands/jbl-logo.svg",
+    "featured": true
   },
   {
     "id": "meetion",
     "name": "Meetion",
     "slug": "meetion",
-    "productCount": 6
+    "productCount": 6,
+    "logo": "/media/brands/meetion-logo.svg",
+    "featured": true
   },
   {
     "id": "vdenmenv",
     "name": "VDENMENV",
     "slug": "vdenmenv",
-    "productCount": 6
+    "productCount": 6,
+    "logo": "/media/brands/vdenmenv-logo.svg",
+    "featured": true
   },
   {
     "id": "foneng",
     "name": "FONENG",
     "slug": "foneng",
-    "productCount": 11
+    "productCount": 11,
+    "logo": "/media/brands/foneng-logo.svg",
+    "featured": true
   },
   {
     "id": "brodu",
     "name": "Brodu",
     "slug": "brodu",
-    "productCount": 6
+    "productCount": 6,
+    "logo": "/media/brands/brodu-logo.svg",
+    "featured": true
   },
   {
     "id": "plokama",
     "name": "PLOKAMA",
     "slug": "plokama",
-    "productCount": 15
+    "productCount": 15,
+    "logo": "/media/brands/plokama-logo.svg",
+    "featured": true
   },
   {
     "id": "anker",
     "name": "Anker",
     "slug": "anker",
-    "productCount": 20
+    "productCount": 20,
+    "logo": "/media/brands/anker-logo.svg",
+    "featured": true
   },
   {
     "id": "joyroom",
     "name": "Joyroom",
     "slug": "joyroom",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/joyroom-logo.svg",
+    "featured": true
   },
   {
     "id": "vgr",
     "name": "VGR",
     "slug": "vgr",
-    "productCount": 3
+    "productCount": 3,
+    "logo": "/media/brands/vgr-logo.svg",
+    "featured": false
   },
   {
     "id": "yesido",
     "name": "YESIDO",
     "slug": "yesido",
-    "productCount": 2
+    "productCount": 2,
+    "logo": "/media/brands/yesido-logo.svg",
+    "featured": false
   },
   {
     "id": "tplink",
     "name": "TPLINK",
     "slug": "tplink",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/tplink-logo.svg",
+    "featured": true
   },
   {
     "id": "hikvision-ezviz-hikvision",
     "name": "Hikvision > EZVIZ, Hikvision",
     "slug": "hikvision-ezviz-hikvision",
-    "productCount": 7
+    "productCount": 7,
+    "logo": "/media/brands/hikvision-ezviz-hikvision-logo.svg",
+    "featured": true
   },
   {
     "id": "ldnio",
     "name": "LDNIO",
     "slug": "ldnio",
-    "productCount": 6
+    "productCount": 6,
+    "logo": "/media/brands/ldnio-logo.svg",
+    "featured": true
   },
   {
     "id": "baseus",
     "name": "Baseus",
     "slug": "baseus",
-    "productCount": 7
+    "productCount": 7,
+    "logo": "/media/brands/baseus-logo.svg",
+    "featured": true
   },
   {
     "id": "ndr",
     "name": "NDR",
     "slug": "ndr",
-    "productCount": 5
+    "productCount": 5,
+    "logo": "/media/brands/ndr-logo.svg",
+    "featured": true
   },
   {
     "id": "mi",
     "name": "Mi",
     "slug": "mi",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/mi-logo.svg",
+    "featured": true
   },
   {
     "id": "kts",
     "name": "KTS",
     "slug": "kts",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/kts-logo.svg",
+    "featured": false
   },
   {
     "id": "lb-link",
     "name": "LB-LINK",
     "slug": "lb-link",
-    "productCount": 4
+    "productCount": 4,
+    "logo": "/media/brands/lb-link-logo.svg",
+    "featured": false
   },
   {
     "id": "haylou",
     "name": "HAYLOU",
     "slug": "haylou",
-    "productCount": 3
+    "productCount": 3,
+    "logo": "/media/brands/haylou-logo.svg",
+    "featured": false
   },
   {
     "id": "keqiwear",
     "name": "KEQIWEAR",
     "slug": "keqiwear",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/keqiwear-logo.svg",
+    "featured": false
   },
   {
     "id": "goop",
     "name": "GOOP",
     "slug": "goop",
-    "productCount": 2
+    "productCount": 2,
+    "logo": "/media/brands/goop-logo.svg",
+    "featured": false
   },
   {
     "id": "jio",
     "name": "JIO",
     "slug": "jio",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/jio-logo.svg",
+    "featured": false
   },
   {
     "id": "uiisii",
     "name": "UiiSii",
     "slug": "uiisii",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/uiisii-logo.svg",
+    "featured": false
   },
   {
     "id": "tiandy",
     "name": "Tiandy",
     "slug": "tiandy",
-    "productCount": 2
+    "productCount": 2,
+    "logo": "/media/brands/tiandy-logo.svg",
+    "featured": false
   },
   {
     "id": "aibimy",
     "name": "aibimy",
     "slug": "aibimy",
-    "productCount": 3
+    "productCount": 3,
+    "logo": "/media/brands/aibimy-logo.svg",
+    "featured": false
   },
   {
     "id": "lito",
     "name": "LITO",
     "slug": "lito",
-    "productCount": 7
+    "productCount": 7,
+    "logo": "/media/brands/lito-logo.svg",
+    "featured": true
   },
   {
     "id": "ven-dens",
     "name": "VEN-DENS",
     "slug": "ven-dens",
-    "productCount": 4
+    "productCount": 4,
+    "logo": "/media/brands/ven-dens-logo.svg",
+    "featured": false
   },
   {
     "id": "kingston",
     "name": "Kingston",
     "slug": "kingston",
-    "productCount": 4
+    "productCount": 4,
+    "logo": "/media/brands/kingston-logo.svg",
+    "featured": true
   },
   {
     "id": "kisonli",
     "name": "Kisonli",
     "slug": "kisonli",
-    "productCount": 3
+    "productCount": 3,
+    "logo": "/media/brands/kisonli-logo.svg",
+    "featured": false
   },
   {
     "id": "sandisk",
     "name": "SanDisk",
     "slug": "sandisk",
-    "productCount": 2
+    "productCount": 2,
+    "logo": "/media/brands/sandisk-logo.svg",
+    "featured": true
   },
   {
     "id": "vstarcam",
     "name": "VSTARCAM",
     "slug": "vstarcam",
-    "productCount": 6
+    "productCount": 6,
+    "logo": "/media/brands/vstarcam-logo.svg",
+    "featured": true
   },
   {
     "id": "soundpeats",
     "name": "Soundpeats",
     "slug": "soundpeats",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/soundpeats-logo.svg",
+    "featured": false
   },
   {
     "id": "sky-mobile",
     "name": "SKY MOBILE",
     "slug": "sky-mobile",
-    "productCount": 2
+    "productCount": 2,
+    "logo": "/media/brands/sky-mobile-logo.svg",
+    "featured": false
   },
   {
     "id": "ugreen",
     "name": "UGREEN",
     "slug": "ugreen",
-    "productCount": 6
+    "productCount": 6,
+    "logo": "/media/brands/ugreen-logo.svg",
+    "featured": true
   },
   {
     "id": "sony",
     "name": "SONY",
     "slug": "sony",
     "productCount": 22,
-    "logo": "/media/brands/sony-logo.svg"
+    "logo": "/media/brands/sony-logo.svg",
+    "featured": true
   },
   {
     "id": "pluzz",
     "name": "PLUZZ",
     "slug": "pluzz",
-    "productCount": 2
+    "productCount": 2,
+    "logo": "/media/brands/pluzz-logo.svg",
+    "featured": false
   },
   {
     "id": "nokia",
     "name": "NOKIA",
     "slug": "nokia",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/nokia-logo.svg",
+    "featured": false
   },
   {
     "id": "hmd",
     "name": "HMD",
     "slug": "hmd",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/hmd-logo.svg",
+    "featured": false
   },
   {
     "id": "softlogic",
     "name": "Softlogic",
     "slug": "softlogic",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/softlogic-logo.svg",
+    "featured": false
   },
   {
     "id": "hono",
     "name": "Hono",
     "slug": "hono",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/hono-logo.svg",
+    "featured": false
   },
   {
     "id": "greentel",
     "name": "Greentel",
     "slug": "greentel",
-    "productCount": 2
+    "productCount": 2,
+    "logo": "/media/brands/greentel-logo.svg",
+    "featured": false
   },
   {
     "id": "samsung",
     "name": "SAMSUNG",
     "slug": "samsung",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/samsung-logo.svg",
+    "featured": true
   },
   {
     "id": "microlab",
     "name": "Microlab",
     "slug": "microlab",
-    "productCount": 2
+    "productCount": 2,
+    "logo": "/media/brands/microlab-logo.svg",
+    "featured": false
   },
   {
     "id": "hoioto",
     "name": "HOIOTO",
     "slug": "hoioto",
-    "productCount": 2
+    "productCount": 2,
+    "logo": "/media/brands/hoioto-logo.svg",
+    "featured": false
   },
   {
     "id": "aoc",
     "name": "AOC",
     "slug": "aoc",
-    "productCount": 1
+    "productCount": 1,
+    "logo": "/media/brands/aoc-logo.svg",
+    "featured": false
   },
   {
     "id": "hiksemi",
     "name": "HIKSEMI",
     "slug": "hiksemi",
-    "productCount": 2
+    "productCount": 2,
+    "logo": "/media/brands/hiksemi-logo.svg",
+    "featured": false
   },
   {
     "id": "mikorean",
     "name": "Mikorean",
     "slug": "mikorean",
-    "productCount": 2
+    "productCount": 2,
+    "logo": "/media/brands/mikorean-logo.svg",
+    "featured": false
   }
 ]

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+      <circle cx="26" cy="30" r="14" fill="#0EA5E9"/>
+      <path d="M20 33 Q26 23 32 33" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+      <text x="48" y="37" font-family="Arial Black, sans-serif" font-size="20" font-weight="900" fill="#0369A1">SKY MOBILE</text>
+    </svg>

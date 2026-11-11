@@ -106,8 +106,14 @@ export default function App() {
   });
   const [brands, setBrands] = useState<BrandItem[]>(() => {
     try {
+      const savedV2 = localStorage.getItem('dwstore_admin_brands_v2');
+      if (savedV2) return JSON.parse(savedV2);
       const saved = localStorage.getItem('dwstore_admin_brands');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const hasLogos = Array.isArray(parsed) && parsed.filter((b: any) => Boolean(b.logo)).length > 10;
+        if (hasLogos) return parsed;
+      }
     } catch (e) {}
     return realBrands;
   });
@@ -132,16 +138,22 @@ export default function App() {
 
   useEffect(() => {
     try {
+      localStorage.setItem('dwstore_admin_brands_v2', JSON.stringify(brands));
       localStorage.setItem('dwstore_admin_brands', JSON.stringify(brands));
     } catch (e) {}
   }, [brands]);
+
   // Sync brands with Storefront API
   useEffect(() => {
-    fetch(`${getStorefrontUrl()}/api/brands`)
+    fetch(`${getStorefrontUrl()}/api/brands?t=${Date.now()}`)
       .then((r) => r.json())
       .then((data) => {
         if (data?.success && Array.isArray(data.brands) && data.brands.length > 0) {
           setBrands(data.brands);
+          try {
+            localStorage.setItem('dwstore_admin_brands_v2', JSON.stringify(data.brands));
+            localStorage.setItem('dwstore_admin_brands', JSON.stringify(data.brands));
+          } catch {}
         }
       })
       .catch(() => {});
