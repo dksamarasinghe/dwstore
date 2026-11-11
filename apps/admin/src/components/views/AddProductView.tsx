@@ -1626,7 +1626,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                   <div className="row g-3">
                     <div className="col-12 col-md-4">
                       <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
-                        Opening Stock *
+                        Opening Stock (Optional)
                       </label>
                       <input
                         type="number"
@@ -1641,7 +1641,6 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                         placeholder="0"
                         value={openingStock}
                         onChange={(e) => setOpeningStock(e.target.value)}
-                        required
                       />
                     </div>
 

@@ -134,26 +134,31 @@ export default function HeroSection({ initialData }: HeroSectionProps) {
                     {/* Main Featured Image */}
                     <img
                       src={
-                        mainBox.image ||
-                        'https://www.dwstore.lk/wp-content/uploads/2024/10/T800-Ultra-Smart-Watch-1.jpg'
+                        mainBox.image && !mainBox.image.includes('wp-content/uploads')
+                          ? mainBox.image
+                          : '/media/categories/smartwatches-T800-Ultra-Smart-Watch-1.jpg'
                       }
                       alt={mainBox.title || 'Featured Tech'}
                       className="w-64 xl:w-72 h-auto object-contain drop-shadow-2xl rounded-2xl bg-white/70 p-3 border border-white"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =
-                          'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=400&auto=format&fit=crop&q=80';
+                          '/media/categories/smartwatches-T800-Ultra-Smart-Watch-1.jpg';
                       }}
                     />
                     {/* Floating secondary badge chip */}
                     {mainBox.secondaryImage && (
                       <div className="absolute -bottom-2 left-0 w-28 h-28 bg-white/90 backdrop-blur-md rounded-2xl p-2.5 border border-white shadow-xl hidden xl:block">
                         <img
-                          src={mainBox.secondaryImage}
+                          src={
+                            mainBox.secondaryImage && !mainBox.secondaryImage.includes('wp-content/uploads')
+                              ? mainBox.secondaryImage
+                              : '/media/products/RPP2921_5d0c7431.jpg'
+                          }
                           alt="Secondary Showcase"
                           className="w-full h-full object-contain"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
-                              'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=160&auto=format&fit=crop&q=80';
+                              '/media/products/RPP2921_5d0c7431.jpg';
                           }}
                         />
                       </div>
@@ -197,14 +202,15 @@ export default function HeroSection({ initialData }: HeroSectionProps) {
               <div className="absolute right-2 bottom-0 top-0 w-36 flex items-center justify-end p-2 pointer-events-none">
                 <img
                   src={
-                    sideBox1.image ||
-                    'https://www.dwstore.lk/wp-content/uploads/2024/10/T800-Ultra-Smart-Watch-1.jpg'
+                    sideBox1.image && !sideBox1.image.includes('wp-content/uploads')
+                      ? sideBox1.image
+                      : '/media/categories/smartwatches-T800-Ultra-Smart-Watch-1.jpg'
                   }
                   alt={sideBox1.title || 'Product'}
                   className="w-full h-auto object-contain group-hover:scale-105 transition duration-500 rounded-lg max-h-36"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
-                      'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=200&auto=format&fit=crop&q=80';
+                      '/media/categories/smartwatches-T800-Ultra-Smart-Watch-1.jpg';
                   }}
                 />
               </div>
@@ -239,14 +245,15 @@ export default function HeroSection({ initialData }: HeroSectionProps) {
               <div className="absolute right-2 bottom-0 top-0 w-36 flex items-center justify-end p-2 pointer-events-none">
                 <img
                   src={
-                    sideBox2.image ||
-                    'https://www.dwstore.lk/wp-content/uploads/2024/10/RPP2921.jpg'
+                    sideBox2.image && !sideBox2.image.includes('wp-content/uploads')
+                      ? sideBox2.image
+                      : '/media/products/RPP2921_5d0c7431.jpg'
                   }
                   alt={sideBox2.title || 'Product'}
                   className="w-full h-auto object-contain group-hover:scale-105 transition duration-500 rounded-lg max-h-36"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
-                      'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=200&auto=format&fit=crop&q=80';
+                      '/media/products/RPP2921_5d0c7431.jpg';
                   }}
                 />
               </div>

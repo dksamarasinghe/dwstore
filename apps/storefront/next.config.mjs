@@ -52,6 +52,18 @@ const nextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      {
+        source: '/media/:path*',
+        destination: '/api/media/:path*',
+      },
+      {
+        source: '/wp-content/uploads/:path*',
+        destination: '/api/media/wp-content/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

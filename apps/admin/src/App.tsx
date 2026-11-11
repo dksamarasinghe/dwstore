@@ -21,6 +21,7 @@ import { AddProductView } from './components/views/AddProductView';
 import { CategoriesView } from './components/views/CategoriesView';
 import { BrandsView } from './components/views/BrandsView';
 import { HomeCustomizerView } from './components/views/HomeCustomizerView';
+import { MediaLibraryView } from './components/views/MediaLibraryView';
 import { InventoryView } from './components/views/InventoryView';
 import { CustomersView } from './components/views/CustomersView';
 import { ReviewsView } from './components/views/ReviewsView';
@@ -1042,6 +1043,10 @@ export default function App() {
               showNotification={showNotification}
               setActiveTab={setActiveTab}
             />
+          )}
+
+          {activeTab === 'media' && (
+            <MediaLibraryView showNotification={showNotification} />
           )}
 
           {activeTab === 'inventory' && (

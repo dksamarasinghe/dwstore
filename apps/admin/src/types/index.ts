@@ -6,6 +6,7 @@ export type TabType =
   | 'categories'
   | 'brands'
   | 'home-customizer'
+  | 'media'
   | 'inventory'
   | 'customers'
   | 'reviews'

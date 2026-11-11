@@ -32,15 +32,26 @@ interface CategoryCirclesProps {
 
 export default function CategoryCircles({ initialConfig }: CategoryCirclesProps) {
   const [config, setConfig] = useState(initialConfig);
+  const [categoriesList, setCategoriesList] = useState<any[]>(categoriesData);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // 1. Fetch categories from live API
+    fetch('/api/categories?t=' + Date.now(), { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data?.categories) && data.categories.length > 0) {
+          setCategoriesList(data.categories);
+        }
+      })
+      .catch(() => {});
+
     if (initialConfig) {
       setConfig(initialConfig);
       return;
     }
 
-    // Fetch config from API if not provided via props
+    // 2. Fetch homepage config from API if not provided via props
     const fetchConfig = async () => {
       try {
         const res = await fetch('/api/homepage?t=' + Date.now(), { cache: 'no-store' });
@@ -65,13 +76,13 @@ export default function CategoryCircles({ initialConfig }: CategoryCirclesProps)
   if (selectedSlugs.length > 0) {
     // Map slugs in the exact order specified by the admin
     displayCategories = selectedSlugs
-      .map((slug) => categoriesData.find((c: any) => c.slug === slug || c.id === slug))
+      .map((slug) => categoriesList.find((c: any) => c.slug === slug || c.id === slug))
       .filter(Boolean);
   }
 
   // Fallback to top 8 leaf categories if none selected
   if (displayCategories.length === 0) {
-    displayCategories = categoriesData
+    displayCategories = categoriesList
       .filter((c: any) => c.productCount > 0)
       .sort((a: any, b: any) => b.productCount - a.productCount)
       .slice(0, 8);
@@ -150,6 +161,9 @@ export default function CategoryCircles({ initialConfig }: CategoryCirclesProps)
                       src={imgSrc}
                       alt={cat.name}
                       className="w-full h-full object-contain mix-blend-multiply"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
                     />
                   ) : (
                     <Icon className="w-8 h-8 text-blue-600" />

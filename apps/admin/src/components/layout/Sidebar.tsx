@@ -31,7 +31,8 @@ import {
   ExternalLink,
   Store,
   ChevronDown,
-  LayoutTemplate
+  LayoutTemplate,
+  Images
 } from 'lucide-react';
 import { TabType } from '../../types';
 
@@ -248,6 +249,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <LayoutTemplate size={18} />
             {!collapsed && <span>Home Customizer</span>}
+          </a>
+
+          <a
+            className={`sb-link ${activeTab === 'media' ? 'active' : ''}`}
+            href="#media"
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick('media');
+            }}
+            title="Media & Files"
+          >
+            <Images size={18} />
+            {!collapsed && <span>Media Library</span>}
           </a>
 
           <a
