@@ -21,6 +21,7 @@ import {
 import { BrandItem, ProductItem, TabType } from '../../types';
 import { CSVImportModal } from '../common/CSVImportModal';
 import { downloadCSV } from '../../utils/csv';
+import { resolveImageUrl } from '../../utils/image';
 
 interface ProductsViewProps {
   products: ProductItem[];
@@ -489,7 +490,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                           >
                             {prod.image ? (
                               <img
-                                src={prod.image}
+                                src={resolveImageUrl(prod.image)}
                                 alt={prod.name}
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                 onError={(e) => {
@@ -900,7 +901,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             {inspectProduct.image && (
               <div className="my-3 text-center p-3 rounded-3" style={{ background: 'var(--hover)' }}>
                 <img
-                  src={inspectProduct.image}
+                  src={resolveImageUrl(inspectProduct.image)}
                   alt={inspectProduct.name}
                   style={{ maxHeight: '180px', maxWidth: '100%', objectFit: 'contain' }}
                 />

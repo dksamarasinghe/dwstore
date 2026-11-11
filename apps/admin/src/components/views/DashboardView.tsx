@@ -21,6 +21,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { OrderItem, ProductItem, ReviewItem, TabType } from '../../types';
+import { resolveImageUrl } from '../../utils/image';
 
 interface DashboardViewProps {
   orders: OrderItem[];
@@ -770,7 +771,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   >
                     {p.image ? (
                       <img
-                        src={p.image}
+                        src={resolveImageUrl(p.image)}
                         alt={p.name}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={(e) => {

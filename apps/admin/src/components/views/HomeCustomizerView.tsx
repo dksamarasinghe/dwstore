@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { ProductItem, CategoryItem, BrandItem } from '../../types';
 import { getStorefrontUrl } from '../../config';
+import { resolveImageUrl } from '../../utils/image';
 
 interface HomeCustomizerViewProps {
   products: ProductItem[];
@@ -1465,7 +1466,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                       }}
                     >
                       <img
-                        src={currentBoxConfig.image}
+                        src={resolveImageUrl(currentBoxConfig.image)}
                         alt="Preview"
                         style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                       />
@@ -1543,7 +1544,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                         }}
                       >
                         <img
-                          src={currentBoxConfig.secondaryImage}
+                          src={resolveImageUrl(currentBoxConfig.secondaryImage)}
                           alt="Preview"
                           style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                         />
@@ -1707,7 +1708,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                       }}
                     >
                       <img
-                        src={currentBoxConfig.image}
+                        src={resolveImageUrl(currentBoxConfig.image)}
                         alt={currentBoxConfig.title}
                         style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                       />
@@ -1734,7 +1735,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                       }}
                     >
                       <img
-                        src={currentBoxConfig.secondaryImage}
+                        src={resolveImageUrl(currentBoxConfig.secondaryImage)}
                         alt="Secondary"
                         style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                       />
@@ -1797,7 +1798,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                     }}
                   >
                     <img
-                      src={currentBoxConfig.image}
+                      src={resolveImageUrl(currentBoxConfig.image)}
                       alt={currentBoxConfig.title}
                       style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 14px rgba(0,0,0,0.5))' }}
                     />
@@ -1859,7 +1860,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                     }}
                   >
                     <img
-                      src={currentBoxConfig.image}
+                      src={resolveImageUrl(currentBoxConfig.image)}
                       alt={currentBoxConfig.title}
                       style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 14px rgba(0,0,0,0.5))' }}
                     />
@@ -2012,7 +2013,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                     }}
                   >
                     <img
-                      src={banner.image}
+                      src={resolveImageUrl(banner.image)}
                       alt={banner.title}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={(e) => {
@@ -2260,7 +2261,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                       >
                         <div className="d-flex align-items-center gap-2" style={{ minWidth: 0 }}>
                           <img
-                            src={p.image || '/dwstore_logo.png'}
+                            src={resolveImageUrl(p.image) || '/dwstore_logo.png'}
                             alt={p.name}
                             style={{
                               width: '36px',
@@ -2371,7 +2372,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                           }}
                         >
                           <img
-                            src={prod.image || '/dwstore_logo.png'}
+                            src={resolveImageUrl(prod.image) || '/dwstore_logo.png'}
                             alt={prod.name}
                             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                           />
@@ -2590,7 +2591,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                       >
                         {currentLogo ? (
                           <img
-                            src={currentLogo}
+                            src={resolveImageUrl(currentLogo)}
                             alt={brandItem.name}
                             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                             onError={(e) => {
@@ -2701,7 +2702,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                         >
                           {b.logo ? (
                             <img
-                              src={b.logo}
+                              src={resolveImageUrl(b.logo)}
                               alt={b.name}
                               style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                             />
@@ -3372,7 +3373,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                         <label className="fw-bold mb-1.5 d-block" style={{ fontSize: '12px' }}>
                           Card Image:
                         </label>
-                        <div className="d-flex gap-2 mb-2">
+                        <div className="d-flex gap-2 mb-2 align-items-center">
                           <input
                             type="text"
                             className="input-x flex-grow-1"
@@ -3381,6 +3382,28 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                             onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'image', e.target.value)}
                             style={{ height: '36px', fontSize: '12px' }}
                           />
+                          {currentBox.image && (
+                            <div
+                              style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '6px',
+                                overflow: 'hidden',
+                                border: '1px solid var(--border)',
+                                background: '#fff',
+                                flexShrink: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <img
+                                src={resolveImageUrl(currentBox.image)}
+                                alt="Preview"
+                                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                              />
+                            </div>
+                          )}
                           <label
                             className="btn-soft d-inline-flex align-items-center gap-1.5 cursor-pointer"
                             style={{ height: '36px', fontSize: '12px', padding: '0 12px', cursor: 'pointer', flexShrink: 0 }}
@@ -3424,7 +3447,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                                   title={prod.name}
                                 >
                                   <img
-                                    src={prod.image}
+                                    src={resolveImageUrl(prod.image)}
                                     alt={prod.name}
                                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                   />
@@ -3517,7 +3540,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                           }}
                         >
                           <img
-                            src={currentBox.image}
+                            src={resolveImageUrl(currentBox.image)}
                             alt={currentBox.title}
                             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.5))' }}
                           />

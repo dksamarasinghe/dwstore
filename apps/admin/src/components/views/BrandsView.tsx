@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { getStorefrontUrl } from '../../config';
+import { resolveImageUrl } from '../../utils/image';
 import {
   Tags,
   Plus,
@@ -252,7 +253,7 @@ export const BrandsView: React.FC<BrandsViewProps> = ({
                       >
                         {brand.logo ? (
                           <img
-                            src={brand.logo}
+                            src={resolveImageUrl(brand.logo)}
                             alt={brand.name}
                             style={{
                               maxWidth: '100%',
@@ -518,7 +519,7 @@ export const BrandsView: React.FC<BrandsViewProps> = ({
                       style={{ width: '48px', height: '48px', border: '1px solid var(--border)' }}
                     >
                       <img
-                        src={formLogo}
+                        src={resolveImageUrl(formLogo)}
                         alt="Preview"
                         style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                         onError={(e) => {

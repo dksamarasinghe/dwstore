@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getStorefrontUrl } from '../../config';
+import { resolveImageUrl } from '../../utils/image';
 import {
   Package,
   ArrowLeft,
@@ -1215,7 +1216,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                                   >
                                     {b.logo ? (
                                       <img
-                                        src={b.logo}
+                                        src={resolveImageUrl(b.logo)}
                                         alt={b.name}
                                         style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                                         onError={(e) => {
@@ -1285,7 +1286,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                         }}
                       >
                         <img
-                          src={mainImage}
+                          src={resolveImageUrl(mainImage)}
                           alt="Main Product"
                           style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                         />
@@ -1427,7 +1428,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                                 }}
                               >
                                 <img
-                                  src={img}
+                                  src={resolveImageUrl(img)}
                                   alt={`Gallery ${idx + 1}`}
                                   style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                                 />
@@ -1965,7 +1966,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                               >
                                 {v.image || v.displayImage ? (
                                   <img
-                                    src={v.image || v.displayImage}
+                                    src={resolveImageUrl(v.image || v.displayImage)}
                                     alt="Variation"
                                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                   />
@@ -2697,7 +2698,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                   <div className="p-2 border rounded bg-white d-flex align-items-center gap-2 mt-2">
                     <div style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <img
-                        src={newBrandLogo}
+                        src={resolveImageUrl(newBrandLogo)}
                         alt="Preview"
                         style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                         onError={(e) => {
@@ -2883,7 +2884,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                         }}
                       >
                         <img
-                          src={imgUrl}
+                          src={resolveImageUrl(imgUrl)}
                           alt="Gallery item"
                           style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                         />
