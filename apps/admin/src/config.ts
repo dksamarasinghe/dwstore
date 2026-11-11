@@ -12,6 +12,10 @@ export function getStorefrontUrl(): string {
     if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
       return `${protocol}//${hostname}:3000`;
     }
+    // If running under path on main domain (e.g. dwstore.lk/sudo-sudo/admin)
+    if (hostname === 'dwstore.lk' || hostname === 'www.dwstore.lk') {
+      return `${protocol}//${hostname}`;
+    }
     // If on a domain like admin.dwstore.lk, main site is dwstore.lk
     if (hostname.startsWith('admin.')) {
       return `${protocol}//${hostname.replace('admin.', '')}`;
