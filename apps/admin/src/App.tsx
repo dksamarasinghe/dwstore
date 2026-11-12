@@ -65,35 +65,51 @@ export default function App() {
   const [notification, setNotification] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Helper: Merge loaded items with realCatalog so variations & attributes are never lost
+  const mergeCatalogWithReal = (items: ProductItem[]): ProductItem[] => {
+    const realMap = new Map<string, ProductItem>();
+    realProducts.forEach((rp) => {
+      realMap.set(String(rp.id), rp);
+      if (rp.sku) realMap.set(rp.sku.trim().toLowerCase(), rp);
+      realMap.set(rp.name.trim().toLowerCase(), rp);
+    });
+
+    return items.map((p) => {
+      const rp =
+        realMap.get(String(p.id)) ||
+        (p.sku ? realMap.get(p.sku.trim().toLowerCase()) : undefined) ||
+        realMap.get(p.name?.trim().toLowerCase());
+
+      if (!rp) return p;
+
+      const hasRealVars = Array.isArray(rp.variations) && rp.variations.length > 0;
+      const hasParsedVars = Array.isArray(p.variations) && p.variations.length > 0;
+      const hasRealAttrs = Array.isArray(rp.attributes) && rp.attributes.length > 0;
+      const hasParsedAttrs = Array.isArray(p.attributes) && p.attributes.length > 0;
+      const isVar = rp.productType === 'variable' || p.productType === 'variable' || hasRealVars || hasParsedVars || hasRealAttrs || hasParsedAttrs;
+
+      return {
+        ...p,
+        productType: isVar ? 'variable' : (p.productType || 'simple'),
+        type: isVar ? 'variable' : (p.productType || 'simple'),
+        attributes: (hasRealAttrs && (!hasParsedAttrs || p.attributes!.length === 0)) ? rp.attributes : (p.attributes || rp.attributes || []),
+        variations: (hasRealVars && (!hasParsedVars || p.variations!.length === 0)) ? rp.variations : (p.variations || rp.variations || []),
+      };
+    });
+  };
+
   // Main entity states with 100% Real WooCommerce Database & Koombiyo Logistics
   const [products, setProducts] = useState<ProductItem[]>(() => {
     try {
-      const savedV4 = localStorage.getItem('dwstore_admin_products_v4');
-      if (savedV4) {
-        const parsed: ProductItem[] = JSON.parse(savedV4);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      const savedV5 = localStorage.getItem('dwstore_admin_products_v5');
+      if (savedV5) {
+        const parsed: ProductItem[] = JSON.parse(savedV5);
+        if (Array.isArray(parsed) && parsed.length > 0) return mergeCatalogWithReal(parsed);
       }
-      // Migrate from v2 or v1: merge with realProducts so variations & attributes are preserved
-      const savedV2 = localStorage.getItem('dwstore_admin_products_v2') || localStorage.getItem('dwstore_admin_products_v1');
-      if (savedV2) {
-        const parsed: ProductItem[] = JSON.parse(savedV2);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const realMap = new Map(realProducts.map(rp => [rp.id, rp]));
-          return parsed.map(p => {
-            const rp = realMap.get(p.id);
-            if (!rp) return p;
-            const hasRealVars = Array.isArray(rp.variations) && rp.variations.length > 0;
-            const hasParsedVars = Array.isArray(p.variations) && p.variations.length > 0;
-            const isVar = rp.productType === 'variable' || p.productType === 'variable' || hasRealVars || hasParsedVars;
-            return {
-              ...p,
-              productType: isVar ? 'variable' : (p.productType || 'simple'),
-              type: isVar ? 'variable' : (p.productType || 'simple'),
-              attributes: (hasRealVars && rp.attributes && rp.attributes.length > 0) ? rp.attributes : (p.attributes || rp.attributes || []),
-              variations: (hasRealVars && (!hasParsedVars || p.variations!.length === 0)) ? rp.variations : (p.variations || rp.variations || []),
-            };
-          });
-        }
+      const savedOld = localStorage.getItem('dwstore_admin_products_v4') || localStorage.getItem('dwstore_admin_products_v2') || localStorage.getItem('dwstore_admin_products_v1');
+      if (savedOld) {
+        const parsed: ProductItem[] = JSON.parse(savedOld);
+        if (Array.isArray(parsed) && parsed.length > 0) return mergeCatalogWithReal(parsed);
       }
     } catch (e) {}
     return realProducts;
@@ -101,6 +117,7 @@ export default function App() {
 
   useEffect(() => {
     try {
+      localStorage.setItem('dwstore_admin_products_v5', JSON.stringify(products));
       localStorage.setItem('dwstore_admin_products_v4', JSON.stringify(products));
       localStorage.setItem('dwstore_admin_products_v2', JSON.stringify(products));
     } catch (e) {}
@@ -442,6 +459,11 @@ export default function App() {
           : realProd?.imageUrls || [],
     };
 
+    // 1. Immediately open form with complete merged data (Zero lag, no waiting for network)
+    setEditingProductForForm(initialMerged);
+    setActiveTab('add-product');
+
+    // 2. Asynchronously sync latest product details from API in background
     try {
       const endpoints = [
         `${getStorefrontUrl()}/api/products?id=${encodeURIComponent(prod.id)}`,
@@ -528,8 +550,10 @@ export default function App() {
                 galleryImages:
                   fullProd.imageUrls || prod.galleryImages || realProd?.galleryImages || initialMerged.galleryImages,
               };
-              setEditingProductForForm(merged);
-              setActiveTab('add-product');
+              setEditingProductForForm((curr) => {
+                if (!curr || String(curr.id) !== String(prod.id)) return curr;
+                return { ...curr, ...merged };
+              });
               return;
             }
           }
@@ -538,9 +562,6 @@ export default function App() {
     } catch (e) {
       console.warn('Could not fetch single product details from API:', e);
     }
-
-    setEditingProductForForm(initialMerged);
-    setActiveTab('add-product');
   };
 
   const handleOpenAddProduct = () => {

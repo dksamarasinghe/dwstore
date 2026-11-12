@@ -251,9 +251,15 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
   const isEditing = Boolean(initialProduct);
 
   // 1. Product Type: 'simple' | 'variable' (Auto-detected from variations or attributes!)
-  const [productType, setProductType] = useState<'simple' | 'variable'>(
-    isVariableProduct(initialProduct) ? 'variable' : (initialProduct?.productType || 'simple')
-  );
+  const [productType, setProductType] = useState<'simple' | 'variable'>(() => {
+    if (!initialProduct) return 'simple';
+    const attrs = parseInitialAttributes(initialProduct);
+    const vars = parseInitialVariations(initialProduct, attrs);
+    if (vars.length > 0 || attrs.length > 0 || isVariableProduct(initialProduct)) {
+      return 'variable';
+    }
+    return initialProduct?.productType === 'variable' ? 'variable' : 'simple';
+  });
 
   // 2. Basic Information (Completely blank if adding new!)
   const [productName, setProductName] = useState(initialProduct?.name || '');
@@ -742,7 +748,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
     const defaultReg = parseFloat(regularPrice) || 0;
     const defaultSale = parseFloat(salePrice) || 0;
     const defaultCost = parseFloat(costPrice) || 0;
-    const defaultStock = parseInt(openingStock, 10) || 0;
+    const defaultStock = parseInt(openingStock, 10) || 10;
     const baseSkuClean = sku.trim().toUpperCase() || 'DWS';
 
     const newVars: ProductVariationItem[] = combinations.map((comb, idx) => {
@@ -754,9 +760,11 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
         attributes: comb,
         sku: `${baseSkuClean}-${slug}`,
         regularPrice: defaultReg,
-        salePrice: defaultSale,
+        salePrice: defaultSale > 0 ? defaultSale : defaultReg,
         costPrice: defaultCost,
-        stock: defaultStock
+        stock: defaultStock > 0 ? defaultStock : 10,
+        image: mainImage || '',
+        displayImage: mainImage || '',
       };
     });
 
