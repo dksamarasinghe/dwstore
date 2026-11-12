@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TabType, ProductItem, OrderItem, ReviewItem, CategoryItem, BrandItem, CouponItem, ShipmentItem, AbandonedCartItem, CustomerItem } from './types';
+import { TabType, ProductItem, AttributeItem, OrderItem, ReviewItem, CategoryItem, BrandItem, CouponItem, ShipmentItem, AbandonedCartItem, CustomerItem } from './types';
 import {
   initialReviews,
   initialCoupons,
@@ -68,16 +68,32 @@ export default function App() {
   // Main entity states with 100% Real WooCommerce Database & Koombiyo Logistics
   const [products, setProducts] = useState<ProductItem[]>(() => {
     try {
-      const savedV2 = localStorage.getItem('dwstore_admin_products_v2');
-      if (savedV2) {
-        const parsed: ProductItem[] = JSON.parse(savedV2);
+      const savedV4 = localStorage.getItem('dwstore_admin_products_v4');
+      if (savedV4) {
+        const parsed: ProductItem[] = JSON.parse(savedV4);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-      const saved = localStorage.getItem('dwstore_admin_products_v1');
-      if (saved) {
-        const parsed: ProductItem[] = JSON.parse(saved);
-        const hasVars = parsed.some((p) => p.variations && p.variations.length > 0);
-        if (hasVars) return parsed;
+      // Migrate from v2 or v1: merge with realProducts so variations & attributes are preserved
+      const savedV2 = localStorage.getItem('dwstore_admin_products_v2') || localStorage.getItem('dwstore_admin_products_v1');
+      if (savedV2) {
+        const parsed: ProductItem[] = JSON.parse(savedV2);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const realMap = new Map(realProducts.map(rp => [rp.id, rp]));
+          return parsed.map(p => {
+            const rp = realMap.get(p.id);
+            if (!rp) return p;
+            const hasRealVars = Array.isArray(rp.variations) && rp.variations.length > 0;
+            const hasParsedVars = Array.isArray(p.variations) && p.variations.length > 0;
+            const isVar = rp.productType === 'variable' || p.productType === 'variable' || hasRealVars || hasParsedVars;
+            return {
+              ...p,
+              productType: isVar ? 'variable' : (p.productType || 'simple'),
+              type: isVar ? 'variable' : (p.productType || 'simple'),
+              attributes: (hasRealVars && rp.attributes && rp.attributes.length > 0) ? rp.attributes : (p.attributes || rp.attributes || []),
+              variations: (hasRealVars && (!hasParsedVars || p.variations!.length === 0)) ? rp.variations : (p.variations || rp.variations || []),
+            };
+          });
+        }
       }
     } catch (e) {}
     return realProducts;
@@ -85,9 +101,100 @@ export default function App() {
 
   useEffect(() => {
     try {
+      localStorage.setItem('dwstore_admin_products_v4', JSON.stringify(products));
       localStorage.setItem('dwstore_admin_products_v2', JSON.stringify(products));
     } catch (e) {}
   }, [products]);
+
+  // Sync products with Storefront API on mount
+  useEffect(() => {
+    const syncProducts = async () => {
+      const endpoints = [
+        `${getStorefrontUrl()}/api/products?t=${Date.now()}`,
+        `/api/products?t=${Date.now()}`,
+      ];
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint);
+          if (res.ok) {
+            const apiProds = await res.json();
+            if (Array.isArray(apiProds) && apiProds.length > 0) {
+              const apiMap = new Map(apiProds.map((item: any) => [String(item.id), item]));
+              const realMap = new Map(realProducts.map((rp) => [rp.id, rp]));
+              setProducts((prev) =>
+                prev.map((p) => {
+                  const apiItem = apiMap.get(String(p.id));
+                  const rp = realMap.get(p.id);
+                  if (!apiItem) {
+                    if (rp && rp.productType === 'variable' && (!p.variations || p.variations.length === 0)) {
+                      return {
+                        ...p,
+                        productType: 'variable',
+                        type: 'variable',
+                        attributes: rp.attributes || [],
+                        variations: rp.variations || [],
+                      };
+                    }
+                    return p;
+                  }
+
+                  const hasVars = Array.isArray(apiItem.variations) && apiItem.variations.length > 0;
+                  const isVar = apiItem.type === 'variable' || hasVars || rp?.productType === 'variable' || p.productType === 'variable';
+
+                  let normalizedAttributes = p.attributes || [];
+                  if (apiItem.attributes) {
+                    if (Array.isArray(apiItem.attributes)) {
+                      normalizedAttributes = apiItem.attributes;
+                    } else if (typeof apiItem.attributes === 'object') {
+                      normalizedAttributes = Object.entries(apiItem.attributes)
+                        .filter(([k]) => k.toLowerCase() !== 'warranty')
+                        .map(([k, v]) => ({
+                          name: k.trim(),
+                          values: Array.isArray(v) ? v.join(', ') : String(v),
+                        }));
+                    }
+                  } else if (rp?.attributes && rp.attributes.length > 0) {
+                    normalizedAttributes = rp.attributes;
+                  }
+
+                  const normalizedVars = hasVars
+                    ? apiItem.variations.map((v: any, idx: number) => ({
+                        id: String(v.id || `var-${idx}`),
+                        sku: v.sku || '',
+                        attributes: v.attributes || {},
+                        regularPrice: v.regularPrice !== undefined ? Number(v.regularPrice) : (v.regularPriceMinor ? Math.round(Number(v.regularPriceMinor) / 100) : p.regularPrice),
+                        salePrice: v.salePrice !== undefined ? Number(v.salePrice) : (v.salePriceMinor ? Math.round(Number(v.salePriceMinor) / 100) : p.salePrice),
+                        costPrice: 0,
+                        stock: v.stock !== undefined && v.stock !== null ? Number(v.stock) : (v.stockQty !== undefined && v.stockQty !== null ? Number(v.stockQty) : 10),
+                        image: v.displayImage || v.image || '',
+                        displayImage: v.displayImage || v.image || '',
+                      }))
+                    : (p.variations && p.variations.length > 0 ? p.variations : rp?.variations || []);
+
+                  return {
+                    ...p,
+                    productType: isVar ? 'variable' : (p.productType || 'simple'),
+                    type: isVar ? 'variable' : (p.productType || 'simple'),
+                    regularPrice: apiItem.regularPriceMinor ? Math.round(apiItem.regularPriceMinor / 100) : p.regularPrice,
+                    salePrice: apiItem.salePriceMinor ? Math.round(apiItem.salePriceMinor / 100) : p.salePrice,
+                    stock: apiItem.stockQty !== undefined && apiItem.stockQty !== null ? Number(apiItem.stockQty) : p.stock,
+                    attributes: normalizedAttributes,
+                    variations: normalizedVars,
+                    image: apiItem.displayImage || p.image || rp?.image || '',
+                    displayImage: apiItem.displayImage || p.displayImage || rp?.displayImage || '',
+                    imageUrls: apiItem.imageUrls || p.imageUrls || rp?.imageUrls || [],
+                    galleryImages: apiItem.imageUrls || p.galleryImages || rp?.galleryImages || [],
+                  };
+                })
+              );
+              break;
+            }
+          }
+        } catch {}
+      }
+    };
+    syncProducts();
+  }, []);
   const [orders, setOrders] = useState<OrderItem[]>(() => {
     try {
       const saved = localStorage.getItem('dwstore_admin_orders_v3');
@@ -283,46 +390,143 @@ export default function App() {
   const [editingProductForForm, setEditingProductForForm] = useState<ProductItem | null>(null);
 
   const handleStartEditProduct = async (prod: ProductItem) => {
-    try {
-      const res = await fetch(`${getStorefrontUrl()}/api/products?id=${encodeURIComponent(prod.id)}`, { cache: 'no-store' });
-      if (res.ok) {
-        const fullProd = await res.json();
-        if (fullProd && !fullProd.error) {
-          const normalizedVars = Array.isArray(fullProd.variations) && fullProd.variations.length > 0
-            ? fullProd.variations.map((v: any, idx: number) => ({
-                id: String(v.id || `var-${idx}`),
-                sku: v.sku || '',
-                attributes: v.attributes || {},
-                regularPrice: v.regularPrice !== undefined ? Number(v.regularPrice) : (v.regularPriceMinor ? Math.round(Number(v.regularPriceMinor) / 100) : prod.regularPrice),
-                salePrice: v.salePrice !== undefined ? Number(v.salePrice) : (v.salePriceMinor ? Math.round(Number(v.salePriceMinor) / 100) : prod.salePrice),
-                costPrice: 0,
-                stock: v.stock !== undefined && v.stock !== null ? Number(v.stock) : (v.stockQty !== undefined && v.stockQty !== null ? Number(v.stockQty) : 10),
-                image: v.displayImage || v.image || '',
-                displayImage: v.displayImage || v.image || '',
-              }))
-            : prod.variations || [];
+    const realProd = realProducts.find(
+      (rp) => rp.id === prod.id || (rp.sku && prod.sku && rp.sku === prod.sku)
+    );
 
-          const merged: ProductItem = {
-            ...prod,
-            productType: (fullProd.type === 'variable' || normalizedVars.length > 0) ? 'variable' : (prod.productType || 'simple'),
-            regularPrice: fullProd.regularPriceMinor ? Math.round(fullProd.regularPriceMinor / 100) : prod.regularPrice,
-            salePrice: fullProd.salePriceMinor ? Math.round(fullProd.salePriceMinor / 100) : prod.salePrice,
-            stock: fullProd.stockQty !== undefined && fullProd.stockQty !== null ? Number(fullProd.stockQty) : prod.stock,
-            variations: normalizedVars,
-            image: fullProd.displayImage || prod.image,
-            displayImage: fullProd.displayImage || prod.displayImage,
-            imageUrls: fullProd.imageUrls || prod.imageUrls,
-            galleryImages: fullProd.imageUrls || prod.galleryImages,
-          };
-          setEditingProductForForm(merged);
-          setActiveTab('add-product');
-          return;
-        }
+    // Initial best candidate from local state & realCatalog
+    const initialIsVar =
+      prod.productType === 'variable' ||
+      prod.type === 'variable' ||
+      (Array.isArray(prod.variations) && prod.variations.length > 0) ||
+      realProd?.productType === 'variable' ||
+      (Array.isArray(realProd?.variations) && realProd.variations.length > 0);
+
+    const initialMerged: ProductItem = {
+      ...prod,
+      productType: initialIsVar ? 'variable' : 'simple',
+      type: initialIsVar ? 'variable' : 'simple',
+      attributes:
+        prod.attributes && prod.attributes.length > 0
+          ? prod.attributes
+          : realProd?.attributes || [],
+      variations:
+        prod.variations && prod.variations.length > 0
+          ? prod.variations
+          : realProd?.variations || [],
+      image: prod.image || prod.displayImage || realProd?.image || '',
+      displayImage: prod.displayImage || prod.image || realProd?.displayImage || '',
+      galleryImages:
+        prod.galleryImages && prod.galleryImages.length > 0
+          ? prod.galleryImages
+          : prod.imageUrls && prod.imageUrls.length > 0
+          ? prod.imageUrls
+          : realProd?.galleryImages || [],
+      imageUrls:
+        prod.imageUrls && prod.imageUrls.length > 0
+          ? prod.imageUrls
+          : prod.galleryImages && prod.galleryImages.length > 0
+          ? prod.galleryImages
+          : realProd?.imageUrls || [],
+    };
+
+    try {
+      const endpoints = [
+        `${getStorefrontUrl()}/api/products?id=${encodeURIComponent(prod.id)}`,
+        `/api/products?id=${encodeURIComponent(prod.id)}`,
+      ];
+
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint, { cache: 'no-store' });
+          if (res.ok) {
+            const fullProd = await res.json();
+            if (fullProd && !fullProd.error) {
+              let normalizedAttributes: AttributeItem[] = initialMerged.attributes || [];
+              if (fullProd.attributes) {
+                if (Array.isArray(fullProd.attributes)) {
+                  normalizedAttributes = fullProd.attributes;
+                } else if (typeof fullProd.attributes === 'object') {
+                  normalizedAttributes = Object.entries(fullProd.attributes)
+                    .filter(([k]) => k.toLowerCase() !== 'warranty')
+                    .map(([name, vals]) => ({
+                      name: name.trim(),
+                      values: Array.isArray(vals) ? vals.join(', ') : String(vals),
+                    }));
+                }
+              }
+
+              const normalizedVars =
+                Array.isArray(fullProd.variations) && fullProd.variations.length > 0
+                  ? fullProd.variations.map((v: any, idx: number) => ({
+                      id: String(v.id || `var-${idx}`),
+                      sku: v.sku || '',
+                      attributes: v.attributes || {},
+                      regularPrice:
+                        v.regularPrice !== undefined
+                          ? Number(v.regularPrice)
+                          : v.regularPriceMinor
+                          ? Math.round(Number(v.regularPriceMinor) / 100)
+                          : prod.regularPrice,
+                      salePrice:
+                        v.salePrice !== undefined
+                          ? Number(v.salePrice)
+                          : v.salePriceMinor
+                          ? Math.round(Number(v.salePriceMinor) / 100)
+                          : prod.salePrice,
+                      costPrice: 0,
+                      stock:
+                        v.stock !== undefined && v.stock !== null
+                          ? Number(v.stock)
+                          : v.stockQty !== undefined && v.stockQty !== null
+                          ? Number(v.stockQty)
+                          : 10,
+                      image: v.displayImage || v.image || '',
+                      displayImage: v.displayImage || v.image || '',
+                    }))
+                  : initialMerged.variations || [];
+
+              const isVar =
+                fullProd.type === 'variable' ||
+                normalizedVars.length > 0 ||
+                initialIsVar;
+
+              const merged: ProductItem = {
+                ...initialMerged,
+                ...prod,
+                productType: isVar ? 'variable' : 'simple',
+                type: isVar ? 'variable' : 'simple',
+                regularPrice: fullProd.regularPriceMinor
+                  ? Math.round(fullProd.regularPriceMinor / 100)
+                  : prod.regularPrice,
+                salePrice: fullProd.salePriceMinor
+                  ? Math.round(fullProd.salePriceMinor / 100)
+                  : prod.salePrice,
+                stock:
+                  fullProd.stockQty !== undefined && fullProd.stockQty !== null
+                    ? Number(fullProd.stockQty)
+                    : prod.stock,
+                attributes: normalizedAttributes,
+                variations: normalizedVars,
+                image: fullProd.displayImage || prod.image || initialMerged.image,
+                displayImage:
+                  fullProd.displayImage || prod.displayImage || initialMerged.displayImage,
+                imageUrls: fullProd.imageUrls || prod.imageUrls || initialMerged.imageUrls,
+                galleryImages:
+                  fullProd.imageUrls || prod.galleryImages || initialMerged.galleryImages,
+              };
+              setEditingProductForForm(merged);
+              setActiveTab('add-product');
+              return;
+            }
+          }
+        } catch {}
       }
     } catch (e) {
       console.warn('Could not fetch single product details from API:', e);
     }
-    setEditingProductForForm(prod);
+
+    setEditingProductForForm(initialMerged);
     setActiveTab('add-product');
   };
 
@@ -723,13 +927,29 @@ export default function App() {
 
   // Products CRUD
   const handleAddProduct = async (newProd: ProductItem) => {
-    setProducts((prev) => [newProd, ...prev]);
+    setProducts((prev) => {
+      const next = [newProd, ...prev];
+      try {
+        localStorage.setItem('dwstore_admin_products_v4', JSON.stringify(next));
+        localStorage.setItem('dwstore_admin_products_v2', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
     try {
-      await fetch(`${getStorefrontUrl()}/api/products`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newProd),
-      });
+      const endpoints = [
+        `${getStorefrontUrl()}/api/products`,
+        `/api/products`,
+      ];
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newProd),
+          });
+          if (res.ok) break;
+        } catch {}
+      }
     } catch (e) {
       console.warn('Storefront product sync:', e);
     }
@@ -739,16 +959,26 @@ export default function App() {
     setProducts((prev) => {
       const next = prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p));
       try {
+        localStorage.setItem('dwstore_admin_products_v4', JSON.stringify(next));
         localStorage.setItem('dwstore_admin_products_v2', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
     try {
-      await fetch(`${getStorefrontUrl()}/api/products`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedProduct),
-      });
+      const endpoints = [
+        `${getStorefrontUrl()}/api/products`,
+        `/api/products`,
+      ];
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedProduct),
+          });
+          if (res.ok) break;
+        } catch {}
+      }
     } catch (e) {
       console.warn('Storefront product sync:', e);
     }

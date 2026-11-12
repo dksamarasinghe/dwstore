@@ -72,7 +72,7 @@ const parseInitialAttributes = (prod?: any | null): WorkingAttribute[] => {
       .filter((a: any) => a && a.name && a.name.toLowerCase() !== 'warranty')
       .map((a: any, idx: number) => ({
         id: `attr-${idx}`,
-        name: a.name.toLowerCase(),
+        name: a.name.trim(),
         currentInput: '',
         values: typeof a.values === 'string'
           ? a.values.split(',').map((v: string) => v.trim()).filter(Boolean)
@@ -86,7 +86,7 @@ const parseInitialAttributes = (prod?: any | null): WorkingAttribute[] => {
       .filter(([key]) => key.toLowerCase() !== 'warranty')
       .map(([name, vals], idx) => ({
         id: `attr-${idx}`,
-        name: name.toLowerCase(),
+        name: name.trim(),
         currentInput: '',
         values: Array.isArray(vals)
           ? vals.map((v: any) => String(v).trim()).filter(Boolean)
@@ -474,7 +474,8 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
   // When initialProduct changes, update state
   useEffect(() => {
     if (initialProduct) {
-      setProductType(isVariableProduct(initialProduct) ? 'variable' : (initialProduct.productType || 'simple'));
+      const isVar = isVariableProduct(initialProduct);
+      setProductType(isVar ? 'variable' : (initialProduct.productType || 'simple'));
       setProductName(initialProduct.name || '');
       setSku(initialProduct.sku || '');
       setBrand(initialProduct.brand || '');
@@ -493,6 +494,15 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       setDimHeight(initialProduct.shipping?.height ? String(initialProduct.shipping.height) : '');
       setShippingClass(initialProduct.shipping?.shippingClass || 'Standard Islandwide Delivery (Rs. 450)');
       setWarrantyPeriod(initialProduct.warrantyPeriod || '');
+
+      const img = initialProduct.image || initialProduct.displayImage || '';
+      setMainImage(img);
+      const galleries = (initialProduct.galleryImages && initialProduct.galleryImages.length > 0)
+        ? initialProduct.galleryImages
+        : (initialProduct.imageUrls && initialProduct.imageUrls.length > 0)
+        ? initialProduct.imageUrls
+        : (img ? [img] : []);
+      setGalleryImages(galleries);
       
       const parsedAttrs = parseInitialAttributes(initialProduct);
       setWorkingAttributes(parsedAttrs);

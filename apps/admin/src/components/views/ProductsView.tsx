@@ -510,8 +510,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                             >
                               <b>{prod.name}</b>
                             </button>
-                            <small className="d-block text-muted">
-                              SKU: {prod.sku} • {prod.brand || 'DWstore'}
+                            <small className="d-flex align-items-center gap-1 text-muted flex-wrap">
+                              <span>SKU: {prod.sku} • {prod.brand || 'DWstore'}</span>
+                              {((prod.variations && prod.variations.length > 0) || prod.productType === 'variable') && (
+                                <span className="badge bg-primary text-white" style={{ fontSize: '10px', padding: '2px 6px' }}>
+                                  Variable ({prod.variations?.length || 0})
+                                </span>
+                              )}
                             </small>
                           </div>
                         </div>
