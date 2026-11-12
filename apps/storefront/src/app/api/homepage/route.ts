@@ -20,13 +20,54 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
 
+function normalizeHeroImageUrl(url?: string): string {
+  if (!url) return '';
+  if (url.includes('wp-content/uploads') || url.includes('T800-Ultra-Smart-Watch') || url.includes('T800_Ultra')) {
+    if (url.includes('RPP2921') || url.includes('RPP-292')) {
+      return '/media/products/RPP2921_5d0c7431.jpg';
+    }
+    return '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+  }
+  if (url.includes('wp-content/uploads') && url.includes('RPP2921')) {
+    return '/media/products/RPP2921_5d0c7431.jpg';
+  }
+  return url;
+}
+
+function sanitizeHomepageConfig(data: any): any {
+  if (!data || typeof data !== 'object') return data;
+  if (data.hero) {
+    if (data.hero.mainBox) {
+      if (!data.hero.mainBox.image || data.hero.mainBox.image.includes('wp-content/uploads')) {
+        data.hero.mainBox.image = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+      }
+      if (!data.hero.mainBox.secondaryImage || data.hero.mainBox.secondaryImage.includes('wp-content/uploads')) {
+        data.hero.mainBox.secondaryImage = '/media/products/RPP2921_5d0c7431.jpg';
+      }
+    }
+    if (data.hero.sideBox1) {
+      if (!data.hero.sideBox1.image || data.hero.sideBox1.image.includes('wp-content/uploads')) {
+        data.hero.sideBox1.image = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+      }
+    }
+    if (data.hero.sideBox2) {
+      if (!data.hero.sideBox2.image || data.hero.sideBox2.image.includes('wp-content/uploads')) {
+        data.hero.sideBox2.image = '/media/products/RPP2921_5d0c7431.jpg';
+      }
+    }
+  }
+  return data;
+}
+
 function getHomepageConfig() {
   const cached = globalMemoryCache.get(HOMEPAGE_CACHE_KEY, HOMEPAGE_CACHE_TTL);
-  if (cached) return cached;
+  if (cached) return sanitizeHomepageConfig(cached);
 
   const data = readDataJson('homepage.json', null);
   if (data) {
-    globalMemoryCache.set(HOMEPAGE_CACHE_KEY, data);
+    const clean = sanitizeHomepageConfig(data);
+    globalMemoryCache.set(HOMEPAGE_CACHE_KEY, clean);
+    return clean;
   }
   return data;
 }
@@ -107,11 +148,12 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    writeDataJson('homepage.json', mergedConfig);
-    globalMemoryCache.set(HOMEPAGE_CACHE_KEY, mergedConfig);
+    const cleanMerged = sanitizeHomepageConfig(mergedConfig);
+    writeDataJson('homepage.json', cleanMerged);
+    globalMemoryCache.set(HOMEPAGE_CACHE_KEY, cleanMerged);
 
     return NextResponse.json(
-      { success: true, message: 'Homepage configuration updated successfully', config: mergedConfig },
+      { success: true, message: 'Homepage configuration updated successfully', config: cleanMerged },
       { headers: CORS_HEADERS }
     );
   } catch (err: any) {

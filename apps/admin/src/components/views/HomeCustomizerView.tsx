@@ -69,8 +69,8 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
         button1Link: '/shop',
         button2Text: 'EXPLORE DEALS',
         button2Link: '/shop',
-        image: 'https://www.dwstore.lk/wp-content/uploads/2024/10/T800-Ultra-Smart-Watch-1.jpg',
-        secondaryImage: 'https://www.dwstore.lk/wp-content/uploads/2024/10/RPP2921.jpg',
+        image: '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg',
+        secondaryImage: '/media/products/RPP2921_5d0c7431.jpg',
       },
       sideBox1: {
         type: 'product' as 'category' | 'product' | 'brand' | 'custom',
@@ -81,7 +81,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
         priceText: 'Rs. 1,990',
         buttonText: 'Order now',
         link: '/product/t800-ultra-smartwatch-series-8-29517',
-        image: 'https://www.dwstore.lk/wp-content/uploads/2024/10/T800-Ultra-Smart-Watch-1.jpg',
+        image: '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg',
       },
       sideBox2: {
         type: 'product' as 'category' | 'product' | 'brand' | 'custom',
@@ -92,7 +92,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
         priceText: 'Rs. 9,990',
         buttonText: 'Order now',
         link: '/product/remax-rpp-292-225w-20000mah-pdqc-power-bank-29534',
-        image: 'https://www.dwstore.lk/wp-content/uploads/2024/10/RPP2921.jpg',
+        image: '/media/products/RPP2921_5d0c7431.jpg',
       },
     },
     promoBanners: {
@@ -177,7 +177,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
           subtitle: '',
           buttonText: 'Explore Smartwatches',
           link: '/category/smartwatches',
-          image: 'https://www.dwstore.lk/wp-content/uploads/2024/10/T800-Ultra-Smart-Watch-1.jpg'
+          image: '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg'
         },
         {
           id: 'box3',
@@ -188,7 +188,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
           subtitle: '55+ Models',
           buttonText: 'Shop Speakers',
           link: '/category/bluetooth-speakers',
-          image: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=240&auto=format&fit=crop&q=80'
+          image: '/media/categories/bluetooth-speakers-M-10.jpg'
         },
         {
           id: 'box4',
@@ -199,7 +199,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
           subtitle: '32+ Models',
           buttonText: 'Shop PowerBanks',
           link: '/category/power-banks',
-          image: 'https://www.dwstore.lk/wp-content/uploads/2024/10/1.jpg'
+          image: '/media/categories/power-banks-1.jpg'
         },
         {
           id: 'box5',
@@ -210,7 +210,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
           subtitle: '140+ Certified Accessories',
           buttonText: 'Explore Phone Accessories',
           link: '/category/phone-accessories',
-          image: 'https://www.dwstore.lk/wp-content/uploads/2024/10/UIYMHe1d4e6137a474dab9a387743d627bef1H.jpg'
+          image: '/media/categories/phone-accessories-m-6.jpg'
         }
       ]
     },
@@ -219,7 +219,22 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
   const [config, setConfig] = useState<any>(() => {
     try {
       const saved = localStorage.getItem('dwstore_homepage_config');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.hero?.mainBox?.image?.includes('wp-content/uploads')) {
+          parsed.hero.mainBox.image = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+        }
+        if (parsed?.hero?.mainBox?.secondaryImage?.includes('wp-content/uploads')) {
+          parsed.hero.mainBox.secondaryImage = '/media/products/RPP2921_5d0c7431.jpg';
+        }
+        if (parsed?.hero?.sideBox1?.image?.includes('wp-content/uploads')) {
+          parsed.hero.sideBox1.image = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+        }
+        if (parsed?.hero?.sideBox2?.image?.includes('wp-content/uploads')) {
+          parsed.hero.sideBox2.image = '/media/products/RPP2921_5d0c7431.jpg';
+        }
+        return parsed;
+      }
     } catch {}
     return defaultConfig;
   });
@@ -248,6 +263,37 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
     throw lastError || new Error('Could not connect to Storefront API');
   };
 
+  // Helper to sanitize any legacy wp-content or broken URLs
+  const cleanHeroConfig = (cfg: any) => {
+    if (!cfg || typeof cfg !== 'object') return cfg;
+    const copy = { ...cfg };
+    if (copy.hero) {
+      copy.hero = { ...copy.hero };
+      if (copy.hero.mainBox) {
+        copy.hero.mainBox = { ...copy.hero.mainBox };
+        if (!copy.hero.mainBox.image || copy.hero.mainBox.image.includes('wp-content/uploads')) {
+          copy.hero.mainBox.image = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+        }
+        if (!copy.hero.mainBox.secondaryImage || copy.hero.mainBox.secondaryImage.includes('wp-content/uploads')) {
+          copy.hero.mainBox.secondaryImage = '/media/products/RPP2921_5d0c7431.jpg';
+        }
+      }
+      if (copy.hero.sideBox1) {
+        copy.hero.sideBox1 = { ...copy.hero.sideBox1 };
+        if (!copy.hero.sideBox1.image || copy.hero.sideBox1.image.includes('wp-content/uploads')) {
+          copy.hero.sideBox1.image = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+        }
+      }
+      if (copy.hero.sideBox2) {
+        copy.hero.sideBox2 = { ...copy.hero.sideBox2 };
+        if (!copy.hero.sideBox2.image || copy.hero.sideBox2.image.includes('wp-content/uploads')) {
+          copy.hero.sideBox2.image = '/media/products/RPP2921_5d0c7431.jpg';
+        }
+      }
+    }
+    return copy;
+  };
+
   // Fetch live config from Storefront API on mount
   React.useEffect(() => {
     const fetchConfig = async () => {
@@ -258,9 +304,10 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
           if (res.ok) {
             const data = await res.json();
             if (data && data.success && data.config) {
-              setConfig(data.config);
+              const cleaned = cleanHeroConfig(data.config);
+              setConfig(cleaned);
               try {
-                localStorage.setItem('dwstore_homepage_config', JSON.stringify(data.config));
+                localStorage.setItem('dwstore_homepage_config', JSON.stringify(cleaned));
               } catch {}
               return;
             }

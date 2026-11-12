@@ -18,6 +18,7 @@ import {
   Lock,
   Calendar,
   Clock,
+  Images,
 } from 'lucide-react';
 import { TabType } from '../../types';
 
@@ -204,6 +205,18 @@ export const Topbar: React.FC<TopbarProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Media Library Quick Access Button */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('media')}
+          className="btn-soft d-none d-sm-inline-flex"
+          title="Open VPS Media & Asset Library"
+          style={{ height: '40px', fontSize: '13px' }}
+        >
+          <Images size={14} />
+          Media
+        </button>
 
         {/* View Storefront Pill Button */}
         <a

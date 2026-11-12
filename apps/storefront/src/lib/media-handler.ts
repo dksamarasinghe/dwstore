@@ -55,6 +55,49 @@ function generateFallbackSvg(filename: string): string {
 </svg>`;
 }
 
+function findMatchingFile(targetFilename: string, searchBases: string[]): string | null {
+  const ext = path.extname(targetFilename).toLowerCase();
+  const baseNoExt = path.basename(targetFilename, ext).toLowerCase().replace(/-\d+x\d+$/, '');
+  const subfolders = [
+    'products',
+    'categories',
+    'brands',
+    'home-customizer',
+    'gallery',
+    'general',
+    'products/images',
+    'images',
+  ];
+
+  for (const base of searchBases) {
+    for (const sub of subfolders) {
+      const folder = path.join(base, sub);
+      if (!fs.existsSync(folder)) continue;
+      let files: string[] = [];
+      try {
+        files = fs.readdirSync(folder);
+      } catch {
+        continue;
+      }
+
+      // 1. Exact match
+      const exact = files.find((f) => f.toLowerCase() === targetFilename.toLowerCase());
+      if (exact) return path.join(folder, exact);
+
+      // 2. Prefix match (e.g. filename_hash.jpg matches filename.jpg)
+      if (baseNoExt.length >= 3) {
+        const prefix = files.find((f) => f.toLowerCase().startsWith(baseNoExt));
+        if (prefix) return path.join(folder, prefix);
+
+        // 3. Contains match
+        const contains = files.find((f) => f.toLowerCase().includes(baseNoExt));
+        if (contains) return path.join(folder, contains);
+      }
+    }
+  }
+  return null;
+}
+
 export async function handleMediaGet(
   req: NextRequest,
   rawSegments: string[]
@@ -65,11 +108,11 @@ export async function handleMediaGet(
     }
 
     let segments = [...rawSegments];
-    let targetFilename = segments[segments.length - 1];
-
-    if (segments[0] === 'wp-content' || segments[0] === 'uploads') {
-      targetFilename = segments[segments.length - 1];
+    while (segments[0] === 'media' || segments[0] === 'api') {
+      segments.shift();
     }
+
+    const targetFilename = segments[segments.length - 1];
 
     const searchDirs: string[] = [
       path.join(process.cwd(), 'apps', 'storefront', 'public', 'media'),
@@ -99,55 +142,23 @@ export async function handleMediaGet(
       }
     }
 
-    // 2. If it's a legacy WordPress URL or not found directly, search by filename in common folders
+    // 2. Fuzzy / Legacy WordPress / Resized image lookup
     if (!foundPath && targetFilename) {
-      const commonSubfolders = ['products', 'categories', 'brands', 'home-customizer', 'gallery', 'general', 'products/images', 'images'];
-      for (const base of searchDirs) {
-        for (const sub of commonSubfolders) {
-          const candidate = path.join(base, sub, targetFilename);
-          if (fs.existsSync(candidate)) {
-            try {
-              if (fs.statSync(candidate).isFile()) {
-                foundPath = candidate;
-                break;
-              }
-            } catch {}
-          }
-        }
-        if (foundPath) break;
-      }
+      foundPath = findMatchingFile(targetFilename, searchDirs);
     }
 
-    // 3. Fallback matching without timestamp hash
+    // 3. Specific known aliases
     if (!foundPath && targetFilename) {
-      const baseExt = path.extname(targetFilename);
-      const pureName = path.basename(targetFilename, baseExt).split('_')[0].split('-')[0];
-      if (pureName.length >= 3) {
-        for (const base of searchDirs) {
-          const testFolders = ['products', 'categories', 'brands'];
-          for (const sub of testFolders) {
-            const folderPath = path.join(base, sub);
-            if (fs.existsSync(folderPath)) {
-              try {
-                const names = fs.readdirSync(folderPath);
-                const match = names.find((n) => n.toLowerCase().startsWith(pureName.toLowerCase()));
-                if (match) {
-                  const matchPath = path.join(folderPath, match);
-                  if (fs.statSync(matchPath).isFile()) {
-                    foundPath = matchPath;
-                    break;
-                  }
-                }
-              } catch {}
-            }
-          }
-          if (foundPath) break;
-        }
+      const lower = targetFilename.toLowerCase();
+      if (lower.includes('t800') || lower.includes('series-8')) {
+        foundPath = findMatchingFile('T800-Ultra-Smart-Watch-1_d7ac6b08.jpg', searchDirs);
+      } else if (lower.includes('rpp292') || lower.includes('rpp-292') || lower.includes('rpp2921')) {
+        foundPath = findMatchingFile('RPP2921_5d0c7431.jpg', searchDirs);
       }
     }
 
     // 4. File found: stream with cache headers
-    if (foundPath) {
+    if (foundPath && fs.existsSync(foundPath)) {
       const ext = path.extname(foundPath).toLowerCase();
       const contentType = MIME_MAP[ext] || 'application/octet-stream';
       const stats = fs.statSync(foundPath);
