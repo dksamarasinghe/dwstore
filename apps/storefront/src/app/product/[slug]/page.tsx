@@ -10,6 +10,7 @@ import productsData from '@/data/products.json';
 import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { resolveImageUrl } from '@/lib/image';
 import { 
   Star, 
   ShoppingCart, 
@@ -406,9 +407,14 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
           <div className="lg:col-span-5 space-y-4">
             <div className="w-full aspect-square bg-slate-50 rounded-3xl border border-slate-200 p-6 flex items-center justify-center overflow-hidden relative shadow-xs">
               <img
-                src={activeImage}
+                src={resolveImageUrl(activeImage)}
                 alt={product.name}
                 className="w-full h-full object-contain mix-blend-multiply"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+                }}
               />
               {discountPct && (
                 <span className="absolute top-4 left-4 bg-emerald-600 text-white text-xs font-black px-2.5 py-1 rounded-full shadow-sm">
@@ -432,9 +438,14 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                     }`}
                   >
                     <img
-                      src={img}
+                      src={resolveImageUrl(img)}
                       alt="Thumbnail"
                       className="w-full h-full object-contain mix-blend-multiply"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.src = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+                      }}
                     />
                   </button>
                 ))}

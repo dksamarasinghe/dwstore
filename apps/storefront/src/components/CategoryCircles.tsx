@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Watch, Headphones, BatteryCharging, Speaker, Shield, Cable, Laptop, Smartphone } from 'lucide-react';
 import categoriesData from '@/data/categories.json';
+import { resolveImageUrl } from '@/lib/image';
 
 // Curated top categories with appropriate icons & images
 const CATEGORY_ICONS: Record<string, any> = {
@@ -147,7 +148,8 @@ export default function CategoryCircles({ initialConfig }: CategoryCirclesProps)
         >
           {displayCategories.map((cat: any) => {
             const Icon = CATEGORY_ICONS[cat.slug] || Smartphone;
-            const imgSrc = cat.imageUrl || cat.image || (typeof cat.icon === 'string' && (cat.icon.startsWith('/') || cat.icon.startsWith('http')) ? cat.icon : null);
+            const rawImg = cat.imageUrl || cat.image || (typeof cat.icon === 'string' && (cat.icon.startsWith('/') || cat.icon.startsWith('http')) ? cat.icon : null);
+            const imgSrc = rawImg ? resolveImageUrl(rawImg) : null;
 
             return (
               <Link
@@ -162,7 +164,15 @@ export default function CategoryCircles({ initialConfig }: CategoryCirclesProps)
                       alt={cat.name}
                       className="w-full h-full object-contain mix-blend-multiply"
                       onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
+                        const target = e.target as HTMLElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent && !parent.querySelector('.cat-fallback-icon')) {
+                          const icon = document.createElement('div');
+                          icon.className = 'cat-fallback-icon text-blue-600';
+                          icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>';
+                          parent.appendChild(icon);
+                        }
                       }}
                     />
                   ) : (

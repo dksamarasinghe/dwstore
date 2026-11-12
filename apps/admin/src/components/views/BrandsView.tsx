@@ -53,16 +53,28 @@ export const BrandsView: React.FC<BrandsViewProps> = ({
       const fd = new FormData();
       fd.append('file', file);
       fd.append('folder', 'brands');
-      const res = await fetch(`${getStorefrontUrl()}/api/upload`, {
-        method: 'POST',
-        body: fd,
-      });
-      const data = await res.json();
-      if (data.success && data.url) {
-        setFormLogo(data.url);
+      const endpoints = ['/api/upload', `${getStorefrontUrl()}/api/upload`];
+      let uploadedUrl: string | null = null;
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, {
+            method: 'POST',
+            body: fd,
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.url) {
+              uploadedUrl = data.url;
+              break;
+            }
+          }
+        } catch {}
+      }
+      if (uploadedUrl) {
+        setFormLogo(uploadedUrl);
         showNotification('Brand logo uploaded to VPS media (/media/brands/) successfully!');
       } else {
-        showNotification(data.error || 'Logo upload failed');
+        showNotification('Logo upload failed. Please try again.');
       }
     } catch (err: any) {
       showNotification('Error uploading logo: ' + err.message);

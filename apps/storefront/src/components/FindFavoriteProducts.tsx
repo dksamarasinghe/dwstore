@@ -6,6 +6,7 @@ import { SlidersHorizontal, ShoppingCart, Heart, Star } from 'lucide-react';
 import productsData from '@/data/products.json';
 import { formatPriceLKR } from '@/lib/catalog';
 import { useWishlist } from '@/context/WishlistContext';
+import { resolveImageUrl } from '@/lib/image';
 
 export default function FindFavoriteProducts() {
   const [activeFilter, setActiveFilter] = useState('All');
@@ -91,9 +92,14 @@ export default function FindFavoriteProducts() {
                     className="w-full aspect-[4/3] bg-slate-50 rounded-xl p-4 flex items-center justify-center mb-4 overflow-hidden group-hover:bg-blue-50/20 transition"
                   >
                     <img
-                      src={item.displayImage}
+                      src={resolveImageUrl(item.displayImage || item.image)}
                       alt={item.name}
                       className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition duration-300"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.src = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+                      }}
                     />
                   </Link>
 

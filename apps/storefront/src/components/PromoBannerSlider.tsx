@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { resolveImageUrl } from '@/lib/image';
 
 interface PromoBannerSliderProps {
   initialConfig?: any;
@@ -93,11 +94,13 @@ export default function PromoBannerSlider({ initialConfig }: PromoBannerSliderPr
             className="block relative w-full aspect-[21/9] sm:aspect-[16/5] md:aspect-[28/7] max-h-[380px] bg-slate-900 overflow-hidden"
           >
             <img
-              src={currentBanner.image}
+              src={resolveImageUrl(currentBanner.image, 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1400&auto=format&fit=crop&q=80')}
               alt={currentBanner.title || 'Promotional Banner'}
               className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]"
               onError={(e) => {
-                (e.target as HTMLImageElement).src =
+                const target = e.target as HTMLImageElement;
+                target.onerror = null;
+                target.src =
                   'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1400&auto=format&fit=crop&q=80';
               }}
             />

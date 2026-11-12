@@ -11,6 +11,7 @@ import brandsData from '@/data/brands.json';
 import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { resolveImageUrl } from '@/lib/image';
 import { Star, ShoppingCart, Heart, SlidersHorizontal, ChevronRight, X, Check, Filter } from 'lucide-react';
 
 function ShopContent() {
@@ -805,14 +806,16 @@ function ShopContent() {
                       <Link href={`/product/${product.slug}`} className="block">
                         <div className="w-full aspect-square bg-slate-50/50 rounded-xl p-3 flex items-center justify-center overflow-hidden mb-3 relative">
                           <img
-                            src={product.displayImage || product.imageUrls?.[0] || '/dwstore_logo.png'}
+                            src={resolveImageUrl(product.displayImage || product.imageUrls?.[0])}
                             alt={product.name}
                             className={`w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 ${
                               !isInStock ? 'opacity-70 grayscale-[20%]' : ''
                             }`}
                             loading="lazy"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/dwstore_logo.png';
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.src = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
                             }}
                           />
                           {!isInStock && (

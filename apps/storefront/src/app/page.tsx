@@ -25,8 +25,13 @@ function getHomepageConfig(): any {
   return readDataJson<any>('homepage.json', null);
 }
 
+function getBrandsData(): any[] {
+  return readDataJson<any[]>('brands.json', []);
+}
+
 export default function HomePage() {
   const config = getHomepageConfig();
+  const brandsData = getBrandsData();
   const isBrandsEnabled = config?.brandsBar?.enabled !== false;
   const isPromoEnabled = Boolean(
     config?.promoBanners?.enabled === true && 
@@ -48,7 +53,9 @@ export default function HomePage() {
       <HeroSection initialData={config?.hero} />
 
       {/* 3. Brand Logos Bar */}
-      {isBrandsEnabled && <BrandLogos initialConfig={config?.brandsBar} />}
+      {isBrandsEnabled && (
+        <BrandLogos initialConfig={config?.brandsBar} brandsData={brandsData} />
+      )}
 
       {/* 4. Promotional Banners Slider (Below Brand Logos - 11.11 & Seasonal Promo) */}
       {isPromoEnabled && <PromoBannerSlider initialConfig={config?.promoBanners} />}

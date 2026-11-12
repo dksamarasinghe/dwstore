@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { resolveImageUrl } from '@/lib/image';
 
 export interface BentoBoxItem {
   id: string;
@@ -148,11 +149,13 @@ export default function BentoPromo({ initialConfig }: BentoPromoProps) {
             </div>
             <div className="absolute inset-x-0 bottom-0 top-32 flex items-end justify-center pb-4 pointer-events-none">
               <img
-                src={box1.image || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80'}
+                src={resolveImageUrl(box1.image, 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80')}
                 alt={box1.title}
                 className="h-48 object-contain group-hover:scale-105 transition duration-500 drop-shadow-2xl"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80';
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80';
                 }}
               />
             </div>
@@ -187,11 +190,13 @@ export default function BentoPromo({ initialConfig }: BentoPromoProps) {
             </div>
             <div className="absolute inset-x-0 bottom-0 top-32 flex items-end justify-center pb-4 pointer-events-none">
               <img
-                src={box2.image || 'https://www.dwstore.lk/wp-content/uploads/2024/10/T800-Ultra-Smart-Watch-1.jpg'}
+                src={resolveImageUrl(box2.image, '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg')}
                 alt={box2.title}
                 className="h-48 object-contain group-hover:scale-105 transition duration-500 drop-shadow-2xl"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=400&auto=format&fit=crop&q=80';
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
                 }}
               />
             </div>
@@ -230,11 +235,13 @@ export default function BentoPromo({ initialConfig }: BentoPromoProps) {
                 </div>
                 <div className="absolute right-0 bottom-0 w-28 h-28 flex items-end justify-end pointer-events-none p-2">
                   <img
-                    src={box3.image || 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=240&auto=format&fit=crop&q=80'}
+                    src={resolveImageUrl(box3.image, 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=240&auto=format&fit=crop&q=80')}
                     alt={box3.title}
                     className="h-full object-contain group-hover:scale-105 transition duration-500"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=240&auto=format&fit=crop&q=80';
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=240&auto=format&fit=crop&q=80';
                     }}
                   />
                 </div>
@@ -269,11 +276,13 @@ export default function BentoPromo({ initialConfig }: BentoPromoProps) {
                 </div>
                 <div className="absolute right-0 bottom-0 w-28 h-28 flex items-end justify-end pointer-events-none p-2">
                   <img
-                    src={box4.image || 'https://www.dwstore.lk/wp-content/uploads/2024/10/1.jpg'}
+                    src={resolveImageUrl(box4.image, '/media/products/RPP2921_5d0c7431.jpg')}
                     alt={box4.title}
                     className="h-full object-contain group-hover:scale-105 transition duration-500"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=200&auto=format&fit=crop&q=80';
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = '/media/products/RPP2921_5d0c7431.jpg';
                     }}
                   />
                 </div>
@@ -311,11 +320,13 @@ export default function BentoPromo({ initialConfig }: BentoPromoProps) {
               </div>
               <div className="absolute right-4 bottom-0 top-0 w-40 flex items-center justify-end pointer-events-none">
                 <img
-                  src={box5.image || 'https://www.dwstore.lk/wp-content/uploads/2024/10/UIYMHe1d4e6137a474dab9a387743d627bef1H.jpg'}
+                  src={resolveImageUrl(box5.image, 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=280&auto=format&fit=crop&q=80')}
                   alt={box5.title}
                   className="h-36 object-contain group-hover:scale-105 transition duration-500"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=280&auto=format&fit=crop&q=80';
+                    const target = e.target as HTMLImageElement;
+                    target.onerror = null;
+                    target.src = 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=280&auto=format&fit=crop&q=80';
                   }}
                 />
               </div>

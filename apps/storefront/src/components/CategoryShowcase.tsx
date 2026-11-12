@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowRight, ShoppingCart, Star } from 'lucide-react';
 import productsData from '@/data/products.json';
 import { formatPriceLKR } from '@/lib/catalog';
+import { resolveImageUrl } from '@/lib/image';
 
 export default function CategoryShowcase() {
   // Real SmartWatches from CSV
@@ -67,9 +68,14 @@ export default function CategoryShowcase() {
                       className="w-full aspect-square bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center p-2.5 mb-2.5 group-hover:bg-blue-50/20 transition"
                     >
                       <img
-                        src={item.displayImage}
+                        src={resolveImageUrl(item.displayImage || item.image)}
                         alt={item.name}
                         className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition duration-300"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+                        }}
                       />
                     </Link>
 
@@ -152,9 +158,14 @@ export default function CategoryShowcase() {
                       className="w-full aspect-square bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center p-2.5 mb-2.5 group-hover:bg-blue-50/20 transition"
                     >
                       <img
-                        src={item.displayImage}
+                        src={resolveImageUrl(item.displayImage || item.image)}
                         alt={item.name}
                         className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition duration-300"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+                        }}
                       />
                     </Link>
 
