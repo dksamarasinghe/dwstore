@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getStorefrontUrl } from '../../config';
 import { resolveImageUrl } from '../../utils/image';
+import { realProducts } from '../../data/realCatalog';
 import {
   Package,
   ArrowLeft,
@@ -51,24 +52,61 @@ interface WorkingAttribute {
   values: string[];
 }
 
-const isVariableProduct = (prod?: any | null): boolean => {
+export const isVariableProduct = (prod?: any | null): boolean => {
   if (!prod) return false;
   if (prod.productType === 'variable' || prod.type === 'variable') return true;
   if (prod.variations && Array.isArray(prod.variations) && prod.variations.length > 0) return true;
   if (prod.attributes) {
     if (Array.isArray(prod.attributes)) {
-      return prod.attributes.some((a: any) => a && a.name && a.name.toLowerCase() !== 'warranty' && (a.values || a.options));
+      const nonWarranty = prod.attributes.filter(
+        (a: any) => a && a.name && String(a.name).trim().toLowerCase() !== 'warranty'
+      );
+      if (nonWarranty.length > 0) return true;
     } else if (typeof prod.attributes === 'object') {
-      return Object.keys(prod.attributes).some((k) => k.toLowerCase() !== 'warranty');
+      const keys = Object.keys(prod.attributes).filter(
+        (k) => k.trim().toLowerCase() !== 'warranty'
+      );
+      if (keys.length > 0) return true;
     }
+  }
+  // Also check against realCatalog
+  const match = realProducts.find(
+    (rp) =>
+      (prod.id && String(rp.id) === String(prod.id)) ||
+      (rp.sku && prod.sku && rp.sku.trim().toLowerCase() === String(prod.sku).trim().toLowerCase()) ||
+      (rp.name && prod.name && rp.name.trim().toLowerCase() === String(prod.name).trim().toLowerCase())
+  );
+  if (
+    match &&
+    (match.productType === 'variable' ||
+      (match.variations && match.variations.length > 0) ||
+      (match.attributes && match.attributes.some((a: any) => a.name.toLowerCase() !== 'warranty')))
+  ) {
+    return true;
   }
   return false;
 };
 
 const parseInitialAttributes = (prod?: any | null): WorkingAttribute[] => {
-  if (!prod || !prod.attributes) return [];
-  if (Array.isArray(prod.attributes)) {
-    return prod.attributes
+  if (!prod) return [];
+  let attrs = prod.attributes;
+  if (!attrs || (Array.isArray(attrs) && attrs.length === 0)) {
+    // Check fallback from realProducts
+    const match = realProducts.find(
+      (rp) =>
+        (prod.id && String(rp.id) === String(prod.id)) ||
+        (rp.sku && prod.sku && rp.sku.trim().toLowerCase() === String(prod.sku).trim().toLowerCase()) ||
+        (rp.name && prod.name && rp.name.trim().toLowerCase() === String(prod.name).trim().toLowerCase())
+    );
+    if (match && match.attributes && match.attributes.length > 0) {
+      attrs = match.attributes;
+    }
+  }
+
+  if (!attrs) return [];
+
+  if (Array.isArray(attrs)) {
+    return attrs
       .filter((a: any) => a && a.name && a.name.toLowerCase() !== 'warranty')
       .map((a: any, idx: number) => ({
         id: `attr-${idx}`,
@@ -81,8 +119,8 @@ const parseInitialAttributes = (prod?: any | null): WorkingAttribute[] => {
           : []
       }));
   }
-  if (typeof prod.attributes === 'object') {
-    return Object.entries(prod.attributes)
+  if (typeof attrs === 'object') {
+    return Object.entries(attrs)
       .filter(([key]) => key.toLowerCase() !== 'warranty')
       .map(([name, vals], idx) => ({
         id: `attr-${idx}`,
@@ -98,7 +136,7 @@ const parseInitialAttributes = (prod?: any | null): WorkingAttribute[] => {
   return [];
 };
 
-const parseInitialVariations = (prod?: any | null, parsedAttrs?: WorkingAttribute[]): ProductVariationItem[] => {
+export const parseInitialVariations = (prod?: any | null, parsedAttrs?: WorkingAttribute[]): ProductVariationItem[] => {
   if (!prod) return [];
   const defaultReg = prod.regularPrice || (prod.regularPriceMinor ? Math.round(prod.regularPriceMinor / 100) : 0);
   const defaultSale = prod.salePrice || (prod.salePriceMinor ? Math.round(prod.salePriceMinor / 100) : defaultReg);
@@ -130,6 +168,33 @@ const parseInitialVariations = (prod?: any | null, parsedAttrs?: WorkingAttribut
         regularPrice: reg,
         salePrice: sale > 0 ? sale : reg,
         costPrice: v.costPrice ? Number(v.costPrice) : defaultCost,
+        stock: stock,
+        image: img,
+        displayImage: img,
+      };
+    });
+  }
+
+  // Check realProducts catalog fallback for variations
+  const match = realProducts.find(
+    (rp) =>
+      (prod.id && String(rp.id) === String(prod.id)) ||
+      (rp.sku && prod.sku && rp.sku.trim().toLowerCase() === String(prod.sku).trim().toLowerCase()) ||
+      (rp.name && prod.name && rp.name.trim().toLowerCase() === String(prod.name).trim().toLowerCase())
+  );
+  if (match && match.variations && Array.isArray(match.variations) && match.variations.length > 0) {
+    return match.variations.map((v: any, idx: number) => {
+      const reg = v.regularPrice !== undefined ? Number(v.regularPrice) : defaultReg;
+      const sale = v.salePrice !== undefined ? Number(v.salePrice) : defaultSale;
+      const stock = v.stock !== undefined ? Number(v.stock) : defaultStock;
+      const img = v.displayImage || v.image || prod.displayImage || prod.image || '';
+      return {
+        id: String(v.id || `var-${Date.now()}-${idx}`),
+        sku: v.sku || `${prod.sku || 'DWS'}-${idx + 1}`,
+        attributes: v.attributes || {},
+        regularPrice: reg,
+        salePrice: sale > 0 ? sale : reg,
+        costPrice: defaultCost,
         stock: stock,
         image: img,
         displayImage: img,
@@ -474,7 +539,13 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
   // When initialProduct changes, update state
   useEffect(() => {
     if (initialProduct) {
-      const isVar = isVariableProduct(initialProduct);
+      const parsedAttrs = parseInitialAttributes(initialProduct);
+      setWorkingAttributes(parsedAttrs);
+
+      const parsedVars = parseInitialVariations(initialProduct, parsedAttrs);
+      setVariations(parsedVars);
+
+      const isVar = isVariableProduct(initialProduct) || parsedAttrs.length > 0 || parsedVars.length > 0;
       setProductType(isVar ? 'variable' : (initialProduct.productType || 'simple'));
       setProductName(initialProduct.name || '');
       setSku(initialProduct.sku || '');
@@ -503,12 +574,51 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
         ? initialProduct.imageUrls
         : (img ? [img] : []);
       setGalleryImages(galleries);
-      
-      const parsedAttrs = parseInitialAttributes(initialProduct);
-      setWorkingAttributes(parsedAttrs);
-      setVariations(parseInitialVariations(initialProduct, parsedAttrs));
     }
   }, [initialProduct]);
+
+  // Auto-generate variations whenever productType is variable and variations is empty but attributes exist
+  useEffect(() => {
+    if (productType === 'variable' && variations.length === 0) {
+      const validAttrs = workingAttributes.filter((a) => a.name.trim() && a.values.length > 0);
+      if (validAttrs.length > 0) {
+        let combinations: Record<string, string>[] = [{}];
+        for (const attr of validAttrs) {
+          const nextCombos: Record<string, string>[] = [];
+          for (const curr of combinations) {
+            for (const val of attr.values) {
+              nextCombos.push({ ...curr, [attr.name]: val });
+            }
+          }
+          combinations = nextCombos;
+        }
+
+        const defaultReg = parseFloat(regularPrice) || 0;
+        const defaultSale = parseFloat(salePrice) || 0;
+        const defaultCost = parseFloat(costPrice) || 0;
+        const defaultStock = parseInt(openingStock, 10) || 10;
+        const baseSkuClean = sku.trim().toUpperCase() || 'DWS';
+
+        const newVars: ProductVariationItem[] = combinations.map((comb, idx) => {
+          const slug = Object.values(comb)
+            .map((v) => v.slice(0, 3).toUpperCase())
+            .join('-');
+          return {
+            id: `var-${Date.now()}-${idx}`,
+            attributes: comb,
+            sku: `${baseSkuClean}-${slug}`,
+            regularPrice: defaultReg,
+            salePrice: defaultSale > 0 ? defaultSale : defaultReg,
+            costPrice: defaultCost,
+            stock: defaultStock > 0 ? defaultStock : 10,
+            image: mainImage || '',
+            displayImage: mainImage || '',
+          };
+        });
+        setVariations(newVars);
+      }
+    }
+  }, [productType, workingAttributes, variations.length, regularPrice, salePrice, costPrice, openingStock, sku, mainImage]);
 
   // Calculate live Profit Preview
   const profitData = useMemo(() => {
@@ -965,7 +1075,15 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                 {/* Variable Product Option */}
                 <div className="col-12 col-md-6">
                   <div
-                    onClick={() => setProductType('variable')}
+                    onClick={() => {
+                      setProductType('variable');
+                      if (variations.length === 0) {
+                        const validAttrs = workingAttributes.filter((a) => a.name.trim() && a.values.length > 0);
+                        if (validAttrs.length > 0) {
+                          handleGenerateVariations();
+                        }
+                      }
+                    }}
                     className="p-3 rounded-3 cursor-pointer d-flex align-items-center gap-3"
                     style={{
                       border:

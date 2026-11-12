@@ -391,29 +391,41 @@ export default function App() {
 
   const handleStartEditProduct = async (prod: ProductItem) => {
     const realProd = realProducts.find(
-      (rp) => rp.id === prod.id || (rp.sku && prod.sku && rp.sku === prod.sku)
+      (rp) =>
+        String(rp.id) === String(prod.id) ||
+        (rp.sku && prod.sku && rp.sku.trim().toLowerCase() === String(prod.sku).trim().toLowerCase()) ||
+        rp.name.trim().toLowerCase() === String(prod.name).trim().toLowerCase()
     );
 
     // Initial best candidate from local state & realCatalog
+    const initialAttrs =
+      prod.attributes && prod.attributes.length > 0
+        ? prod.attributes
+        : realProd?.attributes && realProd.attributes.length > 0
+        ? realProd.attributes
+        : [];
+
+    const initialVars =
+      prod.variations && prod.variations.length > 0
+        ? prod.variations
+        : realProd?.variations && realProd.variations.length > 0
+        ? realProd.variations
+        : [];
+
     const initialIsVar =
       prod.productType === 'variable' ||
       prod.type === 'variable' ||
-      (Array.isArray(prod.variations) && prod.variations.length > 0) ||
-      realProd?.productType === 'variable' ||
-      (Array.isArray(realProd?.variations) && realProd.variations.length > 0);
+      initialVars.length > 0 ||
+      initialAttrs.some((a: any) => a && a.name && a.name.trim().toLowerCase() !== 'warranty') ||
+      realProd?.productType === 'variable';
 
     const initialMerged: ProductItem = {
+      ...realProd,
       ...prod,
       productType: initialIsVar ? 'variable' : 'simple',
       type: initialIsVar ? 'variable' : 'simple',
-      attributes:
-        prod.attributes && prod.attributes.length > 0
-          ? prod.attributes
-          : realProd?.attributes || [],
-      variations:
-        prod.variations && prod.variations.length > 0
-          ? prod.variations
-          : realProd?.variations || [],
+      attributes: initialAttrs,
+      variations: initialVars,
       image: prod.image || prod.displayImage || realProd?.image || '',
       displayImage: prod.displayImage || prod.image || realProd?.displayImage || '',
       galleryImages:
@@ -442,7 +454,7 @@ export default function App() {
           if (res.ok) {
             const fullProd = await res.json();
             if (fullProd && !fullProd.error) {
-              let normalizedAttributes: AttributeItem[] = initialMerged.attributes || [];
+              let normalizedAttributes: AttributeItem[] = initialAttrs;
               if (fullProd.attributes) {
                 if (Array.isArray(fullProd.attributes)) {
                   normalizedAttributes = fullProd.attributes;
@@ -484,36 +496,37 @@ export default function App() {
                       image: v.displayImage || v.image || '',
                       displayImage: v.displayImage || v.image || '',
                     }))
-                  : initialMerged.variations || [];
+                  : initialVars;
 
               const isVar =
                 fullProd.type === 'variable' ||
                 normalizedVars.length > 0 ||
+                normalizedAttributes.some((a: any) => a && a.name && a.name.trim().toLowerCase() !== 'warranty') ||
                 initialIsVar;
 
               const merged: ProductItem = {
-                ...initialMerged,
+                ...realProd,
                 ...prod,
                 productType: isVar ? 'variable' : 'simple',
                 type: isVar ? 'variable' : 'simple',
                 regularPrice: fullProd.regularPriceMinor
                   ? Math.round(fullProd.regularPriceMinor / 100)
-                  : prod.regularPrice,
+                  : (prod.regularPrice || realProd?.regularPrice || 0),
                 salePrice: fullProd.salePriceMinor
                   ? Math.round(fullProd.salePriceMinor / 100)
-                  : prod.salePrice,
+                  : (prod.salePrice || realProd?.salePrice || 0),
                 stock:
                   fullProd.stockQty !== undefined && fullProd.stockQty !== null
                     ? Number(fullProd.stockQty)
-                    : prod.stock,
-                attributes: normalizedAttributes,
-                variations: normalizedVars,
-                image: fullProd.displayImage || prod.image || initialMerged.image,
+                    : (prod.stock !== undefined ? prod.stock : realProd?.stock || 10),
+                attributes: normalizedAttributes.length > 0 ? normalizedAttributes : initialAttrs,
+                variations: normalizedVars.length > 0 ? normalizedVars : initialVars,
+                image: fullProd.displayImage || prod.image || realProd?.image || initialMerged.image,
                 displayImage:
-                  fullProd.displayImage || prod.displayImage || initialMerged.displayImage,
-                imageUrls: fullProd.imageUrls || prod.imageUrls || initialMerged.imageUrls,
+                  fullProd.displayImage || prod.displayImage || realProd?.displayImage || initialMerged.displayImage,
+                imageUrls: fullProd.imageUrls || prod.imageUrls || realProd?.imageUrls || initialMerged.imageUrls,
                 galleryImages:
-                  fullProd.imageUrls || prod.galleryImages || initialMerged.galleryImages,
+                  fullProd.imageUrls || prod.galleryImages || realProd?.galleryImages || initialMerged.galleryImages,
               };
               setEditingProductForForm(merged);
               setActiveTab('add-product');
