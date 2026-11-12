@@ -51,6 +51,127 @@ interface WorkingAttribute {
   values: string[];
 }
 
+const isVariableProduct = (prod?: any | null): boolean => {
+  if (!prod) return false;
+  if (prod.productType === 'variable' || prod.type === 'variable') return true;
+  if (prod.variations && Array.isArray(prod.variations) && prod.variations.length > 0) return true;
+  if (prod.attributes) {
+    if (Array.isArray(prod.attributes)) {
+      return prod.attributes.some((a: any) => a && a.name && a.name.toLowerCase() !== 'warranty' && (a.values || a.options));
+    } else if (typeof prod.attributes === 'object') {
+      return Object.keys(prod.attributes).some((k) => k.toLowerCase() !== 'warranty');
+    }
+  }
+  return false;
+};
+
+const parseInitialAttributes = (prod?: any | null): WorkingAttribute[] => {
+  if (!prod || !prod.attributes) return [];
+  if (Array.isArray(prod.attributes)) {
+    return prod.attributes
+      .filter((a: any) => a && a.name && a.name.toLowerCase() !== 'warranty')
+      .map((a: any, idx: number) => ({
+        id: `attr-${idx}`,
+        name: a.name.toLowerCase(),
+        currentInput: '',
+        values: typeof a.values === 'string'
+          ? a.values.split(',').map((v: string) => v.trim()).filter(Boolean)
+          : Array.isArray(a.values)
+          ? a.values.map((v: any) => String(v).trim()).filter(Boolean)
+          : []
+      }));
+  }
+  if (typeof prod.attributes === 'object') {
+    return Object.entries(prod.attributes)
+      .filter(([key]) => key.toLowerCase() !== 'warranty')
+      .map(([name, vals], idx) => ({
+        id: `attr-${idx}`,
+        name: name.toLowerCase(),
+        currentInput: '',
+        values: Array.isArray(vals)
+          ? vals.map((v: any) => String(v).trim()).filter(Boolean)
+          : typeof vals === 'string'
+          ? vals.split(',').map((v: string) => v.trim()).filter(Boolean)
+          : [String(vals).trim()]
+      }));
+  }
+  return [];
+};
+
+const parseInitialVariations = (prod?: any | null, parsedAttrs?: WorkingAttribute[]): ProductVariationItem[] => {
+  if (!prod) return [];
+  const defaultReg = prod.regularPrice || (prod.regularPriceMinor ? Math.round(prod.regularPriceMinor / 100) : 0);
+  const defaultSale = prod.salePrice || (prod.salePriceMinor ? Math.round(prod.salePriceMinor / 100) : defaultReg);
+  const defaultCost = prod.costPrice || 0;
+  const defaultStock = prod.stock !== undefined && prod.stock !== null && prod.stock > 0
+    ? Number(prod.stock)
+    : (prod.stockQty !== undefined && prod.stockQty !== null && prod.stockQty > 0 ? Number(prod.stockQty) : 10);
+
+  if (prod.variations && Array.isArray(prod.variations) && prod.variations.length > 0) {
+    return prod.variations.map((v: any, idx: number) => {
+      const reg = v.regularPrice !== undefined && v.regularPrice !== null && v.regularPrice !== ''
+        ? Number(v.regularPrice)
+        : (v.regularPriceMinor ? Math.round(Number(v.regularPriceMinor) / 100) : defaultReg);
+      const sale = v.salePrice !== undefined && v.salePrice !== null && v.salePrice !== ''
+        ? Number(v.salePrice)
+        : (v.salePriceMinor ? Math.round(Number(v.salePriceMinor) / 100) : defaultSale);
+      const stock = v.stock !== undefined && v.stock !== null && v.stock !== ''
+        ? Number(v.stock)
+        : (v.stockQty !== undefined && v.stockQty !== null
+            ? Number(v.stockQty)
+            : (v.inStock !== false ? defaultStock : 0));
+
+      const img = v.displayImage || v.image || (Array.isArray(v.imageUrls) ? v.imageUrls[0] : '') || prod.displayImage || prod.image || '';
+
+      return {
+        id: String(v.id || `var-${Date.now()}-${idx}`),
+        sku: v.sku || `${prod.sku || 'DWS'}-${idx + 1}`,
+        attributes: v.attributes || {},
+        regularPrice: reg,
+        salePrice: sale > 0 ? sale : reg,
+        costPrice: v.costPrice ? Number(v.costPrice) : defaultCost,
+        stock: stock,
+        image: img,
+        displayImage: img,
+      };
+    });
+  }
+
+  // Auto-generate variations from attributes if variations array was empty
+  const attrs = parsedAttrs || parseInitialAttributes(prod);
+  const validAttrs = attrs.filter((a) => a.name.trim() && a.values.length > 0);
+  if (validAttrs.length > 0) {
+    let combinations: Record<string, string>[] = [{}];
+    for (const attr of validAttrs) {
+      const nextCombos: Record<string, string>[] = [];
+      for (const curr of combinations) {
+        for (const val of attr.values) {
+          nextCombos.push({ ...curr, [attr.name]: val });
+        }
+      }
+      combinations = nextCombos;
+    }
+    return combinations.map((comb, idx) => {
+      const slug = Object.values(comb)
+        .map((v) => v.slice(0, 3).toUpperCase())
+        .join('-');
+      return {
+        id: `var-${Date.now()}-${idx}`,
+        attributes: comb,
+        sku: `${prod.sku || 'DWS'}-${slug}`,
+        regularPrice: defaultReg,
+        salePrice: defaultSale > 0 ? defaultSale : defaultReg,
+        costPrice: defaultCost,
+        stock: defaultStock > 0 ? defaultStock : 10,
+        image: prod.displayImage || prod.image || '',
+        displayImage: prod.displayImage || prod.image || '',
+      };
+    });
+  }
+
+  return [];
+};
+
 export const AddProductView: React.FC<AddProductViewProps> = ({
   initialProduct,
   onAddProduct,
@@ -64,9 +185,9 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
 }) => {
   const isEditing = Boolean(initialProduct);
 
-  // 1. Product Type: 'simple' | 'variable'
+  // 1. Product Type: 'simple' | 'variable' (Auto-detected from variations or attributes!)
   const [productType, setProductType] = useState<'simple' | 'variable'>(
-    initialProduct?.productType || 'simple'
+    isVariableProduct(initialProduct) ? 'variable' : (initialProduct?.productType || 'simple')
   );
 
   // 2. Basic Information (Completely blank if adding new!)
@@ -343,27 +464,17 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
   // 8. Variable Product Attributes & Variations
   const [newAttrName, setNewAttrName] = useState('');
   const [workingAttributes, setWorkingAttributes] = useState<WorkingAttribute[]>(() => {
-    if (initialProduct?.attributes && initialProduct.attributes.length > 0) {
-      return initialProduct.attributes
-        .filter((a) => a.name !== 'Warranty')
-        .map((a, idx) => ({
-          id: `attr-${idx}`,
-          name: a.name.toLowerCase(),
-          currentInput: '',
-          values: a.values ? a.values.split(',').map((v) => v.trim()).filter(Boolean) : []
-        }));
-    }
-    return [];
+    return parseInitialAttributes(initialProduct);
   });
 
-  const [variations, setVariations] = useState<ProductVariationItem[]>(
-    initialProduct?.variations || []
-  );
+  const [variations, setVariations] = useState<ProductVariationItem[]>(() => {
+    return parseInitialVariations(initialProduct, parseInitialAttributes(initialProduct));
+  });
 
   // When initialProduct changes, update state
   useEffect(() => {
     if (initialProduct) {
-      setProductType(initialProduct.productType || 'simple');
+      setProductType(isVariableProduct(initialProduct) ? 'variable' : (initialProduct.productType || 'simple'));
       setProductName(initialProduct.name || '');
       setSku(initialProduct.sku || '');
       setBrand(initialProduct.brand || '');
@@ -380,21 +491,12 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       setDimLength(initialProduct.shipping?.length ? String(initialProduct.shipping.length) : '');
       setDimWidth(initialProduct.shipping?.width ? String(initialProduct.shipping.width) : '');
       setDimHeight(initialProduct.shipping?.height ? String(initialProduct.shipping.height) : '');
-      setShippingClass(initialProduct.shipping?.shippingClass || 'Standard Islandwide Delivery (Rs. 350)');
+      setShippingClass(initialProduct.shipping?.shippingClass || 'Standard Islandwide Delivery (Rs. 450)');
       setWarrantyPeriod(initialProduct.warrantyPeriod || '');
-      if (initialProduct.attributes && initialProduct.attributes.length > 0) {
-        setWorkingAttributes(
-          initialProduct.attributes
-            .filter((a) => a.name !== 'Warranty')
-            .map((a, idx) => ({
-              id: `attr-${idx}`,
-              name: a.name.toLowerCase(),
-              currentInput: '',
-              values: a.values ? a.values.split(',').map((v) => v.trim()).filter(Boolean) : []
-            }))
-        );
-      }
-      setVariations(initialProduct.variations || []);
+      
+      const parsedAttrs = parseInitialAttributes(initialProduct);
+      setWorkingAttributes(parsedAttrs);
+      setVariations(parseInitialVariations(initialProduct, parsedAttrs));
     }
   }, [initialProduct]);
 
@@ -686,12 +788,20 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
     const enteredSaleP = parseFloat(salePrice) || 0;
     const saleP = enteredSaleP > 0 ? enteredSaleP : regP;
     const costP = parseFloat(costPrice) || 0;
+
+    const defaultReg = variations.find((v) => v.regularPrice && v.regularPrice > 0)?.regularPrice || regP;
+    const defaultSale = variations.find((v) => v.salePrice && v.salePrice > 0)?.salePrice || saleP || defaultReg;
+    const finalReg = productType === 'variable' ? (regP > 0 ? regP : defaultReg) : regP;
+    const finalSale = productType === 'variable' ? (saleP > 0 ? saleP : defaultSale) : saleP;
+
     const stockQty =
       productType === 'variable' && variations.length > 0
         ? variations.reduce((sum, v) => sum + (v.stock || 0), 0)
         : parseInt(openingStock, 10) || 0;
 
     const stockAlert = parseInt(stockAlertLevel, 10) || 10;
+    const inStock = stockQty > 0 || (productType === 'variable' && variations.some((v) => (v.stock || 0) > 0));
+    const status = inStock ? (stockQty <= stockAlert ? 'Low stock' : 'Active') : 'Out of stock';
 
     const shippingInfo: ShippingDetails = {
       weight: parseFloat(weightKg) || 0,
@@ -735,12 +845,13 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       brand: brand.trim() || 'DWstore',
       category: selectedCategory.trim() || 'SmartWatches',
       productType,
-      regularPrice: regP,
-      salePrice: saleP,
+      type: productType,
+      regularPrice: finalReg,
+      salePrice: finalSale,
       costPrice: costP,
       stock: stockQty,
       stockAlertLevel: stockAlert,
-      status: stockQty === 0 ? 'Out of stock' : stockQty <= stockAlert ? 'Low stock' : 'Active',
+      status,
       salesCount: initialProduct?.salesCount || 0,
       rating: initialProduct?.rating || 5.0,
       image: primaryImg,

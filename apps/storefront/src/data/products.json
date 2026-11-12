@@ -40,8 +40,8 @@
     ],
     "localImages": [],
     "displayImage": "/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg",
-    "inStock": false,
-    "stockQty": 0,
+    "inStock": true,
+    "stockQty": 30,
     "seoTitle": "T800 Ultra Smartwatch Series 8",
     "seoDescription": "1.99- inch LCD Full touch screen T800 Ultra Smartwatch Series 8 Health Heart rate blood pressure blood oxygen measurement sleep monitoring bluetooth",
     "variations": [
@@ -58,8 +58,8 @@
           "https://www.dwstore.lk/wp-content/uploads/2025/01/T800-Ultra-Smart-Watch-600x600-1.jpg"
         ],
         "displayImage": "/media/products/T800-Ultra-Smart-Watch-600x600-1_04c7a92f.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "31300",
@@ -72,8 +72,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "31301",
@@ -88,8 +88,8 @@
           "https://www.dwstore.lk/wp-content/uploads/2024/10/T800-Ultra-Smart-Watch-3.jpg"
         ],
         "displayImage": "/media/products/T800-Ultra-Smart-Watch-3_fd51799a.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       }
     ],
     "sourceSystem": "woocommerce",
@@ -2090,8 +2090,8 @@
       "/products/images/c958ff0877.jpg"
     ],
     "displayImage": "/media/products/c958ff0877.jpg",
-    "inStock": false,
-    "stockQty": null,
+    "inStock": true,
+    "stockQty": 20,
     "seoTitle": "Lenovo HT38 Airpods TWS Bluetooth Wireless Earphone Earbuds",
     "seoDescription": "Experience premium audio with the Lenovo HT38 TWS Bluetooth Wireless Earbuds. Lightweight, stylish Airpods design with HD sound, touch control, and long battery life – perfect for music and calls.",
     "variations": [
@@ -2108,8 +2108,8 @@
           "https://www.dwstore.lk/wp-content/uploads/2025/01/L4hF310Bv1rSs2S.jpg"
         ],
         "displayImage": "/media/products/L4hF310Bv1rSs2S_8dd58bd4.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "31290",
@@ -2124,8 +2124,8 @@
           "https://www.dwstore.lk/wp-content/uploads/2025/01/32eee9e3cb9245662e898db0253006b3.jpg"
         ],
         "displayImage": "/media/products/32eee9e3cb9245662e898db0253006b3_83e0f5eb.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       }
     ],
     "sourceSystem": "woocommerce",
@@ -2454,8 +2454,8 @@
     ],
     "localImages": [],
     "displayImage": "/media/products/TmIzMen-s-Multifunction-Anti-theft-USB-Shoulder-Bag-Man-Crossbody-Cross-Body-Tra_acf3e10f.jpg",
-    "inStock": false,
-    "stockQty": null,
+    "inStock": true,
+    "stockQty": 20,
     "seoTitle": "New Fashion Chest Bag USB Men Crossbody Anti theft Shoulder Multifunction Sling Travel Cross Bag",
     "seoDescription": "Adjustable Sling Bag: The flexible strap of chest bag can be adjusted varied,Sling backpack can effectively keep your belongings, such as cosmetics,tissues,keys,mobile phones,passports,water bottless,umbrellas,etc.",
     "variations": [
@@ -2472,8 +2472,8 @@
           "https://www.dwstore.lk/wp-content/uploads/2024/10/A1wzMen-s-Multifunction-Anti-theft-USB-Shoulder-Bag-Man-Crossbody-Cross-Body-Travel-Sling-Chest-Bags.jpg"
         ],
         "displayImage": "/media/products/A1wzMen-s-Multifunction-Anti-theft-USB-Shoulder-Bag-Man-Crossbody-Cross-Body-Tra_89e46fe1.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "31732",
@@ -2486,8 +2486,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/TmIzMen-s-Multifunction-Anti-theft-USB-Shoulder-Bag-Man-Crossbody-Cross-Body-Tra_acf3e10f.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       }
     ],
     "sourceSystem": "woocommerce",
@@ -5190,8 +5190,8 @@
       "/products/images/8c09aa5762.jpg"
     ],
     "displayImage": "/media/products/8c09aa5762.jpg",
-    "inStock": false,
-    "stockQty": null,
+    "inStock": true,
+    "stockQty": 20,
     "seoTitle": "Samsung USB Type-C AKG Wired In-Ear Headphones",
     "seoDescription": "Model: AKG Type C Wearing Type: in ear Microphone: Yes Call Receiving: Yes Type-C Cable Two-way speakers tuned by AKG guarantee pro-grade sound quality",
     "variations": [
@@ -5206,8 +5206,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/Samsung-Type-C-AKG-Wired-In-Ear_8c09aa57.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "30993",
@@ -5220,8 +5220,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/Samsung-Type-C-AKG-Wired-In-Ear_8c09aa57.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       }
     ],
     "sourceSystem": "woocommerce",
@@ -5686,8 +5686,8 @@
       "/products/images/19996c7036.jpg"
     ],
     "displayImage": "/media/products/19996c7036.jpg",
-    "inStock": false,
-    "stockQty": null,
+    "inStock": true,
+    "stockQty": 20,
     "seoTitle": "2025 New Fashion Chest Bag USB Men Crossbody Anti theft Shoulder Multifunction Sling Travel Cross Bag",
     "seoDescription": "Adjustable Sling Bag: The flexible strap of chest bag can be adjusted varied,Sling backpack can effectively keep your belongings, such as cosmetics,tissues,keys,mobile phones,passports,water bottless,umbrellas,etc.",
     "variations": [
@@ -5704,8 +5704,8 @@
           "https://www.dwstore.lk/wp-content/uploads/2025/01/mmexport1736262230518.jpg"
         ],
         "displayImage": "/media/products/mmexport1736262230518_735e043a.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "31347",
@@ -5718,8 +5718,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/mmexport1736262226492_19996c70.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       }
     ],
     "sourceSystem": "woocommerce",
@@ -5927,8 +5927,8 @@
     ],
     "localImages": [],
     "displayImage": "/media/products/HK10-Pro-Plus-Smart-Watch-45MM-with-2.02-AMOLED-Display-ChatGPT_e8662ac6.jpg",
-    "inStock": false,
-    "stockQty": null,
+    "inStock": true,
+    "stockQty": 20,
     "seoTitle": "HK10 Pro Plus Smart Watch 45MM with 2.02 AMOLED Display ChatGPT",
     "seoDescription": "HK Pro Plus Smart Watch. Featuring a 2.02 inch AMOLED full touch screen and a powerful chip, this watch provides a crystal clear display and lightning-fast performance.",
     "variations": [
@@ -5943,8 +5943,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/HK10-Pro-Plus-Smart-Watch-45MM-with-2.02-AMOLED-Display-ChatGPT_e8662ac6.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "31570",
@@ -5957,8 +5957,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/HK10-Pro-Plus-Smart-Watch-45MM-with-2.02-AMOLED-Display-ChatGPT_e8662ac6.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       }
     ],
     "sourceSystem": "woocommerce",
@@ -6299,8 +6299,8 @@
       "/products/images/04234c5efe.jpg"
     ],
     "displayImage": "/media/products/04234c5efe.jpg",
-    "inStock": false,
-    "stockQty": null,
+    "inStock": true,
+    "stockQty": 20,
     "seoTitle": "VDENMENV DP09 Power Bank 10000mAh 2.1A Quick Charge Dual USB Port Powerbank",
     "seoDescription": "Capacity: 10000mAh Rated ower: 37Wh Total: 10.5W(Max) Micro input : DC5V - 2.1A Type-C input: DC5V - 2.1A 6 Months Warranty",
     "variations": [
@@ -6317,8 +6317,8 @@
           "https://www.dwstore.lk/wp-content/uploads/2025/03/VDENMENV-DP09-Power-Bank-10000mAh-2.1A-Quick-Charge-Dual-USB-Port-Powerbank-10.jpg"
         ],
         "displayImage": "/media/products/VDENMENV-DP09-Power-Bank-10000mAh-2.1A-Quick-Charge-Dual-USB-Port-Powerbank-10_7cdeb122.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "31753",
@@ -6333,8 +6333,8 @@
           "https://www.dwstore.lk/wp-content/uploads/2025/03/VDENMENV-DP09-Power-Bank-10000mAh-2.1A-Quick-Charge-Dual-USB-Port-Powerbank-9.jpg"
         ],
         "displayImage": "/media/products/VDENMENV-DP09-Power-Bank-10000mAh-2.1A-Quick-Charge-Dual-USB-Port-Powerbank-9_a7c0f41e.jpg",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       }
     ],
     "sourceSystem": "woocommerce",
@@ -7647,8 +7647,8 @@
       "/products/images/50556c8a8e.webp"
     ],
     "displayImage": "/media/products/50556c8a8e.webp",
-    "inStock": false,
-    "stockQty": null,
+    "inStock": true,
+    "stockQty": 20,
     "seoTitle": "ANKER Zolo 20w PD Type C 3.0 Fast Charger",
     "seoDescription": "Buy ANKER Zolo 20W PD 3.0 Fast Charger in Sri Lanka. Compact USB-C adapter with Power Delivery for ultra-fast, safe charging. Ideal for iPhone, Samsung, and more.",
     "variations": [
@@ -7663,8 +7663,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/download-24_50556c8a.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "32331",
@@ -7677,8 +7677,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/download-24_50556c8a.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       }
     ],
     "sourceSystem": "woocommerce",
@@ -9003,8 +9003,8 @@
     ],
     "localImages": [],
     "displayImage": "/media/products/download-2025-09-16T155814.312_77bedcbb.webp",
-    "inStock": false,
-    "stockQty": null,
+    "inStock": true,
+    "stockQty": 30,
     "seoTitle": "HAYLOU Watch S6 Smartwatch with 2.01\" HD Display, Health Tracking & Long Battery Life",
     "seoDescription": "Buy Haylou Watch S6 Smartwatch with 2.01 HD display, health monitoring, fitness tracking & long battery life. Stylish, durable & feature-packed wearable.",
     "variations": [
@@ -9021,8 +9021,8 @@
           "https://www.dwstore.lk/wp-content/uploads/2025/09/download-2025-09-16T155838.228.webp"
         ],
         "displayImage": "/media/products/download-2025-09-16T155838.228_959f4129.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "32619",
@@ -9037,8 +9037,8 @@
           "https://www.dwstore.lk/wp-content/uploads/2025/09/download-2025-09-16T155826.698.webp"
         ],
         "displayImage": "/media/products/download-2025-09-16T155826.698_c06dcfe5.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "32620",
@@ -9051,8 +9051,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/download-2025-09-16T155814.312_77bedcbb.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       }
     ],
     "sourceSystem": "woocommerce",
@@ -10627,8 +10627,8 @@
       "/products/images/d83267e750.webp"
     ],
     "displayImage": "/media/products/d83267e750.webp",
-    "inStock": false,
-    "stockQty": null,
+    "inStock": true,
+    "stockQty": 20,
     "seoTitle": "Haylou Solar Lite Smart Watch Round Face",
     "seoDescription": "Haylou Solar Lite Smart Watch with 1.38\" display, fitness tracking, 100+ sports modes, smart notifications, and IP68 water resistance. Slim, stylish, and long battery life.",
     "variations": [
@@ -10643,8 +10643,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/download-2025-11-20T182553.562_d83267e7.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "33033",
@@ -10657,8 +10657,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/download-2025-11-20T182553.562_d83267e7.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       }
     ],
     "sourceSystem": "woocommerce",
@@ -11250,8 +11250,8 @@
       "/products/images/92ac4f4b75.webp"
     ],
     "displayImage": "/media/products/92ac4f4b75.webp",
-    "inStock": false,
-    "stockQty": null,
+    "inStock": true,
+    "stockQty": 30,
     "seoTitle": "SanDisk Ultra Class 10 UHS-I MicroSD Card 16GB 32GB 64GB 128GB 256GB",
     "seoDescription": "SanDisk Ultra Class 10 UHS-I MicroSD card for fast performance, Full HD video recording, and reliable storage.",
     "variations": [
@@ -11266,8 +11266,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/download-2025-12-17T184548.066_92ac4f4b.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "33283",
@@ -11280,8 +11280,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/download-2025-12-17T184548.066_92ac4f4b.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "33284",
@@ -11294,8 +11294,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/download-2025-12-17T184548.066_92ac4f4b.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       }
     ],
     "sourceSystem": "woocommerce",
@@ -12654,8 +12654,8 @@
       "/products/images/c5f62abc29.webp"
     ],
     "displayImage": "/media/products/c5f62abc29.webp",
-    "inStock": false,
-    "stockQty": null,
+    "inStock": true,
+    "stockQty": 20,
     "seoTitle": "VGR V-975 Professional Salon Series Hair Trimmer for Mens & Boys",
     "seoDescription": "Buy VGR V-975 Professional Salon Series Hair Trimmer in Sri Lanka. ✂️ 120min runtime, LED display, T-blade & USB charging. Shop now at DW Store!",
     "variations": [
@@ -12670,8 +12670,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/VGR_V-975_Professional_Salon_Ser_c5f62abc.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "33882",
@@ -12684,8 +12684,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/VGR_V-975_Professional_Salon_Ser_c5f62abc.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       }
     ],
     "sourceSystem": "woocommerce",
@@ -13204,8 +13204,8 @@
       "/products/images/a6886bcb7d.webp"
     ],
     "displayImage": "/media/products/a6886bcb7d.webp",
-    "inStock": false,
-    "stockQty": null,
+    "inStock": true,
+    "stockQty": 20,
     "seoTitle": "PLUZZ HERO 600S Dual Sim Keypad Button Phone",
     "seoDescription": "Buy PLUZZ HERO 600S Dual Sim Keypad Phone in Sri Lanka. 📱 Massive battery, bright torch, wireless FM & loud speaker. Reliable backup at DW Store!",
     "variations": [
@@ -13220,8 +13220,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/lqNsQjzcVMErGdk34Wu-mA7OCAq4zyfh_a6886bcb.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "34018",
@@ -13234,8 +13234,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/lqNsQjzcVMErGdk34Wu-mA7OCAq4zyfh_a6886bcb.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       }
     ],
     "sourceSystem": "woocommerce",
@@ -14565,8 +14565,8 @@
       "/products/images/d8232e089d.webp"
     ],
     "displayImage": "/media/products/d8232e089d.webp",
-    "inStock": false,
-    "stockQty": null,
+    "inStock": true,
+    "stockQty": 20,
     "seoTitle": "SONY WF-C510 True Wireless Bluetooth Earbuds",
     "seoDescription": "Buy Sony WF-C510 Earbuds in Sri Lanka. 🎧 22H Battery, Multipoint Connection, IPX4 Water Resistant & DSEE Sound. Premium Sony quality at DW Store!",
     "variations": [
@@ -14581,8 +14581,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/download-2026-04-06T200909.644_d8232e08.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       },
       {
         "id": "34273",
@@ -14595,8 +14595,8 @@
         },
         "imageUrls": [],
         "displayImage": "/media/products/download-2026-04-06T200909.644_d8232e08.webp",
-        "inStock": false,
-        "stockQty": null
+        "inStock": true,
+        "stockQty": 10
       }
     ],
     "sourceSystem": "woocommerce",

@@ -68,11 +68,26 @@ export default function App() {
   // Main entity states with 100% Real WooCommerce Database & Koombiyo Logistics
   const [products, setProducts] = useState<ProductItem[]>(() => {
     try {
+      const savedV2 = localStorage.getItem('dwstore_admin_products_v2');
+      if (savedV2) {
+        const parsed: ProductItem[] = JSON.parse(savedV2);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
       const saved = localStorage.getItem('dwstore_admin_products_v1');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed: ProductItem[] = JSON.parse(saved);
+        const hasVars = parsed.some((p) => p.variations && p.variations.length > 0);
+        if (hasVars) return parsed;
+      }
     } catch (e) {}
     return realProducts;
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dwstore_admin_products_v2', JSON.stringify(products));
+    } catch (e) {}
+  }, [products]);
   const [orders, setOrders] = useState<OrderItem[]>(() => {
     try {
       const saved = localStorage.getItem('dwstore_admin_orders_v3');
@@ -267,7 +282,46 @@ export default function App() {
   }, [customers]);
   const [editingProductForForm, setEditingProductForForm] = useState<ProductItem | null>(null);
 
-  const handleStartEditProduct = (prod: ProductItem) => {
+  const handleStartEditProduct = async (prod: ProductItem) => {
+    try {
+      const res = await fetch(`${getStorefrontUrl()}/api/products?id=${encodeURIComponent(prod.id)}`, { cache: 'no-store' });
+      if (res.ok) {
+        const fullProd = await res.json();
+        if (fullProd && !fullProd.error) {
+          const normalizedVars = Array.isArray(fullProd.variations) && fullProd.variations.length > 0
+            ? fullProd.variations.map((v: any, idx: number) => ({
+                id: String(v.id || `var-${idx}`),
+                sku: v.sku || '',
+                attributes: v.attributes || {},
+                regularPrice: v.regularPrice !== undefined ? Number(v.regularPrice) : (v.regularPriceMinor ? Math.round(Number(v.regularPriceMinor) / 100) : prod.regularPrice),
+                salePrice: v.salePrice !== undefined ? Number(v.salePrice) : (v.salePriceMinor ? Math.round(Number(v.salePriceMinor) / 100) : prod.salePrice),
+                costPrice: 0,
+                stock: v.stock !== undefined && v.stock !== null ? Number(v.stock) : (v.stockQty !== undefined && v.stockQty !== null ? Number(v.stockQty) : 10),
+                image: v.displayImage || v.image || '',
+                displayImage: v.displayImage || v.image || '',
+              }))
+            : prod.variations || [];
+
+          const merged: ProductItem = {
+            ...prod,
+            productType: (fullProd.type === 'variable' || normalizedVars.length > 0) ? 'variable' : (prod.productType || 'simple'),
+            regularPrice: fullProd.regularPriceMinor ? Math.round(fullProd.regularPriceMinor / 100) : prod.regularPrice,
+            salePrice: fullProd.salePriceMinor ? Math.round(fullProd.salePriceMinor / 100) : prod.salePrice,
+            stock: fullProd.stockQty !== undefined && fullProd.stockQty !== null ? Number(fullProd.stockQty) : prod.stock,
+            variations: normalizedVars,
+            image: fullProd.displayImage || prod.image,
+            displayImage: fullProd.displayImage || prod.displayImage,
+            imageUrls: fullProd.imageUrls || prod.imageUrls,
+            galleryImages: fullProd.imageUrls || prod.galleryImages,
+          };
+          setEditingProductForForm(merged);
+          setActiveTab('add-product');
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not fetch single product details from API:', e);
+    }
     setEditingProductForForm(prod);
     setActiveTab('add-product');
   };
@@ -682,9 +736,13 @@ export default function App() {
   };
 
   const handleUpdateProduct = async (updatedProduct: ProductItem) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
-    );
+    setProducts((prev) => {
+      const next = prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p));
+      try {
+        localStorage.setItem('dwstore_admin_products_v2', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
     try {
       await fetch(`${getStorefrontUrl()}/api/products`, {
         method: 'POST',

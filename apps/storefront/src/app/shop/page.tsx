@@ -55,6 +55,23 @@ function ShopContent() {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const itemsPerPage = 20;
 
+  const [allProducts, setAllProducts] = useState<any[]>(() => productsData as any[]);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/api/products', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setAllProducts(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Lock body scroll when mobile filter drawer is open
   useEffect(() => {
     if (mobileFilterOpen) {
@@ -189,16 +206,16 @@ function ShopContent() {
   const { totalInStock, totalOutOfStock } = useMemo(() => {
     let inS = 0;
     let outS = 0;
-    (productsData as any[]).forEach((p) => {
+    allProducts.forEach((p) => {
       if (isProductInStock(p)) inS++;
       else outS++;
     });
     return { totalInStock: inS, totalOutOfStock: outS };
-  }, []);
+  }, [allProducts]);
 
   // Filter products with robust case-insensitive slug checking, stock status, and price range
   const filteredProducts = useMemo(() => {
-    return (productsData as any[])
+    return allProducts
       .filter((p) => {
         // Category filter
         if (selectedCategory !== 'all') {
@@ -338,7 +355,7 @@ function ShopContent() {
             }`}
           >
             <span>All Availability</span>
-            <span>{productsData.length}</span>
+            <span>{allProducts.length}</span>
           </button>
           <button
             type="button"
@@ -473,7 +490,7 @@ function ShopContent() {
             }`}
           >
             <span>All Categories</span>
-            <span>{productsData.length}</span>
+            <span>{allProducts.length}</span>
           </button>
           {(categoriesData as any[])
             .filter((c) => c.productCount > 0)

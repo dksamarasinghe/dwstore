@@ -10,8 +10,8 @@ export const realProducts: ProductItem[] = [
     "category": "SmartWatches",
     "regularPrice": 2450,
     "salePrice": 1990,
-    "stock": 0,
-    "status": "Out of stock",
+    "stock": 30,
+    "status": "Active",
     "salesCount": 30,
     "rating": 4.8,
     "image": "https://www.dwstore.lk/wp-content/uploads/2024/10/T800-Ultra-Smart-Watch-1.jpg",
@@ -22,6 +22,48 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, Orange, White"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "31299",
+        "sku": "WC-31299",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 2450,
+        "salePrice": 1990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/T800-Ultra-Smart-Watch-600x600-1_04c7a92f.jpg",
+        "displayImage": "/media/products/T800-Ultra-Smart-Watch-600x600-1_04c7a92f.jpg"
+      },
+      {
+        "id": "31300",
+        "sku": "WC-31300",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 2450,
+        "salePrice": 1990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg",
+        "displayImage": "/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg"
+      },
+      {
+        "id": "31301",
+        "sku": "WC-31301",
+        "attributes": {
+          "Color": "Orange"
+        },
+        "regularPrice": 2450,
+        "salePrice": 1990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/T800-Ultra-Smart-Watch-3_fd51799a.jpg",
+        "displayImage": "/media/products/T800-Ultra-Smart-Watch-3_fd51799a.jpg"
       }
     ]
   },
@@ -104,7 +146,7 @@ export const realProducts: ProductItem[] = [
     "category": "Temperd Glass",
     "regularPrice": 1990,
     "salePrice": 1590,
-    "stock": 35,
+    "stock": 130,
     "status": "Active",
     "salesCount": 28,
     "rating": 4.8,
@@ -115,6 +157,178 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Modle",
         "values": "iPhone 13 / 13 Pro / 14, iPhone 14 Pro, iPhone 14 Pro Max, iPhone 15 / 16, iPhone 15 Plus, iPhone 15 Pro, iPhone 15 Pro Max, iPhone 16 Pro, iPhone 16 Plus, iPhone 16 Pro Max, iPhone 17, iPhone 17 Pro, iPhone 17 Pro Max"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "33467",
+        "sku": "WC-33467",
+        "attributes": {
+          "Modle": "iPhone 13 / 13 Pro / 14"
+        },
+        "regularPrice": 1990,
+        "salePrice": 1590,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/14pro_max_2__f81887eb.jpg",
+        "displayImage": "/media/products/14pro_max_2__f81887eb.jpg"
+      },
+      {
+        "id": "33468",
+        "sku": "WC-33468",
+        "attributes": {
+          "Modle": "iPhone 14 Pro"
+        },
+        "regularPrice": 1990,
+        "salePrice": 1590,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/14pro_max_2__f81887eb.jpg",
+        "displayImage": "/media/products/14pro_max_2__f81887eb.jpg"
+      },
+      {
+        "id": "33469",
+        "sku": "WC-33469",
+        "attributes": {
+          "Modle": "iPhone 14 Pro Max"
+        },
+        "regularPrice": 1990,
+        "salePrice": 1590,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/14pro_max_2__f81887eb.jpg",
+        "displayImage": "/media/products/14pro_max_2__f81887eb.jpg"
+      },
+      {
+        "id": "33470",
+        "sku": "WC-33470",
+        "attributes": {
+          "Modle": "iPhone 15 / 16"
+        },
+        "regularPrice": 1990,
+        "salePrice": 1590,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/14pro_max_2__f81887eb.jpg",
+        "displayImage": "/media/products/14pro_max_2__f81887eb.jpg"
+      },
+      {
+        "id": "33471",
+        "sku": "WC-33471",
+        "attributes": {
+          "Modle": "iPhone 15 Plus"
+        },
+        "regularPrice": 1990,
+        "salePrice": 1590,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/14pro_max_2__f81887eb.jpg",
+        "displayImage": "/media/products/14pro_max_2__f81887eb.jpg"
+      },
+      {
+        "id": "33472",
+        "sku": "WC-33472",
+        "attributes": {
+          "Modle": "iPhone 15 Pro"
+        },
+        "regularPrice": 1990,
+        "salePrice": 1590,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/14pro_max_2__f81887eb.jpg",
+        "displayImage": "/media/products/14pro_max_2__f81887eb.jpg"
+      },
+      {
+        "id": "33473",
+        "sku": "WC-33473",
+        "attributes": {
+          "Modle": "iPhone 15 Pro Max"
+        },
+        "regularPrice": 1990,
+        "salePrice": 1590,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/14pro_max_2__f81887eb.jpg",
+        "displayImage": "/media/products/14pro_max_2__f81887eb.jpg"
+      },
+      {
+        "id": "33474",
+        "sku": "WC-33474",
+        "attributes": {
+          "Modle": "iPhone 16 Pro"
+        },
+        "regularPrice": 1990,
+        "salePrice": 1590,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/14pro_max_2__f81887eb.jpg",
+        "displayImage": "/media/products/14pro_max_2__f81887eb.jpg"
+      },
+      {
+        "id": "33475",
+        "sku": "WC-33475",
+        "attributes": {
+          "Modle": "iPhone 16 Plus"
+        },
+        "regularPrice": 1990,
+        "salePrice": 1590,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/14pro_max_2__f81887eb.jpg",
+        "displayImage": "/media/products/14pro_max_2__f81887eb.jpg"
+      },
+      {
+        "id": "33476",
+        "sku": "WC-33476",
+        "attributes": {
+          "Modle": "iPhone 16 Pro Max"
+        },
+        "regularPrice": 1990,
+        "salePrice": 1590,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/14pro_max_2__f81887eb.jpg",
+        "displayImage": "/media/products/14pro_max_2__f81887eb.jpg"
+      },
+      {
+        "id": "33477",
+        "sku": "WC-33477",
+        "attributes": {
+          "Modle": "iPhone 17"
+        },
+        "regularPrice": 2990,
+        "salePrice": 2250,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/14pro_max_2__f81887eb.jpg",
+        "displayImage": "/media/products/14pro_max_2__f81887eb.jpg"
+      },
+      {
+        "id": "33478",
+        "sku": "WC-33478",
+        "attributes": {
+          "Modle": "iPhone 17 Pro"
+        },
+        "regularPrice": 2990,
+        "salePrice": 2250,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/14pro_max_2__f81887eb.jpg",
+        "displayImage": "/media/products/14pro_max_2__f81887eb.jpg"
+      },
+      {
+        "id": "33479",
+        "sku": "WC-33479",
+        "attributes": {
+          "Modle": "iPhone 17 Pro Max"
+        },
+        "regularPrice": 2990,
+        "salePrice": 2250,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/14pro_max_2__f81887eb.jpg",
+        "displayImage": "/media/products/14pro_max_2__f81887eb.jpg"
       }
     ]
   },
@@ -450,7 +664,7 @@ export const realProducts: ProductItem[] = [
     "category": "Headphone and Headset",
     "regularPrice": 950,
     "salePrice": 950,
-    "stock": 35,
+    "stock": 30,
     "status": "Active",
     "salesCount": 27,
     "rating": 4.8,
@@ -461,6 +675,48 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, Red, Silver"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "29546",
+        "sku": "WC-29546",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 950,
+        "salePrice": 950,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/HTB1Jm3OMW6qK1RjSZFmq6x0PFXae_5926df18.jpg",
+        "displayImage": "/media/products/HTB1Jm3OMW6qK1RjSZFmq6x0PFXae_5926df18.jpg"
+      },
+      {
+        "id": "29560",
+        "sku": "WC-29560",
+        "attributes": {
+          "Color": "Red"
+        },
+        "regularPrice": 950,
+        "salePrice": 950,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/HTB1Jm3OMW6qK1RjSZFmq6x0PFXae_5926df18.jpg",
+        "displayImage": "/media/products/HTB1Jm3OMW6qK1RjSZFmq6x0PFXae_5926df18.jpg"
+      },
+      {
+        "id": "29576",
+        "sku": "WC-29576",
+        "attributes": {
+          "Color": "Silver"
+        },
+        "regularPrice": 950,
+        "salePrice": 950,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/HTB1Jm3OMW6qK1RjSZFmq6x0PFXae_5926df18.jpg",
+        "displayImage": "/media/products/HTB1Jm3OMW6qK1RjSZFmq6x0PFXae_5926df18.jpg"
       }
     ]
   },
@@ -787,8 +1043,8 @@ export const realProducts: ProductItem[] = [
     "category": "Bluetooth Handfree",
     "regularPrice": 2450,
     "salePrice": 2450,
-    "stock": 0,
-    "status": "Out of stock",
+    "stock": 20,
+    "status": "Active",
     "salesCount": 45,
     "rating": 4.8,
     "image": "/products/images/c958ff0877.jpg",
@@ -799,6 +1055,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, White"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "31289",
+        "sku": "WC-31289",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 2450,
+        "salePrice": 2450,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/L4hF310Bv1rSs2S_8dd58bd4.jpg",
+        "displayImage": "/media/products/L4hF310Bv1rSs2S_8dd58bd4.jpg"
+      },
+      {
+        "id": "31290",
+        "sku": "WC-31290",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 2450,
+        "salePrice": 2450,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/32eee9e3cb9245662e898db0253006b3_83e0f5eb.jpg",
+        "displayImage": "/media/products/32eee9e3cb9245662e898db0253006b3_83e0f5eb.jpg"
       }
     ]
   },
@@ -952,8 +1237,8 @@ export const realProducts: ProductItem[] = [
     "category": "Fashion",
     "regularPrice": 3350,
     "salePrice": 2990,
-    "stock": 0,
-    "status": "Out of stock",
+    "stock": 20,
+    "status": "Active",
     "salesCount": 35,
     "rating": 4.8,
     "image": "https://www.dwstore.lk/wp-content/uploads/2024/10/TmIzMen-s-Multifunction-Anti-theft-USB-Shoulder-Bag-Man-Crossbody-Cross-Body-Travel-Sling-Chest-Bags.jpg",
@@ -963,6 +1248,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, Black&Gold"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "31731",
+        "sku": "WC-31731",
+        "attributes": {
+          "Color": "Black&Gold"
+        },
+        "regularPrice": 3350,
+        "salePrice": 2990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/A1wzMen-s-Multifunction-Anti-theft-USB-Shoulder-Bag-Man-Crossbody-Cross-Body-Tra_89e46fe1.jpg",
+        "displayImage": "/media/products/A1wzMen-s-Multifunction-Anti-theft-USB-Shoulder-Bag-Man-Crossbody-Cross-Body-Tra_89e46fe1.jpg"
+      },
+      {
+        "id": "31732",
+        "sku": "WC-31732",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 3350,
+        "salePrice": 2990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/TmIzMen-s-Multifunction-Anti-theft-USB-Shoulder-Bag-Man-Crossbody-Cross-Body-Tra_acf3e10f.jpg",
+        "displayImage": "/media/products/TmIzMen-s-Multifunction-Anti-theft-USB-Shoulder-Bag-Man-Crossbody-Cross-Body-Tra_acf3e10f.jpg"
       }
     ]
   },
@@ -2111,8 +2425,8 @@ export const realProducts: ProductItem[] = [
     "category": "Headphone and Headset",
     "regularPrice": 1990,
     "salePrice": 1990,
-    "stock": 0,
-    "status": "Out of stock",
+    "stock": 20,
+    "status": "Active",
     "salesCount": 22,
     "rating": 4.8,
     "image": "/products/images/8c09aa5762.jpg",
@@ -2122,6 +2436,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, White"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "30992",
+        "sku": "WC-30992",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 1990,
+        "salePrice": 1990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/Samsung-Type-C-AKG-Wired-In-Ear_8c09aa57.jpg",
+        "displayImage": "/media/products/Samsung-Type-C-AKG-Wired-In-Ear_8c09aa57.jpg"
+      },
+      {
+        "id": "30993",
+        "sku": "WC-30993",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 1990,
+        "salePrice": 1990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/Samsung-Type-C-AKG-Wired-In-Ear_8c09aa57.jpg",
+        "displayImage": "/media/products/Samsung-Type-C-AKG-Wired-In-Ear_8c09aa57.jpg"
       }
     ]
   },
@@ -2255,7 +2598,7 @@ export const realProducts: ProductItem[] = [
     "category": "Cable & Adaptors",
     "regularPrice": 790,
     "salePrice": 790,
-    "stock": 35,
+    "stock": 30,
     "status": "Active",
     "salesCount": 14,
     "rating": 4.8,
@@ -2266,6 +2609,48 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Type",
         "values": "A102 Type C, A100 Micro, A101 Lightning"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "31159",
+        "sku": "WC-31159",
+        "attributes": {
+          "Type": "A101 Lightning"
+        },
+        "regularPrice": 790,
+        "salePrice": 790,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/Aspor-Top-Selling-Data-Cable-3A_3c8c7fc4.jpg",
+        "displayImage": "/media/products/Aspor-Top-Selling-Data-Cable-3A_3c8c7fc4.jpg"
+      },
+      {
+        "id": "31160",
+        "sku": "WC-31160",
+        "attributes": {
+          "Type": "A100 Micro"
+        },
+        "regularPrice": 790,
+        "salePrice": 790,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/He1fa20b7c0bd4a63815b2dad7454dd5_7bbd5376.jpg",
+        "displayImage": "/media/products/He1fa20b7c0bd4a63815b2dad7454dd5_7bbd5376.jpg"
+      },
+      {
+        "id": "31161",
+        "sku": "WC-31161",
+        "attributes": {
+          "Type": "A102 Type C"
+        },
+        "regularPrice": 790,
+        "salePrice": 790,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/H066f7abfbad440aab16a0e870649382_0647e32b.jpg",
+        "displayImage": "/media/products/H066f7abfbad440aab16a0e870649382_0647e32b.jpg"
       }
     ]
   },
@@ -2295,8 +2680,8 @@ export const realProducts: ProductItem[] = [
     "category": "Fashion",
     "regularPrice": 3790,
     "salePrice": 3390,
-    "stock": 0,
-    "status": "Out of stock",
+    "stock": 20,
+    "status": "Active",
     "salesCount": 23,
     "rating": 4.8,
     "image": "/products/images/19996c7036.jpg",
@@ -2306,6 +2691,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, Black&Gold"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "31346",
+        "sku": "WC-31346",
+        "attributes": {
+          "Color": "Black&Gold"
+        },
+        "regularPrice": 3790,
+        "salePrice": 3390,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/mmexport1736262230518_735e043a.jpg",
+        "displayImage": "/media/products/mmexport1736262230518_735e043a.jpg"
+      },
+      {
+        "id": "31347",
+        "sku": "WC-31347",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 3790,
+        "salePrice": 3390,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/mmexport1736262226492_19996c70.jpg",
+        "displayImage": "/media/products/mmexport1736262226492_19996c70.jpg"
       }
     ]
   },
@@ -2387,8 +2801,8 @@ export const realProducts: ProductItem[] = [
     "category": "Electronics Accessories",
     "regularPrice": 12490,
     "salePrice": 9900,
-    "stock": 0,
-    "status": "Out of stock",
+    "stock": 20,
+    "status": "Active",
     "salesCount": 21,
     "rating": 4.8,
     "image": "https://www.dwstore.lk/wp-content/uploads/2025/02/HK10-Pro-Plus-Smart-Watch-45MM-with-2.02-AMOLED-Display-ChatGPT.jpg",
@@ -2399,6 +2813,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, White"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "31569",
+        "sku": "WC-31569",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 12490,
+        "salePrice": 9900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/HK10-Pro-Plus-Smart-Watch-45MM-with-2.02-AMOLED-Display-ChatGPT_e8662ac6.jpg",
+        "displayImage": "/media/products/HK10-Pro-Plus-Smart-Watch-45MM-with-2.02-AMOLED-Display-ChatGPT_e8662ac6.jpg"
+      },
+      {
+        "id": "31570",
+        "sku": "WC-31570",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 12490,
+        "salePrice": 9900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/HK10-Pro-Plus-Smart-Watch-45MM-with-2.02-AMOLED-Display-ChatGPT_e8662ac6.jpg",
+        "displayImage": "/media/products/HK10-Pro-Plus-Smart-Watch-45MM-with-2.02-AMOLED-Display-ChatGPT_e8662ac6.jpg"
       }
     ]
   },
@@ -2534,8 +2977,8 @@ export const realProducts: ProductItem[] = [
     "category": "Electronics Accessories",
     "regularPrice": 2250,
     "salePrice": 1550,
-    "stock": 0,
-    "status": "Out of stock",
+    "stock": 20,
+    "status": "Active",
     "salesCount": 21,
     "rating": 4.8,
     "image": "/products/images/04234c5efe.jpg",
@@ -2546,6 +2989,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, White"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "31752",
+        "sku": "WC-31752",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 2250,
+        "salePrice": 1550,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/VDENMENV-DP09-Power-Bank-10000mAh-2.1A-Quick-Charge-Dual-USB-Port-Powerbank-10_7cdeb122.jpg",
+        "displayImage": "/media/products/VDENMENV-DP09-Power-Bank-10000mAh-2.1A-Quick-Charge-Dual-USB-Port-Powerbank-10_7cdeb122.jpg"
+      },
+      {
+        "id": "31753",
+        "sku": "WC-31753",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 2250,
+        "salePrice": 1550,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/VDENMENV-DP09-Power-Bank-10000mAh-2.1A-Quick-Charge-Dual-USB-Port-Powerbank-9_a7c0f41e.jpg",
+        "displayImage": "/media/products/VDENMENV-DP09-Power-Bank-10000mAh-2.1A-Quick-Charge-Dual-USB-Port-Powerbank-9_a7c0f41e.jpg"
       }
     ]
   },
@@ -2593,7 +3065,7 @@ export const realProducts: ProductItem[] = [
     "category": "Bluetooth Handfree",
     "regularPrice": 4990,
     "salePrice": 4490,
-    "stock": 35,
+    "stock": 30,
     "status": "Active",
     "salesCount": 18,
     "rating": 4.8,
@@ -2604,6 +3076,48 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, Blue, White"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "32310",
+        "sku": "WC-32310",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 4990,
+        "salePrice": 4490,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/Anker-Soundcore-R50i-True-Wireless-Bluetooth-Earbuds-5_30b44658.jpg",
+        "displayImage": "/media/products/Anker-Soundcore-R50i-True-Wireless-Bluetooth-Earbuds-5_30b44658.jpg"
+      },
+      {
+        "id": "32311",
+        "sku": "WC-32311",
+        "attributes": {
+          "Color": "Blue"
+        },
+        "regularPrice": 4990,
+        "salePrice": 4490,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/Anker-Soundcore-R50i-True-Wireless-Bluetooth-Earbuds-5_30b44658.jpg",
+        "displayImage": "/media/products/Anker-Soundcore-R50i-True-Wireless-Bluetooth-Earbuds-5_30b44658.jpg"
+      },
+      {
+        "id": "33255",
+        "sku": "WC-33255",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 4990,
+        "salePrice": 4490,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/Anker-Soundcore-R50i-True-Wireless-Bluetooth-Earbuds-5_30b44658.jpg",
+        "displayImage": "/media/products/Anker-Soundcore-R50i-True-Wireless-Bluetooth-Earbuds-5_30b44658.jpg"
       }
     ]
   },
@@ -2650,7 +3164,7 @@ export const realProducts: ProductItem[] = [
     "category": "Bluetooth Handfree",
     "regularPrice": 7790,
     "salePrice": 6890,
-    "stock": 35,
+    "stock": 20,
     "status": "Active",
     "salesCount": 27,
     "rating": 4.8,
@@ -2661,6 +3175,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, White"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "31892",
+        "sku": "WC-31892",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 7790,
+        "salePrice": 6890,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/Anker-Soundcore-R50i-NC-True-Wireless-Bluetooth-Earbuds-ANC-Handfree-7_8ab21ce2.jpg",
+        "displayImage": "/media/products/Anker-Soundcore-R50i-NC-True-Wireless-Bluetooth-Earbuds-ANC-Handfree-7_8ab21ce2.jpg"
+      },
+      {
+        "id": "31893",
+        "sku": "WC-31893",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 7790,
+        "salePrice": 6890,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/Anker-Soundcore-R50i-NC-True-Wireless-Bluetooth-Earbuds-ANC-Handfree-8_058705ab.jpg",
+        "displayImage": "/media/products/Anker-Soundcore-R50i-NC-True-Wireless-Bluetooth-Earbuds-ANC-Handfree-8_058705ab.jpg"
       }
     ]
   },
@@ -2708,7 +3251,7 @@ export const realProducts: ProductItem[] = [
     "category": "Phone Accessories",
     "regularPrice": 790,
     "salePrice": 790,
-    "stock": 35,
+    "stock": 30,
     "status": "Active",
     "salesCount": 45,
     "rating": 4.8,
@@ -2719,6 +3262,48 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, Gray, White, Orange"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "31928",
+        "sku": "WC-31928",
+        "attributes": {
+          "Color": "Orange"
+        },
+        "regularPrice": 790,
+        "salePrice": 790,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/S045bc2bb300a45e58fbd4f80dee21f46B_68c50dfb.png",
+        "displayImage": "/media/products/S045bc2bb300a45e58fbd4f80dee21f46B_68c50dfb.png"
+      },
+      {
+        "id": "31929",
+        "sku": "WC-31929",
+        "attributes": {
+          "Color": "Gray"
+        },
+        "regularPrice": 790,
+        "salePrice": 790,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/S11e704ae94c947139ad00e3c2e7b5858Y_d904205e.png",
+        "displayImage": "/media/products/S11e704ae94c947139ad00e3c2e7b5858Y_d904205e.png"
+      },
+      {
+        "id": "31930",
+        "sku": "WC-31930",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 790,
+        "salePrice": 790,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/Sd25968d9aa1945ae8b6fec1186605673E_a15952b9.png",
+        "displayImage": "/media/products/Sd25968d9aa1945ae8b6fec1186605673E_a15952b9.png"
       }
     ]
   },
@@ -3106,8 +3691,8 @@ export const realProducts: ProductItem[] = [
     "category": "Cable & Adaptors",
     "regularPrice": 4200,
     "salePrice": 4200,
-    "stock": 0,
-    "status": "Out of stock",
+    "stock": 20,
+    "status": "Active",
     "salesCount": 30,
     "rating": 4.8,
     "image": "/products/images/50556c8a8e.webp",
@@ -3119,6 +3704,35 @@ export const realProducts: ProductItem[] = [
         "name": "Color",
         "values": "White, Black"
       }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "32330",
+        "sku": "WC-32330",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 4200,
+        "salePrice": 4200,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-24_50556c8a.webp",
+        "displayImage": "/media/products/download-24_50556c8a.webp"
+      },
+      {
+        "id": "32331",
+        "sku": "WC-32331",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 4200,
+        "salePrice": 4200,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-24_50556c8a.webp",
+        "displayImage": "/media/products/download-24_50556c8a.webp"
+      }
     ]
   },
   {
@@ -3129,7 +3743,7 @@ export const realProducts: ProductItem[] = [
     "category": "Cable & Adaptors",
     "regularPrice": 6200,
     "salePrice": 4990,
-    "stock": 35,
+    "stock": 20,
     "status": "Active",
     "salesCount": 12,
     "rating": 4.8,
@@ -3141,6 +3755,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "White, Black"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "32338",
+        "sku": "WC-32338",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 6200,
+        "salePrice": 4990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-29_a8abea50.webp",
+        "displayImage": "/media/products/download-29_a8abea50.webp"
+      },
+      {
+        "id": "32339",
+        "sku": "WC-32339",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 6200,
+        "salePrice": 4990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-29_a8abea50.webp",
+        "displayImage": "/media/products/download-29_a8abea50.webp"
       }
     ]
   },
@@ -3561,7 +4204,7 @@ export const realProducts: ProductItem[] = [
     "category": "Phone Accessories",
     "regularPrice": 8900,
     "salePrice": 7990,
-    "stock": 35,
+    "stock": 20,
     "status": "Active",
     "salesCount": 31,
     "rating": 4.8,
@@ -3573,6 +4216,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, Silver"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34312",
+        "sku": "WC-34312",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 8900,
+        "salePrice": 7990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-09T111320.506_f6fdea38.webp",
+        "displayImage": "/media/products/download-2026-04-09T111320.506_f6fdea38.webp"
+      },
+      {
+        "id": "34313",
+        "sku": "WC-34313",
+        "attributes": {
+          "Color": "Silver"
+        },
+        "regularPrice": 8900,
+        "salePrice": 7990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-09T111300.838_0b4d845d.webp",
+        "displayImage": "/media/products/download-2026-04-09T111300.838_0b4d845d.webp"
       }
     ]
   },
@@ -3692,8 +4364,8 @@ export const realProducts: ProductItem[] = [
     "category": "Phone Accessories",
     "regularPrice": 8850,
     "salePrice": 6950,
-    "stock": 0,
-    "status": "Out of stock",
+    "stock": 30,
+    "status": "Active",
     "salesCount": 27,
     "rating": 4.8,
     "image": "https://www.dwstore.lk/wp-content/uploads/2025/09/download-2025-09-16T155814.312.webp",
@@ -3704,6 +4376,48 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, White, Pink"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "32618",
+        "sku": "WC-32618",
+        "attributes": {
+          "Color": "Pink"
+        },
+        "regularPrice": 8850,
+        "salePrice": 6950,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2025-09-16T155838.228_959f4129.webp",
+        "displayImage": "/media/products/download-2025-09-16T155838.228_959f4129.webp"
+      },
+      {
+        "id": "32619",
+        "sku": "WC-32619",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 8850,
+        "salePrice": 6950,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2025-09-16T155826.698_c06dcfe5.webp",
+        "displayImage": "/media/products/download-2025-09-16T155826.698_c06dcfe5.webp"
+      },
+      {
+        "id": "32620",
+        "sku": "WC-32620",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 8850,
+        "salePrice": 6950,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2025-09-16T155814.312_77bedcbb.webp",
+        "displayImage": "/media/products/download-2025-09-16T155814.312_77bedcbb.webp"
       }
     ]
   },
@@ -3928,7 +4642,7 @@ export const realProducts: ProductItem[] = [
     "category": "Backcovers",
     "regularPrice": 650,
     "salePrice": 650,
-    "stock": 35,
+    "stock": 50,
     "status": "Active",
     "salesCount": 24,
     "rating": 4.8,
@@ -3940,6 +4654,74 @@ export const realProducts: ProductItem[] = [
         "name": "Color",
         "values": "Black, Dark Blue, Gray, Red, Green"
       }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "32748",
+        "sku": "WC-32748",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 650,
+        "salePrice": 650,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2025-09-29T153415.660_b717d3fa.webp",
+        "displayImage": "/media/products/download-2025-09-29T153415.660_b717d3fa.webp"
+      },
+      {
+        "id": "32749",
+        "sku": "WC-32749",
+        "attributes": {
+          "Color": "Dark Blue"
+        },
+        "regularPrice": 650,
+        "salePrice": 650,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2025-09-29T153415.660_b717d3fa.webp",
+        "displayImage": "/media/products/download-2025-09-29T153415.660_b717d3fa.webp"
+      },
+      {
+        "id": "32750",
+        "sku": "WC-32750",
+        "attributes": {
+          "Color": "Gray"
+        },
+        "regularPrice": 650,
+        "salePrice": 650,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2025-09-29T153415.660_b717d3fa.webp",
+        "displayImage": "/media/products/download-2025-09-29T153415.660_b717d3fa.webp"
+      },
+      {
+        "id": "32751",
+        "sku": "WC-32751",
+        "attributes": {
+          "Color": "Red"
+        },
+        "regularPrice": 650,
+        "salePrice": 650,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2025-09-29T153415.660_b717d3fa.webp",
+        "displayImage": "/media/products/download-2025-09-29T153415.660_b717d3fa.webp"
+      },
+      {
+        "id": "35003",
+        "sku": "WC-35003",
+        "attributes": {
+          "Color": "Green"
+        },
+        "regularPrice": 650,
+        "salePrice": 650,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2025-09-29T153415.660_b717d3fa.webp",
+        "displayImage": "/media/products/download-2025-09-29T153415.660_b717d3fa.webp"
+      }
     ]
   },
   {
@@ -3950,7 +4732,7 @@ export const realProducts: ProductItem[] = [
     "category": "Bluetooth Handfree",
     "regularPrice": 650,
     "salePrice": 650,
-    "stock": 35,
+    "stock": 50,
     "status": "Active",
     "salesCount": 8,
     "rating": 4.8,
@@ -3961,6 +4743,74 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, Dark Blue, Gray, Red, Green"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "32755",
+        "sku": "WC-32755",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 650,
+        "salePrice": 650,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download_919558dc-567b-4a93-9699_09f81b2f.webp",
+        "displayImage": "/media/products/download_919558dc-567b-4a93-9699_09f81b2f.webp"
+      },
+      {
+        "id": "32756",
+        "sku": "WC-32756",
+        "attributes": {
+          "Color": "Dark Blue"
+        },
+        "regularPrice": 650,
+        "salePrice": 650,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download_919558dc-567b-4a93-9699_09f81b2f.webp",
+        "displayImage": "/media/products/download_919558dc-567b-4a93-9699_09f81b2f.webp"
+      },
+      {
+        "id": "32757",
+        "sku": "WC-32757",
+        "attributes": {
+          "Color": "Gray"
+        },
+        "regularPrice": 650,
+        "salePrice": 650,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download_919558dc-567b-4a93-9699_09f81b2f.webp",
+        "displayImage": "/media/products/download_919558dc-567b-4a93-9699_09f81b2f.webp"
+      },
+      {
+        "id": "32758",
+        "sku": "WC-32758",
+        "attributes": {
+          "Color": "Red"
+        },
+        "regularPrice": 650,
+        "salePrice": 650,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download_919558dc-567b-4a93-9699_09f81b2f.webp",
+        "displayImage": "/media/products/download_919558dc-567b-4a93-9699_09f81b2f.webp"
+      },
+      {
+        "id": "35001",
+        "sku": "WC-35001",
+        "attributes": {
+          "Color": "Green"
+        },
+        "regularPrice": 650,
+        "salePrice": 650,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download_919558dc-567b-4a93-9699_09f81b2f.webp",
+        "displayImage": "/media/products/download_919558dc-567b-4a93-9699_09f81b2f.webp"
       }
     ]
   },
@@ -4361,8 +5211,8 @@ export const realProducts: ProductItem[] = [
     "category": "Phone Accessories",
     "regularPrice": 7900,
     "salePrice": 7900,
-    "stock": 0,
-    "status": "Out of stock",
+    "stock": 20,
+    "status": "Active",
     "salesCount": 34,
     "rating": 4.8,
     "image": "/products/images/d83267e750.webp",
@@ -4373,6 +5223,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Deep Blue, Silver"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "33032",
+        "sku": "WC-33032",
+        "attributes": {
+          "Color": "Silver"
+        },
+        "regularPrice": 7900,
+        "salePrice": 7900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2025-11-20T182553.562_d83267e7.webp",
+        "displayImage": "/media/products/download-2025-11-20T182553.562_d83267e7.webp"
+      },
+      {
+        "id": "33033",
+        "sku": "WC-33033",
+        "attributes": {
+          "Color": "Deep Blue"
+        },
+        "regularPrice": 7900,
+        "salePrice": 7900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2025-11-20T182553.562_d83267e7.webp",
+        "displayImage": "/media/products/download-2025-11-20T182553.562_d83267e7.webp"
       }
     ]
   },
@@ -4629,8 +5508,8 @@ export const realProducts: ProductItem[] = [
     "category": "Computer Accessories",
     "regularPrice": 1550,
     "salePrice": 1550,
-    "stock": 0,
-    "status": "Out of stock",
+    "stock": 30,
+    "status": "Active",
     "salesCount": 12,
     "rating": 4.8,
     "image": "/products/images/92ac4f4b75.webp",
@@ -4641,6 +5520,48 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Capacity",
         "values": "16GB, 32GB, 64GB, 128GB, 256GB"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "33282",
+        "sku": "WC-33282",
+        "attributes": {
+          "Capacity": "16GB"
+        },
+        "regularPrice": 1550,
+        "salePrice": 1550,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2025-12-17T184548.066_92ac4f4b.webp",
+        "displayImage": "/media/products/download-2025-12-17T184548.066_92ac4f4b.webp"
+      },
+      {
+        "id": "33283",
+        "sku": "WC-33283",
+        "attributes": {
+          "Capacity": "32GB"
+        },
+        "regularPrice": 1950,
+        "salePrice": 1550,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2025-12-17T184548.066_92ac4f4b.webp",
+        "displayImage": "/media/products/download-2025-12-17T184548.066_92ac4f4b.webp"
+      },
+      {
+        "id": "33284",
+        "sku": "WC-33284",
+        "attributes": {
+          "Capacity": "64GB"
+        },
+        "regularPrice": 2550,
+        "salePrice": 1550,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2025-12-17T184548.066_92ac4f4b.webp",
+        "displayImage": "/media/products/download-2025-12-17T184548.066_92ac4f4b.webp"
       }
     ]
   },
@@ -4920,7 +5841,7 @@ export const realProducts: ProductItem[] = [
     "category": "Bluetooth Handfree",
     "regularPrice": 10900,
     "salePrice": 9990,
-    "stock": 35,
+    "stock": 30,
     "status": "Active",
     "salesCount": 37,
     "rating": 4.8,
@@ -4932,6 +5853,48 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, White, Blue"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34849",
+        "sku": "WC-34849",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 10900,
+        "salePrice": 9990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/AnkerSoundcoreR60iNC-Simplytek-S_17ce0873.webp",
+        "displayImage": "/media/products/AnkerSoundcoreR60iNC-Simplytek-S_17ce0873.webp"
+      },
+      {
+        "id": "34851",
+        "sku": "WC-34851",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 10900,
+        "salePrice": 9990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-10-01T194841.204_df9452f0.png",
+        "displayImage": "/media/products/download-2026-10-01T194841.204_df9452f0.png"
+      },
+      {
+        "id": "35158",
+        "sku": "WC-35158",
+        "attributes": {
+          "Color": "Blue"
+        },
+        "regularPrice": 10900,
+        "salePrice": 9990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-10-01T172603.096_afc2ee9c.png",
+        "displayImage": "/media/products/download-2026-10-01T172603.096_afc2ee9c.png"
       }
     ]
   },
@@ -5243,8 +6206,8 @@ export const realProducts: ProductItem[] = [
     "category": "Personal Care",
     "regularPrice": 4250,
     "salePrice": 4250,
-    "stock": 0,
-    "status": "Out of stock",
+    "stock": 20,
+    "status": "Active",
     "salesCount": 14,
     "rating": 4.8,
     "image": "/products/images/c5f62abc29.webp",
@@ -5255,6 +6218,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Green, Gold"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "33881",
+        "sku": "WC-33881",
+        "attributes": {
+          "Color": "Green"
+        },
+        "regularPrice": 4250,
+        "salePrice": 4250,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/VGR_V-975_Professional_Salon_Ser_c5f62abc.webp",
+        "displayImage": "/media/products/VGR_V-975_Professional_Salon_Ser_c5f62abc.webp"
+      },
+      {
+        "id": "33882",
+        "sku": "WC-33882",
+        "attributes": {
+          "Color": "Gold"
+        },
+        "regularPrice": 4250,
+        "salePrice": 4250,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/VGR_V-975_Professional_Salon_Ser_c5f62abc.webp",
+        "displayImage": "/media/products/VGR_V-975_Professional_Salon_Ser_c5f62abc.webp"
       }
     ]
   },
@@ -5476,8 +6468,8 @@ export const realProducts: ProductItem[] = [
     "category": "Mobile Phones",
     "regularPrice": 3600,
     "salePrice": 3600,
-    "stock": 0,
-    "status": "Out of stock",
+    "stock": 20,
+    "status": "Active",
     "salesCount": 40,
     "rating": 4.8,
     "image": "/products/images/a6886bcb7d.webp",
@@ -5488,6 +6480,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Blue, Black"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34017",
+        "sku": "WC-34017",
+        "attributes": {
+          "Color": "Blue"
+        },
+        "regularPrice": 3600,
+        "salePrice": 3600,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/lqNsQjzcVMErGdk34Wu-mA7OCAq4zyfh_a6886bcb.webp",
+        "displayImage": "/media/products/lqNsQjzcVMErGdk34Wu-mA7OCAq4zyfh_a6886bcb.webp"
+      },
+      {
+        "id": "34018",
+        "sku": "WC-34018",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 3600,
+        "salePrice": 3600,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/lqNsQjzcVMErGdk34Wu-mA7OCAq4zyfh_a6886bcb.webp",
+        "displayImage": "/media/products/lqNsQjzcVMErGdk34Wu-mA7OCAq4zyfh_a6886bcb.webp"
       }
     ]
   },
@@ -5712,7 +6733,7 @@ export const realProducts: ProductItem[] = [
     "category": "Cable & Adaptors",
     "regularPrice": 2300,
     "salePrice": 2300,
-    "stock": 35,
+    "stock": 20,
     "status": "Active",
     "salesCount": 5,
     "rating": 4.8,
@@ -5724,6 +6745,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Cable",
         "values": "With Type C to C Cable, With Type C to Lightning Cable"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34111",
+        "sku": "WC-34111",
+        "attributes": {
+          "Cable": "With Type C to C Cable"
+        },
+        "regularPrice": 2300,
+        "salePrice": 2300,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/Untitled-design-2_bde8a987.png",
+        "displayImage": "/media/products/Untitled-design-2_bde8a987.png"
+      },
+      {
+        "id": "34112",
+        "sku": "WC-34112",
+        "attributes": {
+          "Cable": "With Type C to Lightning Cable"
+        },
+        "regularPrice": 2300,
+        "salePrice": 2300,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/Untitled-design-2_bde8a987.png",
+        "displayImage": "/media/products/Untitled-design-2_bde8a987.png"
       }
     ]
   },
@@ -5753,7 +6803,7 @@ export const realProducts: ProductItem[] = [
     "category": "Phone Accessories",
     "regularPrice": 1950,
     "salePrice": 1300,
-    "stock": 35,
+    "stock": 60,
     "status": "Active",
     "salesCount": 46,
     "rating": 4.8,
@@ -5764,6 +6814,87 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Modle",
         "values": "iphone XR / 11, iphone X / XS / 11 PRO, iphone 15 PRO MAX, iphone 14 PRO MAX, iphone 13 PRO MAX / 14 PLUS, iphone 12/12PRO"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34146",
+        "sku": "WC-34146",
+        "attributes": {
+          "Modle": "iphone XR / 11"
+        },
+        "regularPrice": 1950,
+        "salePrice": 1300,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-03-30T194650.410_cd7edc81.webp",
+        "displayImage": "/media/products/download-2026-03-30T194650.410_cd7edc81.webp"
+      },
+      {
+        "id": "34147",
+        "sku": "WC-34147",
+        "attributes": {
+          "Modle": "iphone X / XS / 11 PRO"
+        },
+        "regularPrice": 1950,
+        "salePrice": 1300,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-03-30T194650.410_cd7edc81.webp",
+        "displayImage": "/media/products/download-2026-03-30T194650.410_cd7edc81.webp"
+      },
+      {
+        "id": "34148",
+        "sku": "WC-34148",
+        "attributes": {
+          "Modle": "iphone 15 PRO MAX"
+        },
+        "regularPrice": 1950,
+        "salePrice": 1300,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-03-30T194650.410_cd7edc81.webp",
+        "displayImage": "/media/products/download-2026-03-30T194650.410_cd7edc81.webp"
+      },
+      {
+        "id": "34149",
+        "sku": "WC-34149",
+        "attributes": {
+          "Modle": "iphone 14 PRO MAX"
+        },
+        "regularPrice": 1950,
+        "salePrice": 1300,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-03-30T194650.410_cd7edc81.webp",
+        "displayImage": "/media/products/download-2026-03-30T194650.410_cd7edc81.webp"
+      },
+      {
+        "id": "34150",
+        "sku": "WC-34150",
+        "attributes": {
+          "Modle": "iphone 13 PRO MAX / 14 PLUS"
+        },
+        "regularPrice": 1950,
+        "salePrice": 1300,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-03-30T194650.410_cd7edc81.webp",
+        "displayImage": "/media/products/download-2026-03-30T194650.410_cd7edc81.webp"
+      },
+      {
+        "id": "34151",
+        "sku": "WC-34151",
+        "attributes": {
+          "Modle": "iphone 12/12PRO"
+        },
+        "regularPrice": 1950,
+        "salePrice": 1300,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-03-30T194650.410_cd7edc81.webp",
+        "displayImage": "/media/products/download-2026-03-30T194650.410_cd7edc81.webp"
       }
     ]
   },
@@ -5917,7 +7048,7 @@ export const realProducts: ProductItem[] = [
     "category": "Headphone and Headset",
     "regularPrice": 62900,
     "salePrice": 42900,
-    "stock": 35,
+    "stock": 30,
     "status": "Active",
     "salesCount": 35,
     "rating": 4.8,
@@ -5929,6 +7060,48 @@ export const realProducts: ProductItem[] = [
         "name": "Color",
         "values": "Black, Forest Grey, White"
       }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34234",
+        "sku": "WC-34234",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 62900,
+        "salePrice": 42900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-06T191150.300_7c0c1629.webp",
+        "displayImage": "/media/products/download-2026-04-06T191150.300_7c0c1629.webp"
+      },
+      {
+        "id": "34235",
+        "sku": "WC-34235",
+        "attributes": {
+          "Color": "Forest Grey"
+        },
+        "regularPrice": 62900,
+        "salePrice": 42900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-06T191150.300_7c0c1629.webp",
+        "displayImage": "/media/products/download-2026-04-06T191150.300_7c0c1629.webp"
+      },
+      {
+        "id": "34236",
+        "sku": "WC-34236",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 62900,
+        "salePrice": 42900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-06T191150.300_7c0c1629.webp",
+        "displayImage": "/media/products/download-2026-04-06T191150.300_7c0c1629.webp"
+      }
     ]
   },
   {
@@ -5939,7 +7112,7 @@ export const realProducts: ProductItem[] = [
     "category": "Headphone and Headset",
     "regularPrice": 15900,
     "salePrice": 10900,
-    "stock": 35,
+    "stock": 40,
     "status": "Active",
     "salesCount": 33,
     "rating": 4.8,
@@ -5951,6 +7124,61 @@ export const realProducts: ProductItem[] = [
         "name": "Color",
         "values": "Black, White, Pink, Blue"
       }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34248",
+        "sku": "WC-34248",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 15900,
+        "salePrice": 10900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-06T193207.507_37a03a17.webp",
+        "displayImage": "/media/products/download-2026-04-06T193207.507_37a03a17.webp"
+      },
+      {
+        "id": "34249",
+        "sku": "WC-34249",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 15900,
+        "salePrice": 10900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-06T193207.507_37a03a17.webp",
+        "displayImage": "/media/products/download-2026-04-06T193207.507_37a03a17.webp"
+      },
+      {
+        "id": "34250",
+        "sku": "WC-34250",
+        "attributes": {
+          "Color": "Pink"
+        },
+        "regularPrice": 15900,
+        "salePrice": 10900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-06T193207.507_37a03a17.webp",
+        "displayImage": "/media/products/download-2026-04-06T193207.507_37a03a17.webp"
+      },
+      {
+        "id": "34251",
+        "sku": "WC-34251",
+        "attributes": {
+          "Color": "Blue"
+        },
+        "regularPrice": 15900,
+        "salePrice": 10900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-06T193207.507_37a03a17.webp",
+        "displayImage": "/media/products/download-2026-04-06T193207.507_37a03a17.webp"
+      }
     ]
   },
   {
@@ -5961,7 +7189,7 @@ export const realProducts: ProductItem[] = [
     "category": "Headphone and Headset",
     "regularPrice": 38900,
     "salePrice": 28900,
-    "stock": 35,
+    "stock": 40,
     "status": "Active",
     "salesCount": 38,
     "rating": 4.8,
@@ -5973,6 +7201,61 @@ export const realProducts: ProductItem[] = [
         "name": "Color",
         "values": "Black, Blue, White, Pink"
       }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34262",
+        "sku": "WC-34262",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 38900,
+        "salePrice": 28900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-06T195459.304_759020ac.webp",
+        "displayImage": "/media/products/download-2026-04-06T195459.304_759020ac.webp"
+      },
+      {
+        "id": "34263",
+        "sku": "WC-34263",
+        "attributes": {
+          "Color": "Blue"
+        },
+        "regularPrice": 38900,
+        "salePrice": 28900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-06T195459.304_759020ac.webp",
+        "displayImage": "/media/products/download-2026-04-06T195459.304_759020ac.webp"
+      },
+      {
+        "id": "34264",
+        "sku": "WC-34264",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 38900,
+        "salePrice": 28900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-06T195459.304_759020ac.webp",
+        "displayImage": "/media/products/download-2026-04-06T195459.304_759020ac.webp"
+      },
+      {
+        "id": "34265",
+        "sku": "WC-34265",
+        "attributes": {
+          "Color": "Pink"
+        },
+        "regularPrice": 38900,
+        "salePrice": 28900,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-06T195459.304_759020ac.webp",
+        "displayImage": "/media/products/download-2026-04-06T195459.304_759020ac.webp"
+      }
     ]
   },
   {
@@ -5983,8 +7266,8 @@ export const realProducts: ProductItem[] = [
     "category": "Bluetooth Handfree",
     "regularPrice": 20900,
     "salePrice": 14700,
-    "stock": 0,
-    "status": "Out of stock",
+    "stock": 20,
+    "status": "Active",
     "salesCount": 37,
     "rating": 4.8,
     "image": "/products/images/d8232e089d.webp",
@@ -5994,6 +7277,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, White"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34272",
+        "sku": "WC-34272",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 20900,
+        "salePrice": 14700,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-06T200909.644_d8232e08.webp",
+        "displayImage": "/media/products/download-2026-04-06T200909.644_d8232e08.webp"
+      },
+      {
+        "id": "34273",
+        "sku": "WC-34273",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 20900,
+        "salePrice": 14700,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-06T200909.644_d8232e08.webp",
+        "displayImage": "/media/products/download-2026-04-06T200909.644_d8232e08.webp"
       }
     ]
   },
@@ -6005,7 +7317,7 @@ export const realProducts: ProductItem[] = [
     "category": "Bluetooth Handfree",
     "regularPrice": 7250,
     "salePrice": 4999,
-    "stock": 35,
+    "stock": 20,
     "status": "Active",
     "salesCount": 47,
     "rating": 4.8,
@@ -6017,6 +7329,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, White"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34300",
+        "sku": "WC-34300",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 7250,
+        "salePrice": 4999,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-08T115856.577_2e8d4f94.webp",
+        "displayImage": "/media/products/download-2026-04-08T115856.577_2e8d4f94.webp"
+      },
+      {
+        "id": "34301",
+        "sku": "WC-34301",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 7250,
+        "salePrice": 4999,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-08T115901.759_b3cb2c47.webp",
+        "displayImage": "/media/products/download-2026-04-08T115901.759_b3cb2c47.webp"
       }
     ]
   },
@@ -6063,7 +7404,7 @@ export const realProducts: ProductItem[] = [
     "category": "Bluetooth Handfree",
     "regularPrice": 4250,
     "salePrice": 3590,
-    "stock": 35,
+    "stock": 20,
     "status": "Active",
     "salesCount": 7,
     "rating": 4.8,
@@ -6075,6 +7416,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Microphone",
         "values": "Soft Microphone, Soft & Hard Microphone"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "35170",
+        "sku": "WC-35170",
+        "attributes": {
+          "Microphone": "Soft Microphone"
+        },
+        "regularPrice": 4250,
+        "salePrice": 3590,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-22T114422.880_3df900e0.webp",
+        "displayImage": "/media/products/download-2026-04-22T114422.880_3df900e0.webp"
+      },
+      {
+        "id": "35171",
+        "sku": "WC-35171",
+        "attributes": {
+          "Microphone": "Soft & Hard Microphone"
+        },
+        "regularPrice": 4750,
+        "salePrice": 3790,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-04-22T114422.880_3df900e0.webp",
+        "displayImage": "/media/products/download-2026-04-22T114422.880_3df900e0.webp"
       }
     ]
   },
@@ -6420,7 +7790,7 @@ export const realProducts: ProductItem[] = [
     "category": "Bluetooth Handfree",
     "regularPrice": 5500,
     "salePrice": 4390,
-    "stock": 35,
+    "stock": 20,
     "status": "Active",
     "salesCount": 30,
     "rating": 4.8,
@@ -6432,6 +7802,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Microphone",
         "values": "Soft Microphone, Soft & Hard Microphone"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34631",
+        "sku": "WC-34631",
+        "attributes": {
+          "Microphone": "Soft & Hard Microphone"
+        },
+        "regularPrice": 5790,
+        "salePrice": 4590,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/Y30-waterproof-motorcycle-helmet-Bluetooth-intercom-headset-mounted-on-a-black-h_40294624.jpg",
+        "displayImage": "/media/products/Y30-waterproof-motorcycle-helmet-Bluetooth-intercom-headset-mounted-on-a-black-h_40294624.jpg"
+      },
+      {
+        "id": "34632",
+        "sku": "WC-34632",
+        "attributes": {
+          "Microphone": "Soft Microphone"
+        },
+        "regularPrice": 5500,
+        "salePrice": 4390,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/Y30-waterproof-motorcycle-helmet-Bluetooth-intercom-headset-mounted-on-a-black-h_69011685.jpg",
+        "displayImage": "/media/products/Y30-waterproof-motorcycle-helmet-Bluetooth-intercom-headset-mounted-on-a-black-h_69011685.jpg"
       }
     ]
   },
@@ -6633,7 +8032,7 @@ export const realProducts: ProductItem[] = [
     "category": "Electronics Accessories",
     "regularPrice": 99900,
     "salePrice": 85400,
-    "stock": 35,
+    "stock": 20,
     "status": "Active",
     "salesCount": 42,
     "rating": 4.8,
@@ -6644,6 +8043,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, Blue"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34751",
+        "sku": "WC-34751",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 99900,
+        "salePrice": 85400,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-07-25T163940.334_1f80f5fb.png",
+        "displayImage": "/media/products/download-2026-07-25T163940.334_1f80f5fb.png"
+      },
+      {
+        "id": "34752",
+        "sku": "WC-34752",
+        "attributes": {
+          "Color": "Blue"
+        },
+        "regularPrice": 99900,
+        "salePrice": 85400,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-07-25T164148.803_4d43e466.png",
+        "displayImage": "/media/products/download-2026-07-25T164148.803_4d43e466.png"
       }
     ]
   },
@@ -6673,7 +8101,7 @@ export const realProducts: ProductItem[] = [
     "category": "Bluetooth Speakers",
     "regularPrice": 3990,
     "salePrice": 2790,
-    "stock": 35,
+    "stock": 20,
     "status": "Active",
     "salesCount": 40,
     "rating": 4.8,
@@ -6685,6 +8113,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Orange, Black"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34779",
+        "sku": "WC-34779",
+        "attributes": {
+          "Color": "Orange"
+        },
+        "regularPrice": 3990,
+        "salePrice": 2790,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-08-01T134445.712_7acfb6b5.webp",
+        "displayImage": "/media/products/download-2026-08-01T134445.712_7acfb6b5.webp"
+      },
+      {
+        "id": "34780",
+        "sku": "WC-34780",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 3990,
+        "salePrice": 2790,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-08-01T134439.245_1ed8e01d.webp",
+        "displayImage": "/media/products/download-2026-08-01T134439.245_1ed8e01d.webp"
       }
     ]
   },
@@ -6766,7 +8223,7 @@ export const realProducts: ProductItem[] = [
     "category": "Headphone and Headset",
     "regularPrice": 7900,
     "salePrice": 5490,
-    "stock": 35,
+    "stock": 30,
     "status": "Active",
     "salesCount": 28,
     "rating": 4.8,
@@ -6777,6 +8234,48 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, Pink, White"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34838",
+        "sku": "WC-34838",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 7900,
+        "salePrice": 5490,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-08-10T165217.260_9d86d53f.webp",
+        "displayImage": "/media/products/download-2026-08-10T165217.260_9d86d53f.webp"
+      },
+      {
+        "id": "34839",
+        "sku": "WC-34839",
+        "attributes": {
+          "Color": "Pink"
+        },
+        "regularPrice": 7900,
+        "salePrice": 5490,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-08-10T165217.260_9d86d53f.webp",
+        "displayImage": "/media/products/download-2026-08-10T165217.260_9d86d53f.webp"
+      },
+      {
+        "id": "34840",
+        "sku": "WC-34840",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 7900,
+        "salePrice": 5490,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-08-10T165217.260_9d86d53f.webp",
+        "displayImage": "/media/products/download-2026-08-10T165217.260_9d86d53f.webp"
       }
     ]
   },
@@ -6806,7 +8305,7 @@ export const realProducts: ProductItem[] = [
     "category": "Phone Accessories",
     "regularPrice": 12900,
     "salePrice": 10490,
-    "stock": 35,
+    "stock": 20,
     "status": "Active",
     "salesCount": 21,
     "rating": 4.8,
@@ -6818,6 +8317,35 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Space Gray, White"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "34909",
+        "sku": "WC-34909",
+        "attributes": {
+          "Color": "Space Gray"
+        },
+        "regularPrice": 12900,
+        "salePrice": 10490,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-08-11T200122.593_b03882b3.webp",
+        "displayImage": "/media/products/download-2026-08-11T200122.593_b03882b3.webp"
+      },
+      {
+        "id": "34910",
+        "sku": "WC-34910",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 12900,
+        "salePrice": 10490,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-08-11T200122.593_b03882b3.webp",
+        "displayImage": "/media/products/download-2026-08-11T200122.593_b03882b3.webp"
       }
     ]
   },
@@ -7324,7 +8852,7 @@ export const realProducts: ProductItem[] = [
     "category": "Computer Accessories",
     "regularPrice": 18900,
     "salePrice": 15990,
-    "stock": 35,
+    "stock": 40,
     "status": "Active",
     "salesCount": 38,
     "rating": 4.8,
@@ -7335,6 +8863,61 @@ export const realProducts: ProductItem[] = [
       {
         "name": "Color",
         "values": "Black, Blue, Green, White"
+      }
+    ],
+    "productType": "variable",
+    "variations": [
+      {
+        "id": "35251",
+        "sku": "WC-35251",
+        "attributes": {
+          "Color": "Black"
+        },
+        "regularPrice": 18900,
+        "salePrice": 15990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/c1676a767f.png",
+        "displayImage": "/media/products/c1676a767f.png"
+      },
+      {
+        "id": "35252",
+        "sku": "WC-35252",
+        "attributes": {
+          "Color": "Blue"
+        },
+        "regularPrice": 18900,
+        "salePrice": 15990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-10-19T120551.430_5a2a84a2.png",
+        "displayImage": "/media/products/download-2026-10-19T120551.430_5a2a84a2.png"
+      },
+      {
+        "id": "35253",
+        "sku": "WC-35253",
+        "attributes": {
+          "Color": "Green"
+        },
+        "regularPrice": 18900,
+        "salePrice": 15990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-10-22T194818.843_2b48f37c.png",
+        "displayImage": "/media/products/download-2026-10-22T194818.843_2b48f37c.png"
+      },
+      {
+        "id": "35254",
+        "sku": "WC-35254",
+        "attributes": {
+          "Color": "White"
+        },
+        "regularPrice": 18900,
+        "salePrice": 15990,
+        "costPrice": 0,
+        "stock": 10,
+        "image": "/media/products/download-2026-10-19T120546.569_84cc6d17.png",
+        "displayImage": "/media/products/download-2026-10-19T120546.569_84cc6d17.png"
       }
     ]
   },

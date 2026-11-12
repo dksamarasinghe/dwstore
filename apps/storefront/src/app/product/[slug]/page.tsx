@@ -32,21 +32,49 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   
-  const product = (productsData as any[]).find(
-    (p) => p.slug === slug || p.id === slug
-  );
+  const [product, setProduct] = useState<any>(() => {
+    return (productsData as any[]).find(
+      (p) => p.slug === slug || String(p.id) === String(slug)
+    ) || null;
+  });
 
-  if (!product) {
-    notFound();
-  }
+  // Fetch latest real-time product from API to guarantee freshly updated data from Admin
+  useEffect(() => {
+    let isMounted = true;
+    fetch(`/api/products?id=${encodeURIComponent(slug)}`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data && !data.error) {
+          setProduct(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [slug]);
 
-  // Attributes & variations logic
-  const attributeEntries = useMemo(() => {
-    if (!product.attributes) return [];
-    return Object.entries(product.attributes).map(([name, values]) => ({
-      name,
-      values: Array.isArray(values) ? values : [values],
-    }));
+  // Attributes & variations logic (supports both array and object formats)
+  const attributeEntries: Array<{ name: string; values: string[] }> = useMemo(() => {
+    if (!product || !product.attributes) return [];
+    if (Array.isArray(product.attributes)) {
+      return product.attributes
+        .filter((a: any) => a && a.name && a.name.toLowerCase() !== 'warranty')
+        .map((a: any) => ({
+          name: a.name,
+          values: typeof a.values === 'string'
+            ? a.values.split(',').map((v: string) => v.trim()).filter(Boolean)
+            : Array.isArray(a.values)
+            ? a.values
+            : [String(a.values)]
+        }));
+    }
+    return Object.entries(product.attributes)
+      .filter(([name]) => name.toLowerCase() !== 'warranty')
+      .map(([name, values]) => ({
+        name,
+        values: Array.isArray(values) ? values : [values],
+      }));
   }, [product]);
 
   // Selected attribute state (e.g. { Color: "Black" })
@@ -192,7 +220,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
 
   // Check if product has variations
   const isVariable = Boolean(product.variations && product.variations.length > 0);
-  const requiredAttributes = useMemo(() => attributeEntries.map((a) => a.name), [attributeEntries]);
+  const requiredAttributes = useMemo(() => attributeEntries.map((a: any) => a.name), [attributeEntries]);
   const isAllAttributesSelected = useMemo(() => {
     if (!isVariable || requiredAttributes.length === 0) return true;
     return requiredAttributes.every((attrName) => Boolean(selectedAttributes[attrName]));
@@ -334,6 +362,21 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     setUserImage(null);
     setValidationError(null);
   };
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex flex-col bg-slate-50">
+        <Header />
+        <div className="flex-1 flex items-center justify-center py-24">
+          <div className="text-center">
+            <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="text-slate-600 font-semibold">Loading product...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white">

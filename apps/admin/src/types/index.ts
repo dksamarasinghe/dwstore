@@ -57,6 +57,7 @@ export interface ProductItem {
   brand: string;
   category: string;
   productType?: 'simple' | 'variable';
+  type?: 'simple' | 'variable';
   regularPrice: number;
   salePrice: number;
   costPrice?: number;

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { readDataJson, writeDataJson } from '@/lib/data-paths';
 import { globalMemoryCache } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
 const CACHE_KEY = 'dwstore_products';
-const CACHE_TTL_MS = 30 * 1000;
+const CACHE_TTL_MS = 10 * 1000;
 
 function getProducts(): any[] {
   const cached = globalMemoryCache.get<any[]>(CACHE_KEY, CACHE_TTL_MS);
@@ -30,7 +31,7 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
+  'Cache-Control': 'no-cache, no-store, must-revalidate',
 };
 
 export async function OPTIONS() {
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
   const products = getProducts();
 
   if (idOrSlug) {
-    const found = products.find((p) => p.id === idOrSlug || p.slug === idOrSlug);
+    const found = products.find((p) => String(p.id) === idOrSlug || p.slug === idOrSlug);
     if (!found) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404, headers: CORS_HEADERS });
     }
@@ -68,8 +69,6 @@ export async function POST(req: NextRequest) {
     // Normalize prices to minor cents (e.g. Rs 1,990 => 199000)
     const saleMinor = body.salePrice ? Math.round(Number(body.salePrice) * 100) : (body.salePriceMinor || 0);
     const regMinor = body.regularPrice ? Math.round(Number(body.regularPrice) * 100) : (body.regularPriceMinor || saleMinor);
-    const inStock = body.status !== 'Out of stock' && Number(body.stock ?? 1) > 0;
-    const stockQty = body.stock !== undefined ? Number(body.stock) : 10;
     const warrantyPeriod = body.warrantyPeriod !== undefined ? String(body.warrantyPeriod).trim() : '';
 
     const primaryImage = body.image || body.displayImage || (existingIndex >= 0 ? products[existingIndex].displayImage : '/dwstore_logo.png');
@@ -79,29 +78,74 @@ export async function POST(req: NextRequest) {
       ? body.imageUrls
       : (existingIndex >= 0 && products[existingIndex].imageUrls?.length ? products[existingIndex].imageUrls : [primaryImage]);
 
-    const formattedVariations = Array.isArray(body.variations)
-      ? body.variations.map((v: any) => ({
-          ...v,
-          id: String(v.id || `var-${Date.now()}`),
-          sku: v.sku || '',
-          attributes: v.attributes || {},
-          regularPriceMinor: v.regularPrice !== undefined ? Math.round(Number(v.regularPrice) * 100) : (v.regularPriceMinor || 0),
-          salePriceMinor: v.salePrice !== undefined ? Math.round(Number(v.salePrice) * 100) : (v.salePriceMinor || 0),
-          displayImage: v.displayImage || v.image || primaryImage,
-          imageUrls: v.image ? [v.image] : (v.displayImage ? [v.displayImage] : []),
-          inStock: Number(v.stock ?? 1) > 0,
-          stockQty: v.stock !== undefined ? Number(v.stock) : null,
-        }))
+    // Parse attributes
+    let normalizedAttributes: any = body.attributes || (existingIndex >= 0 ? products[existingIndex].attributes : {});
+    if (Array.isArray(body.attributes)) {
+      const attrObj: Record<string, string[]> = {};
+      body.attributes.forEach((a: any) => {
+        if (a && a.name && a.name.toLowerCase() !== 'warranty') {
+          const vals = typeof a.values === 'string'
+            ? a.values.split(',').map((s: string) => s.trim()).filter(Boolean)
+            : Array.isArray(a.values) ? a.values : [String(a.values)];
+          attrObj[a.name] = vals;
+        }
+      });
+      normalizedAttributes = attrObj;
+    }
+
+    // Format variations
+    const formattedVariations = Array.isArray(body.variations) && body.variations.length > 0
+      ? body.variations.map((v: any, idx: number) => {
+          const varReg = v.regularPrice !== undefined && v.regularPrice !== null && v.regularPrice !== ''
+            ? Math.round(Number(v.regularPrice) * 100)
+            : (v.regularPriceMinor || regMinor);
+          const varSale = v.salePrice !== undefined && v.salePrice !== null && v.salePrice !== ''
+            ? Math.round(Number(v.salePrice) * 100)
+            : (v.salePriceMinor !== undefined ? v.salePriceMinor : (saleMinor || varReg));
+          const varStock = v.stock !== undefined && v.stock !== null && v.stock !== ''
+            ? Number(v.stock)
+            : (v.stockQty !== undefined && v.stockQty !== null ? Number(v.stockQty) : 10);
+          const varInStock = varStock > 0 || v.inStock === true;
+          const varImg = v.displayImage || v.image || primaryImage;
+
+          return {
+            id: String(v.id || `var-${Date.now()}-${idx}`),
+            sku: v.sku || '',
+            name: v.name || `${body.name || (existingIndex >= 0 ? products[existingIndex].name : '')} - ${Object.values(v.attributes || {}).join(' ')}`.trim(),
+            attributes: v.attributes || {},
+            regularPriceMinor: varReg,
+            salePriceMinor: varSale,
+            displayImage: varImg,
+            imageUrls: v.image ? [v.image] : (v.displayImage ? [v.displayImage] : [primaryImage]),
+            inStock: varInStock,
+            stockQty: varStock,
+          };
+        })
       : (existingIndex >= 0 ? products[existingIndex].variations || [] : []);
+
+    const isVariable = body.productType === 'variable' || body.type === 'variable' || formattedVariations.length > 0;
+    const hasVarStock = formattedVariations.length > 0
+      ? formattedVariations.some((v: any) => v.inStock && (v.stockQty === null || v.stockQty > 0))
+      : false;
+    const inStock = isVariable ? hasVarStock : (body.status !== 'Out of stock' && Number(body.stock ?? 1) > 0);
+    const stockQty = isVariable
+      ? formattedVariations.reduce((sum: number, v: any) => sum + (Number(v.stockQty) || 0), 0)
+      : (body.stock !== undefined ? Number(body.stock) : 10);
+
+    const minPriceMinor = formattedVariations.length > 0
+      ? Math.min(...formattedVariations.map((v: any) => v.salePriceMinor || v.regularPriceMinor || saleMinor))
+      : (saleMinor > 0 ? saleMinor : regMinor);
 
     if (existingIndex >= 0) {
       // Update existing product
       products[existingIndex] = {
         ...products[existingIndex],
+        type: isVariable ? 'variable' : 'simple',
         name: body.name || products[existingIndex].name,
         warrantyPeriod,
         regularPriceMinor: regMinor,
         salePriceMinor: saleMinor,
+        minPriceMinor: minPriceMinor > 0 ? minPriceMinor : (saleMinor > 0 ? saleMinor : regMinor),
         inStock,
         stockQty,
         brand: body.brand || products[existingIndex].brand,
@@ -110,6 +154,7 @@ export async function POST(req: NextRequest) {
         shipping: body.shipping || products[existingIndex].shipping,
         displayImage: primaryImage,
         imageUrls: galleryList,
+        attributes: normalizedAttributes,
         variations: formattedVariations,
       };
     } else {
@@ -119,11 +164,11 @@ export async function POST(req: NextRequest) {
         name: body.name,
         slug: productSlug,
         sku: body.sku || `WC-${Date.now()}`,
-        type: body.productType || 'simple',
+        type: isVariable ? 'variable' : 'simple',
         status: 'published',
         regularPriceMinor: regMinor,
         salePriceMinor: saleMinor,
-        minPriceMinor: saleMinor,
+        minPriceMinor: minPriceMinor > 0 ? minPriceMinor : (saleMinor > 0 ? saleMinor : regMinor),
         warrantyPeriod,
         inStock,
         stockQty,
@@ -131,7 +176,7 @@ export async function POST(req: NextRequest) {
         shortDescription: body.shortDesc || '',
         description: body.description || '',
         categorySlugs: [body.category ? body.category.toLowerCase().replace(/\s+/g, '-') : 'general'],
-        attributes: body.attributes || {},
+        attributes: normalizedAttributes,
         imageUrls: galleryList,
         displayImage: primaryImage,
         variations: formattedVariations,
@@ -141,6 +186,14 @@ export async function POST(req: NextRequest) {
     }
 
     saveProducts(products);
+
+    // Revalidate Next.js cache so changes reflect instantly
+    try {
+      revalidatePath('/product/' + productSlug);
+      revalidatePath('/shop');
+      revalidatePath('/');
+    } catch (e) {}
+
     return NextResponse.json({ success: true, count: products.length }, { headers: CORS_HEADERS });
   } catch (err: any) {
     console.error('Error saving product in API:', err);
