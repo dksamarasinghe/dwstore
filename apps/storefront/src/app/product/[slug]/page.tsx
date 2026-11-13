@@ -276,9 +276,9 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
       return;
     }
 
-    // 2. If variable product and customer hasn\'t selected an option
-    if (isVariable && !isAllAttributesSelected) {
-      const missing = requiredAttributes.find((a) => !selectedAttributes[a]) || 'option';
+    // 2. If variable product and customer hasn't selected an option
+    if (isVariable && (!matchedVariation || !isAllAttributesSelected)) {
+      const missing = requiredAttributes.find((a) => !selectedAttributes[a]) || 'variation option (e.g. Color)';
       setValidationError(`Please select a ${missing} before adding to cart.`);
       const el = document.getElementById('variation-selector-section');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -319,9 +319,9 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
       return;
     }
 
-    // 2. If variable product and customer hasn\'t selected an option
-    if (isVariable && !isAllAttributesSelected) {
-      const missing = requiredAttributes.find((a) => !selectedAttributes[a]) || 'option';
+    // 2. If variable product and customer hasn't selected an option
+    if (isVariable && (!matchedVariation || !isAllAttributesSelected)) {
+      const missing = requiredAttributes.find((a) => !selectedAttributes[a]) || 'variation option (e.g. Color)';
       setValidationError(`Please select a ${missing} before proceeding to checkout.`);
       const el = document.getElementById('variation-selector-section');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });

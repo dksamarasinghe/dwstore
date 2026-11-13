@@ -116,39 +116,72 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // List files in a specific folder
-    const targetFolder = ALLOWED_FOLDERS.includes(folder) ? folder : 'products';
-    const dirs = getTargetFolderDirs(targetFolder);
-    const existingDir = dirs.find((d) => fs.existsSync(d));
+    // List files: either from 'all' folders or a specific folder
+    let files: any[] = [];
+    let targetFolder = folder;
 
-    if (!existingDir) {
-      return NextResponse.json(
-        { success: true, folder: targetFolder, files: [], total: 0, page, totalPages: 1 },
-        { headers: CORS_HEADERS }
-      );
-    }
+    if (folder === 'all') {
+      targetFolder = 'all';
+      for (const f of ALLOWED_FOLDERS) {
+        const dirs = getTargetFolderDirs(f);
+        const existingDir = dirs.find((d) => fs.existsSync(d));
+        if (existingDir) {
+          try {
+            const fileNames = fs.readdirSync(existingDir);
+            for (const name of fileNames) {
+              if (/\.(jpg|jpeg|png|webp|svg|gif|avif|mp4)$/i.test(name)) {
+                const filePath = path.join(existingDir, name);
+                let size = 0;
+                let createdAt = new Date();
+                try {
+                  const stats = fs.statSync(filePath);
+                  size = stats.size;
+                  createdAt = stats.birthtime || stats.mtime;
+                } catch {}
+                files.push({
+                  name,
+                  url: `/media/${f}/${name}`,
+                  size,
+                  sizeFormatted: formatBytes(size),
+                  createdAt,
+                  folder: f,
+                });
+              }
+            }
+          } catch {}
+        }
+      }
+    } else {
+      targetFolder = ALLOWED_FOLDERS.includes(folder) ? folder : 'products';
+      const dirs = getTargetFolderDirs(targetFolder);
+      const existingDir = dirs.find((d) => fs.existsSync(d));
 
-    const fileNames = fs.readdirSync(existingDir);
-    let files = fileNames
-      .filter((name) => /\.(jpg|jpeg|png|webp|svg|gif|avif|mp4)$/i.test(name))
-      .map((name) => {
-        const filePath = path.join(existingDir, name);
-        let size = 0;
-        let createdAt = new Date();
+      if (existingDir) {
         try {
-          const stats = fs.statSync(filePath);
-          size = stats.size;
-          createdAt = stats.birthtime || stats.mtime;
+          const fileNames = fs.readdirSync(existingDir);
+          files = fileNames
+            .filter((name) => /\.(jpg|jpeg|png|webp|svg|gif|avif|mp4)$/i.test(name))
+            .map((name) => {
+              const filePath = path.join(existingDir, name);
+              let size = 0;
+              let createdAt = new Date();
+              try {
+                const stats = fs.statSync(filePath);
+                size = stats.size;
+                createdAt = stats.birthtime || stats.mtime;
+              } catch {}
+              return {
+                name,
+                url: `/media/${targetFolder}/${name}`,
+                size,
+                sizeFormatted: formatBytes(size),
+                createdAt,
+                folder: targetFolder,
+              };
+            });
         } catch {}
-        return {
-          name,
-          url: `/media/${targetFolder}/${name}`,
-          size,
-          sizeFormatted: formatBytes(size),
-          createdAt,
-          folder: targetFolder,
-        };
-      });
+      }
+    }
 
     if (search) {
       files = files.filter((f) => f.name.toLowerCase().includes(search));

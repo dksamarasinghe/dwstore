@@ -305,9 +305,15 @@ function ShopContent() {
     e.preventDefault();
     e.stopPropagation();
 
-    if (product.inStock === false) {
+    if (product.inStock === false || (product.stockQty !== undefined && product.stockQty !== null && Number(product.stockQty) <= 0)) {
       setCartNotice(`"${product.name}" is currently Out of Stock.`);
       setTimeout(() => setCartNotice(null), 3000);
+      return;
+    }
+
+    // Variable product requires selecting options on product page first
+    if (product.type === 'variable' || (Array.isArray(product.variations) && product.variations.length > 0)) {
+      router.push(`/product/${product.slug}`);
       return;
     }
 

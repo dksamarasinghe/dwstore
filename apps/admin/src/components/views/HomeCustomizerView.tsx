@@ -393,8 +393,33 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
     }
   };
 
-  // Helper to handle Hero box type change (product | category | brand | custom)
-  const handleHeroTypeChange = (boxKey: 'mainBox' | 'sideBox1' | 'sideBox2', type: 'category' | 'product' | 'brand' | 'custom') => {
+  // Helper to resolve 9-position coordinates for banner overlay button
+  const getAdminPositionStyle = (pos?: string): React.CSSProperties => {
+    switch (pos) {
+      case 'top-left':
+        return { top: '16px', left: '16px' };
+      case 'top-center':
+        return { top: '16px', left: '50%', transform: 'translateX(-50%)' };
+      case 'top-right':
+        return { top: '16px', right: '16px' };
+      case 'middle-left':
+        return { top: '50%', left: '16px', transform: 'translateY(-50%)' };
+      case 'middle-center':
+        return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
+      case 'middle-right':
+        return { top: '50%', right: '16px', transform: 'translateY(-50%)' };
+      case 'bottom-center':
+        return { bottom: '16px', left: '50%', transform: 'translateX(-50%)' };
+      case 'bottom-right':
+        return { bottom: '16px', right: '16px' };
+      case 'bottom-left':
+      default:
+        return { bottom: '16px', left: '16px' };
+    }
+  };
+
+  // Helper to handle Hero box type change (product | category | brand | custom | banner)
+  const handleHeroTypeChange = (boxKey: 'mainBox' | 'sideBox1' | 'sideBox2', type: 'category' | 'product' | 'brand' | 'custom' | 'banner') => {
     setConfig((prev: any) => ({
       ...prev,
       hero: {
@@ -402,6 +427,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
         [boxKey]: {
           ...prev.hero[boxKey],
           type,
+          buttonPosition: prev.hero[boxKey]?.buttonPosition || 'bottom-left',
         },
       },
     }));
@@ -1063,6 +1089,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                   { id: 'category', label: 'Feature a Category', icon: Layers },
                   { id: 'brand', label: 'Feature a Brand', icon: Tags },
                   { id: 'custom', label: 'Fully Custom Copy', icon: Sliders },
+                  { id: 'banner', label: 'Banner Image Only', icon: ImageIcon },
                 ].map((typeItem) => {
                   const Icon = typeItem.icon;
                   const isSelected = currentBoxConfig.type === typeItem.id;
@@ -1192,7 +1219,279 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
             )}
 
             {/* Content Fields */}
-            <div className="row g-3">
+            {currentBoxConfig.type === 'banner' ? (
+              <div className="d-flex flex-column gap-3">
+                {/* Size recommendation alert */}
+                <div
+                  className="alert alert-info py-2.5 px-3 d-flex align-items-center gap-2 m-0"
+                  style={{ fontSize: '12px', borderRadius: '10px' }}
+                >
+                  <Info size={16} className="text-info flex-shrink-0" />
+                  <div>
+                    <strong>Recommended Banner Image Dimensions: </strong>
+                    {activeHeroBox === 'mainBox'
+                      ? '1200 x 500 px (or 800 x 440 px) — Full width hero graphic'
+                      : '600 x 300 px (or 400 x 200 px) — Side card banner graphic'}
+                    <span className="d-block text-muted mt-0.5" style={{ fontSize: '11px' }}>
+                      Clean image with no auto text overlays. Image will automatically scale to fit the box cleanly.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Banner Image Input & VPS Uploader */}
+                <div>
+                  <label className="form-label fw-bold mb-1" style={{ fontSize: '13px' }}>
+                    Banner Image (Direct Upload / VPS Media Storage):
+                  </label>
+                  <div className="d-flex gap-2">
+                    <input
+                      type="text"
+                      className="form-control"
+                      style={{ borderRadius: '10px', fontSize: '13px' }}
+                      placeholder="e.g. /media/home-customizer/my-banner.jpg or https://..."
+                      value={currentBoxConfig.image || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setConfig((prev: any) => ({
+                          ...prev,
+                          hero: {
+                            ...prev.hero,
+                            [activeHeroBox]: { ...prev.hero[activeHeroBox], image: val },
+                          },
+                        }));
+                      }}
+                    />
+                    <label
+                      className="btn btn-primary d-flex align-items-center gap-1.5 flex-shrink-0 shadow-sm"
+                      style={{ borderRadius: '10px', fontSize: '13px', cursor: 'pointer' }}
+                    >
+                      <Upload size={14} />
+                      <span>Upload Banner</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const fd = new FormData();
+                          fd.append('file', file);
+                          fd.append('folder', 'home-customizer');
+                          try {
+                            const res = await fetch(`${getStorefrontUrl()}/api/upload`, {
+                              method: 'POST',
+                              body: fd,
+                            });
+                            const data = await res.json();
+                            if (data.success && data.url) {
+                              setConfig((prev: any) => ({
+                                ...prev,
+                                hero: {
+                                  ...prev.hero,
+                                  [activeHeroBox]: { ...prev.hero[activeHeroBox], image: data.url },
+                                },
+                              }));
+                              showNotification('Banner image uploaded to VPS media successfully!');
+                            } else {
+                              showNotification(data.error || 'Upload failed');
+                            }
+                          } catch (err: any) {
+                            showNotification('Upload error: ' + err.message);
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {currentBoxConfig.image && (
+                    <div className="mt-2 p-2 border rounded-3 bg-light d-flex align-items-center gap-3">
+                      <div
+                        style={{
+                          width: '70px',
+                          height: '45px',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          background: '#0f172a',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <img
+                          src={resolveImageUrl(currentBoxConfig.image)}
+                          alt="Banner preview"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                      <div className="flex-grow-1 overflow-hidden">
+                        <small className="d-block text-truncate fw-semibold text-body" style={{ fontSize: '11px' }}>
+                          {currentBoxConfig.image}
+                        </small>
+                        <small className="text-success fw-bold" style={{ fontSize: '10px' }}>
+                          ✓ Image Active
+                        </small>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Banner Click Link */}
+                <div>
+                  <label className="form-label fw-semibold mb-1" style={{ fontSize: '13px' }}>
+                    Banner Target Link (Optional — Whole banner click destination):
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    style={{ borderRadius: '10px', fontSize: '13px' }}
+                    placeholder="/shop or /category/... or /product/..."
+                    value={currentBoxConfig.link || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setConfig((prev: any) => ({
+                        ...prev,
+                        hero: {
+                          ...prev.hero,
+                          [activeHeroBox]: { ...prev.hero[activeHeroBox], link: val },
+                        },
+                      }));
+                    }}
+                  />
+                  <small className="text-muted" style={{ fontSize: '11px' }}>
+                    If no button is used, clicking anywhere on the banner will navigate to this link.
+                  </small>
+                </div>
+
+                {/* Overlay Button Settings */}
+                <div className="p-3 border rounded-3 bg-light" style={{ borderColor: 'var(--border)' }}>
+                  <div className="form-check form-switch mb-3">
+                    <input
+                      className="form-check-input cursor-pointer"
+                      type="checkbox"
+                      id="heroBannerBtnSwitch"
+                      checked={Boolean(currentBoxConfig.buttonText)}
+                      onChange={(e) => {
+                        const enabled = e.target.checked;
+                        setConfig((prev: any) => ({
+                          ...prev,
+                          hero: {
+                            ...prev.hero,
+                            [activeHeroBox]: {
+                              ...prev.hero[activeHeroBox],
+                              buttonText: enabled ? 'SHOP NOW' : '',
+                              buttonPosition: prev.hero[activeHeroBox].buttonPosition || 'bottom-left',
+                            },
+                          },
+                        }));
+                      }}
+                    />
+                    <label className="form-check-label fw-bold cursor-pointer" htmlFor="heroBannerBtnSwitch" style={{ fontSize: '13px' }}>
+                      Add Clickable Call-to-Action Button on Banner
+                    </label>
+                  </div>
+
+                  {Boolean(currentBoxConfig.buttonText) && (
+                    <div className="row g-3">
+                      <div className="col-12 col-md-6">
+                        <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>
+                          Button Name / Text:
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          style={{ borderRadius: '8px', fontSize: '13px' }}
+                          placeholder="e.g. SHOP NOW, BUY NOW"
+                          value={currentBoxConfig.buttonText || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setConfig((prev: any) => ({
+                              ...prev,
+                              hero: {
+                                ...prev.hero,
+                                [activeHeroBox]: { ...prev.hero[activeHeroBox], buttonText: val },
+                              },
+                            }));
+                          }}
+                        />
+                      </div>
+
+                      <div className="col-12 col-md-6">
+                        <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>
+                          Button Destination Link:
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          style={{ borderRadius: '8px', fontSize: '13px' }}
+                          placeholder="e.g. /shop or /category/..."
+                          value={currentBoxConfig.buttonLink || currentBoxConfig.link || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setConfig((prev: any) => ({
+                              ...prev,
+                              hero: {
+                                ...prev.hero,
+                                [activeHeroBox]: { ...prev.hero[activeHeroBox], buttonLink: val },
+                              },
+                            }));
+                          }}
+                        />
+                      </div>
+
+                      {/* 9 Positions Interactive Grid */}
+                      <div className="col-12">
+                        <label className="form-label fw-bold mb-1.5 d-block" style={{ fontSize: '12px' }}>
+                          Button Position on Banner (Select 1 of 9 Positions):
+                        </label>
+                        <div
+                          className="d-grid gap-1.5 p-2 bg-white rounded-3 border"
+                          style={{ gridTemplateColumns: 'repeat(3, 1fr)', maxWidth: '360px' }}
+                        >
+                          {[
+                            { id: 'top-left', label: 'Top Left' },
+                            { id: 'top-center', label: 'Top Center' },
+                            { id: 'top-right', label: 'Top Right' },
+                            { id: 'middle-left', label: 'Middle Left' },
+                            { id: 'middle-center', label: 'Middle Center' },
+                            { id: 'middle-right', label: 'Middle Right' },
+                            { id: 'bottom-left', label: 'Bottom Left' },
+                            { id: 'bottom-center', label: 'Bottom Center' },
+                            { id: 'bottom-right', label: 'Bottom Right' },
+                          ].map((pos) => {
+                            const isSelected = (currentBoxConfig.buttonPosition || 'bottom-left') === pos.id;
+                            return (
+                              <button
+                                key={pos.id}
+                                type="button"
+                                onClick={() => {
+                                  setConfig((prev: any) => ({
+                                    ...prev,
+                                    hero: {
+                                      ...prev.hero,
+                                      [activeHeroBox]: { ...prev.hero[activeHeroBox], buttonPosition: pos.id },
+                                    },
+                                  }));
+                                }}
+                                className={`btn btn-sm py-1.5 px-1 d-flex align-items-center justify-content-center text-center ${
+                                  isSelected ? 'btn-primary' : 'btn-outline-secondary'
+                                }`}
+                                style={{ fontSize: '11px', borderRadius: '6px', fontWeight: isSelected ? 700 : 500 }}
+                              >
+                                {isSelected ? `✓ ${pos.label}` : pos.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <small className="text-muted d-block mt-1" style={{ fontSize: '11px' }}>
+                          Current position: <strong>{currentBoxConfig.buttonPosition || 'bottom-left'}</strong>
+                        </small>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="row g-3">
               {/* Badge Text */}
               <div className="col-12 col-md-6">
                 <label className="form-label fw-semibold mb-1" style={{ fontSize: '13px' }}>
@@ -1601,6 +1900,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                 </div>
               )}
             </div>
+            )}
           </div>
         </div>
 
@@ -1629,291 +1929,421 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
 
             {/* 1. Main Hero Card Preview */}
             {activeHeroBox === 'mainBox' && (
-              <div
-                className="rounded-4 p-4 text-slate-900 position-relative overflow-hidden d-flex flex-column justify-content-between shadow-sm border"
-                style={{
-                  minHeight: '380px',
-                  background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 40%, #dbeafe 100%)',
-                  borderColor: '#c7d2fe',
-                }}
-              >
-                {/* Subtle dot overlay */}
+              currentBoxConfig.type === 'banner' ? (
                 <div
-                  className="position-absolute"
+                  className="rounded-4 position-relative overflow-hidden shadow-sm border d-flex align-items-center justify-content-center"
                   style={{
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)',
-                    backgroundSize: '18px 18px',
-                    opacity: 0.15,
-                    pointerEvents: 'none',
-                  }}
-                />
-
-                <div className="position-relative" style={{ zIndex: 2 }}>
-                  {/* Top Badge */}
-                  <div
-                    className="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill mb-3 shadow-xs"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.85)',
-                      border: '1px solid #bfdbfe',
-                      color: '#1d4ed8',
-                      fontSize: '10px',
-                      fontWeight: 700,
-                    }}
-                  >
-                    <Sparkles size={12} className="text-primary flex-shrink-0" />
-                    <span>{currentBoxConfig.badge || "DWSTORE • SRI LANKA'S TRUSTED TECH STORE"}</span>
-                  </div>
-
-                  {/* Main Title */}
-                  <h3
-                    className="fw-black text-uppercase m-0 tracking-tight"
-                    style={{
-                      fontSize: '20px',
-                      lineHeight: 1.15,
-                      color: '#0f172a',
-                      fontWeight: 900,
-                    }}
-                  >
-                    {currentBoxConfig.title || 'PREMIUM TECH, SMARTWATCHES & ACCESSORIES'}
-                  </h3>
-
-                  {/* Description */}
-                  <p
-                    className="mt-2 text-muted fw-medium"
-                    style={{ fontSize: '12px', lineHeight: 1.45, maxWidth: '260px', color: '#475569' }}
-                  >
-                    {currentBoxConfig.description || 'Direct importer warranties, 100% genuine products & island-wide express cash on delivery.'}
-                  </p>
-
-                  {/* Trust Badges */}
-                  <div className="d-flex flex-wrap gap-2 mt-2" style={{ fontSize: '10px', fontWeight: 600, color: '#334155' }}>
-                    <span className="d-inline-flex align-items-center gap-1">
-                      <CheckCircle2 size={12} className="text-success" /> 100% Genuine
-                    </span>
-                    <span className="d-inline-flex align-items-center gap-1">
-                      <ShieldCheck size={12} className="text-primary" /> Island-wide COD
-                    </span>
-                    <span className="d-inline-flex align-items-center gap-1">
-                      <Zap size={12} className="text-warning" /> KOKO &amp; Payzy
-                    </span>
-                  </div>
-                </div>
-
-                {/* CTA Buttons */}
-                <div className="position-relative d-flex flex-wrap gap-2 mt-3" style={{ zIndex: 2 }}>
-                  {currentBoxConfig.button1Text && (
-                    <span
-                      className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 fw-bold shadow-sm"
-                      style={{ fontSize: '11px', borderRadius: '8px', padding: '6px 14px', background: '#2563eb', border: 'none' }}
-                    >
-                      <span>{currentBoxConfig.button1Text}</span>
-                      <ArrowRight size={12} />
-                    </span>
-                  )}
-                  {currentBoxConfig.button2Text && (
-                    <span
-                      className="btn btn-light btn-sm fw-bold border shadow-xs"
-                      style={{ fontSize: '11px', borderRadius: '8px', padding: '6px 12px', background: '#ffffff', color: '#1e293b' }}
-                    >
-                      {currentBoxConfig.button2Text}
-                    </span>
-                  )}
-                </div>
-
-                {/* Image Showcase */}
-                <div
-                  className="position-absolute"
-                  style={{
-                    right: '10px',
-                    bottom: '10px',
-                    width: '170px',
-                    height: '170px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    pointerEvents: 'none',
-                    zIndex: 1,
+                    minHeight: '380px',
+                    background: '#0f172a',
+                    borderColor: '#334155',
                   }}
                 >
+                  {currentBoxConfig.image ? (
+                    <img
+                      src={resolveImageUrl(currentBoxConfig.image)}
+                      alt="Main Banner Preview"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
+                    />
+                  ) : (
+                    <div className="text-center p-4 text-white">
+                      <ImageIcon size={36} className="text-muted mb-2" />
+                      <h6 className="m-0 fw-bold">No Banner Image Uploaded</h6>
+                      <small className="text-muted">Recommended: 1200 x 500 px (or 800 x 440 px)</small>
+                    </div>
+                  )}
+
+                  {/* Overlay Button at chosen position */}
+                  {Boolean(currentBoxConfig.buttonText) && (
+                    <div
+                      className="position-absolute"
+                      style={{
+                        zIndex: 10,
+                        ...getAdminPositionStyle(currentBoxConfig.buttonPosition),
+                      }}
+                    >
+                      <span
+                        className="btn btn-primary btn-sm fw-bold shadow-md d-inline-flex align-items-center gap-1.5"
+                        style={{ fontSize: '12px', borderRadius: '8px', padding: '8px 16px' }}
+                      >
+                        <span>{currentBoxConfig.buttonText}</span>
+                        <ArrowRight size={13} />
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div
+                  className="rounded-4 p-4 text-slate-900 position-relative overflow-hidden d-flex flex-column justify-content-between shadow-sm border"
+                  style={{
+                    minHeight: '380px',
+                    background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 40%, #dbeafe 100%)',
+                    borderColor: '#c7d2fe',
+                  }}
+                >
+                  {/* Subtle dot overlay */}
+                  <div
+                    className="position-absolute"
+                    style={{
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)',
+                      backgroundSize: '18px 18px',
+                      opacity: 0.15,
+                      pointerEvents: 'none',
+                    }}
+                  />
+
+                  <div className="position-relative" style={{ zIndex: 2 }}>
+                    {/* Top Badge */}
+                    <div
+                      className="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill mb-3 shadow-xs"
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.85)',
+                        border: '1px solid #bfdbfe',
+                        color: '#1d4ed8',
+                        fontSize: '10px',
+                        fontWeight: 700,
+                      }}
+                    >
+                      <Sparkles size={12} className="text-primary flex-shrink-0" />
+                      <span>{currentBoxConfig.badge || "DWSTORE • SRI LANKA'S TRUSTED TECH STORE"}</span>
+                    </div>
+
+                    {/* Main Title */}
+                    <h3
+                      className="fw-black text-uppercase m-0 tracking-tight"
+                      style={{
+                        fontSize: '20px',
+                        lineHeight: 1.15,
+                        color: '#0f172a',
+                        fontWeight: 900,
+                      }}
+                    >
+                      {currentBoxConfig.title || 'PREMIUM TECH, SMARTWATCHES & ACCESSORIES'}
+                    </h3>
+
+                    {/* Description */}
+                    <p
+                      className="mt-2 text-muted fw-medium"
+                      style={{ fontSize: '12px', lineHeight: 1.45, maxWidth: '260px', color: '#475569' }}
+                    >
+                      {currentBoxConfig.description || 'Direct importer warranties, 100% genuine products & island-wide express cash on delivery.'}
+                    </p>
+
+                    {/* Trust Badges */}
+                    <div className="d-flex flex-wrap gap-2 mt-2" style={{ fontSize: '10px', fontWeight: 600, color: '#334155' }}>
+                      <span className="d-inline-flex align-items-center gap-1">
+                        <CheckCircle2 size={12} className="text-success" /> 100% Genuine
+                      </span>
+                      <span className="d-inline-flex align-items-center gap-1">
+                        <ShieldCheck size={12} className="text-primary" /> Island-wide COD
+                      </span>
+                      <span className="d-inline-flex align-items-center gap-1">
+                        <Zap size={12} className="text-warning" /> KOKO &amp; Payzy
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* CTA Buttons */}
+                  <div className="position-relative d-flex flex-wrap gap-2 mt-3" style={{ zIndex: 2 }}>
+                    {currentBoxConfig.button1Text && (
+                      <span
+                        className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 fw-bold shadow-sm"
+                        style={{ fontSize: '11px', borderRadius: '8px', padding: '6px 14px', background: '#2563eb', border: 'none' }}
+                      >
+                        <span>{currentBoxConfig.button1Text}</span>
+                        <ArrowRight size={12} />
+                      </span>
+                    )}
+                    {currentBoxConfig.button2Text && (
+                      <span
+                        className="btn btn-light btn-sm fw-bold border shadow-xs"
+                        style={{ fontSize: '11px', borderRadius: '8px', padding: '6px 12px', background: '#ffffff', color: '#1e293b' }}
+                      >
+                        {currentBoxConfig.button2Text}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Image Showcase */}
+                  <div
+                    className="position-absolute"
+                    style={{
+                      right: '10px',
+                      bottom: '10px',
+                      width: '170px',
+                      height: '170px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      pointerEvents: 'none',
+                      zIndex: 1,
+                    }}
+                  >
+                    {currentBoxConfig.image && (
+                      <div
+                        style={{
+                          width: '135px',
+                          height: '135px',
+                          borderRadius: '16px',
+                          background: 'rgba(255, 255, 255, 0.75)',
+                          border: '1px solid #fff',
+                          padding: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 10px 20px -5px rgba(0,0,0,0.15)',
+                        }}
+                      >
+                        <img
+                          src={resolveImageUrl(currentBoxConfig.image)}
+                          alt={currentBoxConfig.title}
+                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Secondary floating chip */}
+                    {currentBoxConfig.secondaryImage && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: '0px',
+                          left: '0px',
+                          width: '56px',
+                          height: '56px',
+                          borderRadius: '12px',
+                          background: '#ffffff',
+                          border: '1px solid #e2e8f0',
+                          padding: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 6px 12px -3px rgba(0,0,0,0.2)',
+                        }}
+                      >
+                        <img
+                          src={resolveImageUrl(currentBoxConfig.secondaryImage)}
+                          alt="Secondary"
+                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            )}
+
+            {/* 2. Side Box 1 Preview */}
+            {activeHeroBox === 'sideBox1' && (
+              currentBoxConfig.type === 'banner' ? (
+                <div
+                  className="rounded-4 position-relative overflow-hidden shadow-sm border d-flex align-items-center justify-content-center"
+                  style={{
+                    minHeight: '230px',
+                    background: '#020617',
+                    borderColor: '#1e293b',
+                  }}
+                >
+                  {currentBoxConfig.image ? (
+                    <img
+                      src={resolveImageUrl(currentBoxConfig.image)}
+                      alt="Side Banner 1 Preview"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
+                    />
+                  ) : (
+                    <div className="text-center p-3 text-white">
+                      <ImageIcon size={28} className="text-muted mb-1" />
+                      <h6 className="m-0 fw-bold" style={{ fontSize: '13px' }}>No Banner Image</h6>
+                      <small className="text-muted" style={{ fontSize: '11px' }}>Recommended: 600 x 300 px</small>
+                    </div>
+                  )}
+
+                  {Boolean(currentBoxConfig.buttonText) && (
+                    <div
+                      className="position-absolute"
+                      style={{
+                        zIndex: 10,
+                        ...getAdminPositionStyle(currentBoxConfig.buttonPosition),
+                      }}
+                    >
+                      <span
+                        className="btn btn-primary btn-sm fw-bold shadow-md d-inline-flex align-items-center gap-1"
+                        style={{ fontSize: '11px', borderRadius: '6px', padding: '6px 12px' }}
+                      >
+                        <span>{currentBoxConfig.buttonText}</span>
+                        <ArrowRight size={12} />
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div
+                  className="rounded-4 p-4 text-white position-relative overflow-hidden d-flex flex-column justify-content-between shadow-lg"
+                  style={{
+                    minHeight: '230px',
+                    background: 'linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                  }}
+                >
+                  <div className="position-relative" style={{ zIndex: 2 }}>
+                    <span
+                      className="text-uppercase fw-bold d-block mb-1 font-monospace"
+                      style={{ fontSize: '10px', letterSpacing: '1px', color: '#60a5fa' }}
+                    >
+                      {currentBoxConfig.badge || 'BEST SELLER'}
+                    </span>
+                    <h3 className="fw-black text-white m-0" style={{ fontSize: '18px' }}>
+                      {currentBoxConfig.title || 'Side Card 1 Title'}
+                    </h3>
+                    {currentBoxConfig.subtitle && (
+                      <p className="mt-1 text-white-50 text-truncate" style={{ fontSize: '11px', maxWidth: '180px' }}>
+                        {currentBoxConfig.subtitle}
+                      </p>
+                    )}
+                    {currentBoxConfig.priceText && (
+                      <p className="fw-bold mt-2 font-monospace" style={{ fontSize: '14px', color: '#fbbf24' }}>
+                        {currentBoxConfig.priceText}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="position-relative d-flex align-items-center gap-1 fw-bold mt-3" style={{ zIndex: 2, fontSize: '12px', color: '#60a5fa' }}>
+                    <span>{currentBoxConfig.buttonText || 'Order now'}</span>
+                    <ArrowRight size={14} />
+                  </div>
+
                   {currentBoxConfig.image && (
                     <div
+                      className="position-absolute"
                       style={{
-                        width: '135px',
-                        height: '135px',
-                        borderRadius: '16px',
-                        background: 'rgba(255, 255, 255, 0.75)',
-                        border: '1px solid #fff',
-                        padding: '8px',
+                        right: '12px',
+                        bottom: '12px',
+                        width: '130px',
+                        height: '130px',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 10px 20px -5px rgba(0,0,0,0.15)',
+                        justifyContent: 'flex-end',
+                        pointerEvents: 'none',
+                        zIndex: 1,
                       }}
                     >
                       <img
                         src={resolveImageUrl(currentBoxConfig.image)}
                         alt={currentBoxConfig.title}
-                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Secondary floating chip */}
-                  {currentBoxConfig.secondaryImage && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: '0px',
-                        left: '0px',
-                        width: '56px',
-                        height: '56px',
-                        borderRadius: '12px',
-                        background: '#ffffff',
-                        border: '1px solid #e2e8f0',
-                        padding: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 6px 12px -3px rgba(0,0,0,0.2)',
-                      }}
-                    >
-                      <img
-                        src={resolveImageUrl(currentBoxConfig.secondaryImage)}
-                        alt="Secondary"
-                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 14px rgba(0,0,0,0.5))' }}
                       />
                     </div>
                   )}
                 </div>
-              </div>
-            )}
-
-            {/* 2. Side Box 1 Preview */}
-            {activeHeroBox === 'sideBox1' && (
-              <div
-                className="rounded-4 p-4 text-white position-relative overflow-hidden d-flex flex-column justify-content-between shadow-lg"
-                style={{
-                  minHeight: '230px',
-                  background: 'linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                }}
-              >
-                <div className="position-relative" style={{ zIndex: 2 }}>
-                  <span
-                    className="text-uppercase fw-bold d-block mb-1 font-monospace"
-                    style={{ fontSize: '10px', letterSpacing: '1px', color: '#60a5fa' }}
-                  >
-                    {currentBoxConfig.badge || 'BEST SELLER'}
-                  </span>
-                  <h3 className="fw-black text-white m-0" style={{ fontSize: '18px' }}>
-                    {currentBoxConfig.title || 'Side Card 1 Title'}
-                  </h3>
-                  {currentBoxConfig.subtitle && (
-                    <p className="mt-1 text-white-50 text-truncate" style={{ fontSize: '11px', maxWidth: '180px' }}>
-                      {currentBoxConfig.subtitle}
-                    </p>
-                  )}
-                  {currentBoxConfig.priceText && (
-                    <p className="fw-bold mt-2 font-monospace" style={{ fontSize: '14px', color: '#fbbf24' }}>
-                      {currentBoxConfig.priceText}
-                    </p>
-                  )}
-                </div>
-
-                <div className="position-relative d-flex align-items-center gap-1 fw-bold mt-3" style={{ zIndex: 2, fontSize: '12px', color: '#60a5fa' }}>
-                  <span>{currentBoxConfig.buttonText || 'Order now'}</span>
-                  <ArrowRight size={14} />
-                </div>
-
-                {currentBoxConfig.image && (
-                  <div
-                    className="position-absolute"
-                    style={{
-                      right: '12px',
-                      bottom: '12px',
-                      width: '130px',
-                      height: '130px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'flex-end',
-                      pointerEvents: 'none',
-                      zIndex: 1,
-                    }}
-                  >
-                    <img
-                      src={resolveImageUrl(currentBoxConfig.image)}
-                      alt={currentBoxConfig.title}
-                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 14px rgba(0,0,0,0.5))' }}
-                    />
-                  </div>
-                )}
-              </div>
+              )
             )}
 
             {/* 3. Side Box 2 Preview */}
             {activeHeroBox === 'sideBox2' && (
-              <div
-                className="rounded-4 p-4 text-white position-relative overflow-hidden d-flex flex-column justify-content-between shadow-lg"
-                style={{
-                  minHeight: '230px',
-                  background: 'linear-gradient(135deg, #0c1321 0%, #111827 50%, #0c1a2e 100%)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                }}
-              >
-                <div className="position-relative" style={{ zIndex: 2 }}>
-                  <span
-                    className="text-uppercase fw-bold d-block mb-1 font-monospace"
-                    style={{ fontSize: '10px', letterSpacing: '1px', color: '#22d3ee' }}
-                  >
-                    {currentBoxConfig.badge || 'HIGH CAPACITY'}
-                  </span>
-                  <h3 className="fw-black text-white m-0" style={{ fontSize: '18px' }}>
-                    {currentBoxConfig.title || 'Side Card 2 Title'}
-                  </h3>
-                  {currentBoxConfig.subtitle && (
-                    <p className="mt-1 text-white-50 text-truncate" style={{ fontSize: '11px', maxWidth: '180px' }}>
-                      {currentBoxConfig.subtitle}
-                    </p>
-                  )}
-                  {currentBoxConfig.priceText && (
-                    <p className="fw-bold mt-2 font-monospace" style={{ fontSize: '14px', color: '#fbbf24' }}>
-                      {currentBoxConfig.priceText}
-                    </p>
-                  )}
-                </div>
-
-                <div className="position-relative d-flex align-items-center gap-1 fw-bold mt-3" style={{ zIndex: 2, fontSize: '12px', color: '#22d3ee' }}>
-                  <span>{currentBoxConfig.buttonText || 'Order now'}</span>
-                  <ArrowRight size={14} />
-                </div>
-
-                {currentBoxConfig.image && (
-                  <div
-                    className="position-absolute"
-                    style={{
-                      right: '12px',
-                      bottom: '12px',
-                      width: '130px',
-                      height: '130px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'flex-end',
-                      pointerEvents: 'none',
-                      zIndex: 1,
-                    }}
-                  >
+              currentBoxConfig.type === 'banner' ? (
+                <div
+                  className="rounded-4 position-relative overflow-hidden shadow-sm border d-flex align-items-center justify-content-center"
+                  style={{
+                    minHeight: '230px',
+                    background: '#0c1321',
+                    borderColor: '#1e293b',
+                  }}
+                >
+                  {currentBoxConfig.image ? (
                     <img
                       src={resolveImageUrl(currentBoxConfig.image)}
-                      alt={currentBoxConfig.title}
-                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 14px rgba(0,0,0,0.5))' }}
+                      alt="Side Banner 2 Preview"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
                     />
+                  ) : (
+                    <div className="text-center p-3 text-white">
+                      <ImageIcon size={28} className="text-muted mb-1" />
+                      <h6 className="m-0 fw-bold" style={{ fontSize: '13px' }}>No Banner Image</h6>
+                      <small className="text-muted" style={{ fontSize: '11px' }}>Recommended: 600 x 300 px</small>
+                    </div>
+                  )}
+
+                  {Boolean(currentBoxConfig.buttonText) && (
+                    <div
+                      className="position-absolute"
+                      style={{
+                        zIndex: 10,
+                        ...getAdminPositionStyle(currentBoxConfig.buttonPosition),
+                      }}
+                    >
+                      <span
+                        className="btn btn-primary btn-sm fw-bold shadow-md d-inline-flex align-items-center gap-1"
+                        style={{ fontSize: '11px', borderRadius: '6px', padding: '6px 12px' }}
+                      >
+                        <span>{currentBoxConfig.buttonText}</span>
+                        <ArrowRight size={12} />
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div
+                  className="rounded-4 p-4 text-white position-relative overflow-hidden d-flex flex-column justify-content-between shadow-lg"
+                  style={{
+                    minHeight: '230px',
+                    background: 'linear-gradient(135deg, #0c1321 0%, #111827 50%, #0c1a2e 100%)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                  }}
+                >
+                  <div className="position-relative" style={{ zIndex: 2 }}>
+                    <span
+                      className="text-uppercase fw-bold d-block mb-1 font-monospace"
+                      style={{ fontSize: '10px', letterSpacing: '1px', color: '#22d3ee' }}
+                    >
+                      {currentBoxConfig.badge || 'HIGH CAPACITY'}
+                    </span>
+                    <h3 className="fw-black text-white m-0" style={{ fontSize: '18px' }}>
+                      {currentBoxConfig.title || 'Side Card 2 Title'}
+                    </h3>
+                    {currentBoxConfig.subtitle && (
+                      <p className="mt-1 text-white-50 text-truncate" style={{ fontSize: '11px', maxWidth: '180px' }}>
+                        {currentBoxConfig.subtitle}
+                      </p>
+                    )}
+                    {currentBoxConfig.priceText && (
+                      <p className="fw-bold mt-2 font-monospace" style={{ fontSize: '14px', color: '#fbbf24' }}>
+                        {currentBoxConfig.priceText}
+                      </p>
+                    )}
                   </div>
-                )}
-              </div>
+
+                  <div className="position-relative d-flex align-items-center gap-1 fw-bold mt-3" style={{ zIndex: 2, fontSize: '12px', color: '#22d3ee' }}>
+                    <span>{currentBoxConfig.buttonText || 'Order now'}</span>
+                    <ArrowRight size={14} />
+                  </div>
+
+                  {currentBoxConfig.image && (
+                    <div
+                      className="position-absolute"
+                      style={{
+                        right: '12px',
+                        bottom: '12px',
+                        width: '130px',
+                        height: '130px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                        pointerEvents: 'none',
+                        zIndex: 1,
+                      }}
+                    >
+                      <img
+                        src={resolveImageUrl(currentBoxConfig.image)}
+                        alt={currentBoxConfig.title}
+                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 14px rgba(0,0,0,0.5))' }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
             )}
 
             {/* Quick Switch to Other Boxes */}

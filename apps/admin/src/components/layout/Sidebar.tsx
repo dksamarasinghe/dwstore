@@ -261,7 +261,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             title="Media & Files"
           >
             <Images size={18} />
-            {!collapsed && <span>Media Library</span>}
+            {!collapsed && <span>Media</span>}
           </a>
 
           <a

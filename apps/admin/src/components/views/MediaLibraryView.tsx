@@ -48,6 +48,11 @@ interface MediaLibraryViewProps {
 }
 
 const FOLDER_CONFIGS: Record<string, { label: string; icon: any; desc: string }> = {
+  all: {
+    label: 'All Media Files',
+    icon: HardDrive,
+    desc: 'Browse all images and uploaded media across the entire website',
+  },
   products: {
     label: 'Products',
     icon: ShoppingBag,

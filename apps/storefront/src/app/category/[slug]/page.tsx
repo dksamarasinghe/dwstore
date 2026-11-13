@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import productsData from '@/data/products.json';
@@ -13,6 +13,7 @@ import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 
 export default function CategoryPage() {
+  const router = useRouter();
   const params = useParams();
   const slug = (params.slug as string) || '';
   const { addToCart } = useCart();
@@ -222,7 +223,12 @@ export default function CategoryPage() {
 
                     <button
                       type="button"
-                      onClick={() =>
+                      onClick={() => {
+                        if (product.type === 'variable' || (Array.isArray(product.variations) && product.variations.length > 0)) {
+                          router.push(`/product/${product.slug}`);
+                          return;
+                        }
+                        if (product.inStock === false) return;
                         addToCart({
                           productId: product.id,
                           name: product.name,
@@ -230,8 +236,8 @@ export default function CategoryPage() {
                           priceMinor: displayPrice,
                           image: product.displayImage,
                           quantity: 1,
-                        })
-                      }
+                        });
+                      }}
                       className="w-8 h-8 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-xs transition"
                       aria-label="Add to cart"
                     >

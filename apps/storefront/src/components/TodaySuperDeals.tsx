@@ -277,15 +277,21 @@ export default function TodaySuperDeals({ initialConfig }: TodaySuperDealsProps)
                     ) : (
                       <button
                         type="button"
-                        onClick={() => addToCart({
-                          productId: String(product.id),
-                          name: product.name,
-                          slug: product.slug,
-                          image: product.displayImage || '',
-                          priceMinor: selling,
-                          regularPriceMinor: regular,
-                          quantity: 1,
-                        })}
+                        onClick={() => {
+                          if (product.type === 'variable' || (Array.isArray(product.variations) && product.variations.length > 0)) {
+                            window.location.href = `/product/${product.slug}`;
+                            return;
+                          }
+                          addToCart({
+                            productId: String(product.id),
+                            name: product.name,
+                            slug: product.slug,
+                            image: product.displayImage || '',
+                            priceMinor: selling,
+                            regularPriceMinor: regular,
+                            quantity: 1,
+                          });
+                        }}
                         className="w-full py-2 bg-slate-900 hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer group-hover:bg-rose-600"
                       >
                         <ShoppingCart className="w-3.5 h-3.5" />

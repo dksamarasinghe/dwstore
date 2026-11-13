@@ -14,7 +14,7 @@ export default function Footer() {
             { icon: Truck, color: 'bg-blue-50 text-blue-600', title: 'Island-wide Delivery', sub: 'Express Cash on Delivery to all 25 districts' },
             { icon: ShieldCheck, color: 'bg-emerald-50 text-emerald-600', title: '100% Genuine Products', sub: 'Official company warranty with every device' },
             { icon: RotateCcw, color: 'bg-purple-50 text-purple-600', title: '7 Days Easy Return', sub: 'Hassle-free replacement for any defects' },
-            { icon: CreditCard, color: 'bg-amber-50 text-amber-600', title: 'Flexible Payments', sub: 'COD, Bank Transfer, Koko & Mintpay 0%' },
+            { icon: CreditCard, color: 'bg-amber-50 text-amber-600', title: 'Flexible Payments', sub: 'COD, Bank Transfer, Koko & Payzy' },
           ].map(({ icon: Icon, color, title, sub }, idx) => (
             <div key={idx} className="flex items-center gap-3">
               <div className={`w-12 h-12 rounded-xl ${color} flex items-center justify-center flex-shrink-0`}>
