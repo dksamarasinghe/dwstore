@@ -293,21 +293,21 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
       </div>
 
       {/* Returns List Table */}
-      <div className="card-x p-0 overflow-hidden">
+      <div className="card-x p-0 overflow-hidden shadow-xs">
         <div className="table-responsive">
-          <table className="tbl-x">
+          <table className="table-x align-middle mb-0" style={{ minWidth: '1050px' }}>
             <thead>
               <tr>
-                <th>Order #</th>
-                <th>Customer</th>
-                <th>Purchased Items</th>
-                <th>Claim Reason</th>
-                <th>Warranty Action</th>
-                <th style={{ textAlign: 'right' }}>Courier Loss</th>
-                <th style={{ textAlign: 'right' }}>Product Loss</th>
-                <th style={{ textAlign: 'right' }}>Total Net Loss</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
+                <th style={{ width: '110px', whiteSpace: 'nowrap' }}>Order #</th>
+                <th style={{ width: '180px' }}>Customer</th>
+                <th style={{ minWidth: '180px', maxWidth: '240px' }}>Purchased Items</th>
+                <th style={{ width: '170px' }}>Claim Reason</th>
+                <th style={{ width: '160px' }}>Warranty Action</th>
+                <th style={{ textAlign: 'right', width: '110px', whiteSpace: 'nowrap' }}>Courier Loss</th>
+                <th style={{ textAlign: 'right', width: '110px', whiteSpace: 'nowrap' }}>Product Loss</th>
+                <th style={{ textAlign: 'right', width: '130px', whiteSpace: 'nowrap' }}>Total Net Loss</th>
+                <th style={{ textAlign: 'center', width: '100px' }}>Status</th>
+                <th style={{ textAlign: 'right', width: '90px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -358,37 +358,37 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
                   const resStatus = rec?.resolutionStatus || 'investigating';
 
                   return (
-                    <tr key={order.orderId}>
+                    <tr key={order.orderId} style={{ verticalAlign: 'middle' }}>
                       {/* Order ID */}
-                      <td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
                         <b
-                          className="font-monospace text-primary"
-                          style={{ cursor: 'pointer' }}
+                          className="font-monospace text-primary d-block"
+                          style={{ cursor: 'pointer', fontSize: '13px' }}
                           onClick={() => setSelectedOrder && setSelectedOrder(order)}
                           title="View order details"
                         >
                           #{order.orderId}
                         </b>
-                        <small className="d-block text-muted" style={{ fontSize: '10px' }}>
+                        <small className="text-muted" style={{ fontSize: '11px' }}>
                           {rec?.createdAt?.slice(0, 10) || order.createdAt?.slice(0, 10)}
                         </small>
                       </td>
 
                       {/* Customer */}
                       <td>
-                        <div style={{ fontWeight: 600 }}>{order.customerName}</div>
+                        <div style={{ fontWeight: 600, fontSize: '13px' }}>{order.customerName}</div>
                         <small className="text-muted d-block" style={{ fontSize: '11px' }}>
                           {order.customerPhone} ({order.city})
                         </small>
                       </td>
 
                       {/* Items */}
-                      <td style={{ maxWidth: '200px' }}>
-                        <div className="text-truncate" style={{ fontSize: '12px', fontWeight: 500 }}>
+                      <td style={{ maxWidth: '240px' }}>
+                        <div className="text-truncate fw-semibold" style={{ fontSize: '12px' }} title={order.items?.[0]?.productTitle}>
                           {order.items?.[0]?.productTitle || 'DWstore Electronics'}
                         </div>
                         {rec?.replacementItemTitle && (
-                          <small className="text-purple d-block text-truncate" style={{ fontSize: '10.5px', color: '#8b5cf6' }}>
+                          <small className="text-purple d-block text-truncate fw-semibold" style={{ fontSize: '11px', color: '#8b5cf6' }}>
                             ↳ {rec.replacementItemTitle}
                           </small>
                         )}
@@ -396,11 +396,11 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
 
                       {/* Claim Reason */}
                       <td>
-                        <span className="badge-x bg-dark-subtle text-body" style={{ fontSize: '10.5px' }}>
+                        <span className="badge bg-secondary-subtle text-body fw-bold" style={{ fontSize: '11px' }}>
                           {reasonLabel}
                         </span>
                         {rec?.reasonDescription && (
-                          <small className="text-muted d-block text-truncate mt-0.5" style={{ fontSize: '10px', maxWidth: '160px' }}>
+                          <small className="text-muted d-block text-truncate mt-1" style={{ fontSize: '11px', maxWidth: '160px' }}>
                             {rec.reasonDescription}
                           </small>
                         )}
@@ -409,9 +409,9 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
                       {/* Warranty Action */}
                       <td>
                         <span
-                          className="badge-x"
+                          className="badge fw-bold"
                           style={{
-                            fontSize: '10.5px',
+                            fontSize: '11px',
                             background:
                               rec?.warrantyAction === 'replacement'
                                 ? 'rgba(139, 92, 246, 0.15)'
@@ -431,33 +431,36 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
                       </td>
 
                       {/* Courier Loss */}
-                      <td style={{ textAlign: 'right', fontSize: '12px' }}>
+                      <td style={{ textAlign: 'right', fontSize: '12.5px', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
                         Rs. {shipLoss.toLocaleString()}
                       </td>
 
                       {/* Product Loss */}
-                      <td style={{ textAlign: 'right', fontSize: '12px' }}>
+                      <td style={{ textAlign: 'right', fontSize: '12.5px', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
                         Rs. {prodLoss.toLocaleString()}
                       </td>
 
                       {/* Total Net Loss */}
-                      <td style={{ textAlign: 'right' }}>
-                        <b className="font-monospace text-danger" style={{ fontSize: '13px' }}>
-                          Rs. {itemTotalLoss.toLocaleString()}
-                        </b>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <span
+                          className="badge bg-danger-subtle text-danger fw-bold font-monospace px-2.5 py-1"
+                          style={{ fontSize: '12px' }}
+                        >
+                          - Rs. {itemTotalLoss.toLocaleString()}
+                        </span>
                       </td>
 
                       {/* Status */}
-                      <td>
+                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                         <span
-                          className={`badge-x ${
+                          className={`badge ${
                             resStatus === 'resolved' || resStatus === 'replacement_dispatched'
-                              ? 's-Delivered'
+                              ? 'bg-success-subtle text-success'
                               : resStatus === 'refunded'
-                              ? 's-Paid'
-                              : 's-Shipped'
-                          }`}
-                          style={{ fontSize: '10.5px' }}
+                              ? 'bg-primary-subtle text-primary'
+                              : 'bg-warning-subtle text-warning'
+                          } fw-bold`}
+                          style={{ fontSize: '11px' }}
                         >
                           {resStatus === 'replacement_dispatched'
                             ? 'Replaced'
@@ -470,16 +473,16 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
                       </td>
 
                       {/* Actions */}
-                      <td style={{ textAlign: 'right' }}>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <div className="d-flex align-items-center justify-content-end gap-1">
                           <button
                             type="button"
-                            className="icon-btn text-primary"
-                            style={{ width: '32px', height: '32px' }}
+                            className="btn btn-sm btn-outline-primary p-1.5"
+                            style={{ borderRadius: '8px' }}
                             onClick={() => setEditingReturnOrder(order)}
                             title="Edit Return & Loss Record"
                           >
-                            <Edit3 size={14} />
+                            <Edit3 size={13} />
                           </button>
                           {cleanPhone && (
                             <a

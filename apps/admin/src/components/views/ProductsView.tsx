@@ -679,14 +679,44 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                const regP = parseFloat(quickEditProduct.regularPrice as any) || 0;
-                const enteredSale = parseFloat(quickEditProduct.salePrice as any) || 0;
-                const finalSale = enteredSale > 0 ? enteredSale : regP;
+                const isVar =
+                  quickEditProduct.productType === 'variable' ||
+                  quickEditProduct.type === 'variable' ||
+                  (Array.isArray(quickEditProduct.variations) && quickEditProduct.variations.length > 0);
+
+                let regP = parseFloat(quickEditProduct.regularPrice as any) || 0;
+                let enteredSale = parseFloat(quickEditProduct.salePrice as any) || 0;
+                let finalSale = enteredSale > 0 ? enteredSale : regP;
+
+                let totalStock = quickEditProduct.stock || 0;
+                let updatedVars = quickEditProduct.variations;
+
+                if (isVar && updatedVars && updatedVars.length > 0) {
+                  totalStock = updatedVars.reduce((sum, v) => sum + (v.stock || 0), 0);
+                  const validRegs = updatedVars.map((v) => v.regularPrice || 0).filter((p) => p > 0);
+                  if (validRegs.length > 0) {
+                    regP = Math.min(...validRegs);
+                  }
+                  const validSales = updatedVars.map((v) => v.salePrice || 0).filter((p) => p > 0);
+                  if (validSales.length > 0) {
+                    finalSale = Math.min(...validSales);
+                  } else {
+                    finalSale = regP;
+                  }
+                }
+
+                const finalStatus =
+                  totalStock === 0 ? 'Out of stock' : totalStock <= 10 ? 'Low stock' : (quickEditProduct.status || 'Active');
+
                 const updated = {
                   ...quickEditProduct,
                   regularPrice: regP,
                   salePrice: finalSale,
+                  stock: totalStock,
+                  status: finalStatus,
+                  variations: updatedVars,
                 };
+
                 onUpdateProduct(updated);
                 setQuickEditProduct(null);
                 showNotification(`Quick changes saved for ${quickEditProduct.name.slice(0, 20)}...`);
@@ -695,7 +725,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             >
               {/* Switch to Full Editor Link */}
               <div className="d-flex justify-content-between align-items-center p-2 rounded-2 mb-3" style={{ background: 'var(--hover)' }}>
-                <small className="text-muted">Need to edit variations, descriptions, warranty or shipping?</small>
+                <small className="text-muted">Need to edit full descriptions, gallery, warranty or shipping?</small>
                 <button
                   type="button"
                   className="btn btn-sm btn-link p-0 text-decoration-none fw-semibold"
@@ -726,69 +756,216 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                 />
               </div>
 
-              {/* Pricing Row */}
-              <div className="row g-3 mb-3">
-                <div className="col-6">
-                  <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
-                    Regular Price (LKR) *
-                  </label>
-                  <input
-                    type="number"
-                    className="w-100 p-2 rounded-2 fw-bold"
-                    style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '15px' }}
-                    value={quickEditProduct.regularPrice}
-                    onChange={(e) =>
-                      setQuickEditProduct({
-                        ...quickEditProduct,
-                        regularPrice: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    required
-                  />
-                  <small className="text-muted d-block mt-1">Standard customer selling price</small>
+              {/* Variable Product Variations Quick Editor */}
+              {((quickEditProduct.productType === 'variable' ||
+                quickEditProduct.type === 'variable' ||
+                (Array.isArray(quickEditProduct.variations) && quickEditProduct.variations.length > 0)) && (
+                <div className="mb-3 p-3 rounded-3" style={{ background: 'var(--hover)', border: '1px solid var(--border)' }}>
+                  <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                    <div>
+                      <b style={{ fontSize: '13px' }}>
+                        Product Variations ({quickEditProduct.variations?.length || 0})
+                      </b>
+                      <small className="text-muted d-block" style={{ fontSize: '11px' }}>
+                        Edit price, promo sale, and optional stock for each variation below.
+                      </small>
+                    </div>
+                    <div className="d-flex gap-1">
+                      <button
+                        type="button"
+                        className="btn-soft"
+                        style={{ fontSize: '11px', padding: '3px 8px' }}
+                        onClick={() => {
+                          const p = prompt('Enter Regular Price to apply to all variations:', String(quickEditProduct.regularPrice || ''));
+                          if (p !== null && !isNaN(parseFloat(p))) {
+                            const num = parseFloat(p);
+                            setQuickEditProduct({
+                              ...quickEditProduct,
+                              regularPrice: num,
+                              variations: (quickEditProduct.variations || []).map((v) => ({ ...v, regularPrice: num })),
+                            });
+                          }
+                        }}
+                      >
+                        Sync Regular Price
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-soft"
+                        style={{ fontSize: '11px', padding: '3px 8px' }}
+                        onClick={() => {
+                          const s = prompt('Enter Stock Quantity to apply to all variations (optional):', '10');
+                          if (s !== null && !isNaN(parseInt(s, 10))) {
+                            const num = parseInt(s, 10);
+                            setQuickEditProduct({
+                              ...quickEditProduct,
+                              variations: (quickEditProduct.variations || []).map((v) => ({ ...v, stock: num })),
+                            });
+                          }
+                        }}
+                      >
+                        Sync Stock
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="d-flex flex-column gap-2" style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                    {(quickEditProduct.variations || []).map((v, idx) => {
+                      const attrLabel =
+                        Object.entries(v.attributes || {})
+                          .map(([k, val]) => `${k}: ${val}`)
+                          .join(' / ') || `Variation #${idx + 1}`;
+
+                      return (
+                        <div
+                          key={v.id || idx}
+                          className="p-2 rounded-2"
+                          style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+                        >
+                          <div className="d-flex align-items-center justify-content-between mb-1.5">
+                            <span className="badge bg-secondary-subtle text-body fw-bold" style={{ fontSize: '11px' }}>
+                              {attrLabel}
+                            </span>
+                            {v.sku && <small className="text-muted font-monospace" style={{ fontSize: '10px' }}>{v.sku}</small>}
+                          </div>
+
+                          <div className="row g-2">
+                            <div className="col-4">
+                              <label className="text-muted d-block mb-0.5" style={{ fontSize: '10px', fontWeight: 600 }}>
+                                Regular Price (LKR) *
+                              </label>
+                              <input
+                                type="number"
+                                className="w-100 p-1.5 rounded-2 fw-bold"
+                                style={{ background: 'var(--hover)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12px' }}
+                                value={v.regularPrice ?? quickEditProduct.regularPrice}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  const nextVars = [...(quickEditProduct.variations || [])];
+                                  nextVars[idx] = { ...v, regularPrice: val };
+                                  setQuickEditProduct({ ...quickEditProduct, variations: nextVars });
+                                }}
+                                required
+                              />
+                            </div>
+
+                            <div className="col-4">
+                              <label className="text-muted d-block mb-0.5" style={{ fontSize: '10px', fontWeight: 600 }}>
+                                Sale Price (Opt)
+                              </label>
+                              <input
+                                type="number"
+                                className="w-100 p-1.5 rounded-2"
+                                style={{ background: 'var(--hover)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12px' }}
+                                placeholder="Optional"
+                                value={v.salePrice && v.salePrice > 0 ? v.salePrice : ''}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  const nextVars = [...(quickEditProduct.variations || [])];
+                                  nextVars[idx] = { ...v, salePrice: val };
+                                  setQuickEditProduct({ ...quickEditProduct, variations: nextVars });
+                                }}
+                              />
+                            </div>
+
+                            <div className="col-4">
+                              <label className="text-muted d-block mb-0.5" style={{ fontSize: '10px', fontWeight: 600 }}>
+                                Stock (Optional)
+                              </label>
+                              <input
+                                type="number"
+                                className="w-100 p-1.5 rounded-2"
+                                style={{ background: 'var(--hover)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12px' }}
+                                placeholder="0 (Optional)"
+                                value={v.stock !== undefined && v.stock !== null && v.stock !== 0 ? v.stock : (v.stock === 0 ? '0' : '')}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? 0 : (parseInt(e.target.value, 10) || 0);
+                                  const nextVars = [...(quickEditProduct.variations || [])];
+                                  nextVars[idx] = { ...v, stock: val };
+                                  setQuickEditProduct({ ...quickEditProduct, variations: nextVars });
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="col-6">
-                  <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
-                    Sale / Promo Price (LKR)
-                  </label>
-                  <input
-                    type="number"
-                    className="w-100 p-2 rounded-2"
-                    style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '14px' }}
-                    value={quickEditProduct.salePrice && quickEditProduct.salePrice < quickEditProduct.regularPrice ? quickEditProduct.salePrice : ''}
-                    placeholder="Optional discount"
-                    onChange={(e) =>
-                      setQuickEditProduct({
-                        ...quickEditProduct,
-                        salePrice: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                  />
-                  <small className="text-muted d-block mt-1">If entered, regular price is crossed out</small>
+              ))}
+
+              {/* Pricing Row for Single Products */}
+              {!(quickEditProduct.productType === 'variable' ||
+                quickEditProduct.type === 'variable' ||
+                (Array.isArray(quickEditProduct.variations) && quickEditProduct.variations.length > 0)) && (
+                <div className="row g-3 mb-3">
+                  <div className="col-6">
+                    <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
+                      Regular Price (LKR) *
+                    </label>
+                    <input
+                      type="number"
+                      className="w-100 p-2 rounded-2 fw-bold"
+                      style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '15px' }}
+                      value={quickEditProduct.regularPrice}
+                      onChange={(e) =>
+                        setQuickEditProduct({
+                          ...quickEditProduct,
+                          regularPrice: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      required
+                    />
+                    <small className="text-muted d-block mt-1">Standard customer selling price</small>
+                  </div>
+                  <div className="col-6">
+                    <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
+                      Sale / Promo Price (LKR)
+                    </label>
+                    <input
+                      type="number"
+                      className="w-100 p-2 rounded-2"
+                      style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '14px' }}
+                      value={quickEditProduct.salePrice && quickEditProduct.salePrice < quickEditProduct.regularPrice ? quickEditProduct.salePrice : ''}
+                      placeholder="Optional discount"
+                      onChange={(e) =>
+                        setQuickEditProduct({
+                          ...quickEditProduct,
+                          salePrice: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                    />
+                    <small className="text-muted d-block mt-1">If entered, regular price is crossed out</small>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Stock and Status Row */}
               <div className="row g-3 mb-3">
                 <div className="col-6">
                   <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
-                    Stock Units Available *
+                    Stock Units Available (Optional)
                   </label>
                   <input
                     type="number"
                     className="w-100 p-2 rounded-2"
                     style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '14px' }}
-                    value={quickEditProduct.stock}
+                    value={quickEditProduct.stock !== undefined && quickEditProduct.stock !== null && quickEditProduct.stock !== 0 ? quickEditProduct.stock : (quickEditProduct.stock === 0 ? '0' : '')}
+                    placeholder="0 (Optional)"
                     onChange={(e) => {
-                      const qty = parseInt(e.target.value, 10) || 0;
+                      const qty = e.target.value === '' ? 0 : (parseInt(e.target.value, 10) || 0);
                       setQuickEditProduct({
                         ...quickEditProduct,
                         stock: qty,
                         status: qty === 0 ? 'Out of stock' : qty <= 10 ? 'Low stock' : 'Active',
                       });
                     }}
-                    required
                   />
+                  <small className="text-muted d-block mt-1">
+                    {quickEditProduct.variations && quickEditProduct.variations.length > 0
+                      ? `Sum of ${quickEditProduct.variations.length} variations`
+                      : 'Optional, leave 0 or blank if out of stock'}
+                  </small>
                 </div>
                 <div className="col-6">
                   <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>

@@ -2368,7 +2368,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
 
                               <div className="col-6 col-md-2">
                                 <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
-                                  Stock *
+                                  Stock (Optional)
                                 </label>
                                 <input
                                   type="number"
@@ -2379,16 +2379,12 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                                     color: 'var(--text)',
                                     fontSize: '13px'
                                   }}
-                                  placeholder="0"
-                                  value={v.stock || ''}
-                                  onChange={(e) =>
-                                    handleUpdateVariation(
-                                      v.id,
-                                      'stock',
-                                      parseInt(e.target.value, 10) || 0
-                                    )
-                                  }
-                                  required
+                                  placeholder="0 (Optional)"
+                                  value={v.stock !== undefined && v.stock !== null && v.stock !== 0 ? v.stock : (v.stock === 0 ? '0' : '')}
+                                  onChange={(e) => {
+                                    const val = e.target.value === '' ? 0 : (parseInt(e.target.value, 10) || 0);
+                                    handleUpdateVariation(v.id, 'stock', val);
+                                  }}
                                 />
                               </div>
                             </div>

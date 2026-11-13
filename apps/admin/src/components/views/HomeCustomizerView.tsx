@@ -51,6 +51,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
 }) => {
   const [activeSection, setActiveSection] = useState<'hero' | 'brands' | 'banners' | 'categories' | 'deals' | 'bento'>('hero');
   const [activeHeroBox, setActiveHeroBox] = useState<'mainBox' | 'sideBox1' | 'sideBox2'>('mainBox');
+  const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
   const [activeBentoBoxIndex, setActiveBentoBoxIndex] = useState<number>(0);
   const [categorySearch, setCategorySearch] = useState('');
   const [brandSearch, setBrandSearch] = useState('');
@@ -60,7 +61,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
   const defaultConfig = {
     hero: {
       mainBox: {
-        type: 'custom' as 'category' | 'product' | 'brand' | 'custom',
+        type: 'custom' as 'category' | 'product' | 'brand' | 'custom' | 'banner' | 'slider',
         selectedId: '',
         badge: "DWSTORE • SRI LANKA'S TRUSTED TECH STORE",
         title: 'PREMIUM TECH, SMARTWATCHES & ACCESSORIES',
@@ -71,6 +72,17 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
         button2Link: '/shop',
         image: '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg',
         secondaryImage: '/media/products/RPP2921_5d0c7431.jpg',
+        slides: [
+          {
+            id: 'slide-1',
+            image: '/media/categories/smartwatches-T800-Ultra-Smart-Watch-1.jpg',
+            title: 'Featured Promotion 1',
+            link: '/shop',
+            buttonText: 'SHOP ALL PRODUCTS',
+            buttonLink: '/shop',
+            buttonPosition: 'bottom-left',
+          },
+        ],
       },
       sideBox1: {
         type: 'product' as 'category' | 'product' | 'brand' | 'custom',
@@ -418,19 +430,40 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
     }
   };
 
-  // Helper to handle Hero box type change (product | category | brand | custom | banner)
-  const handleHeroTypeChange = (boxKey: 'mainBox' | 'sideBox1' | 'sideBox2', type: 'category' | 'product' | 'brand' | 'custom' | 'banner') => {
-    setConfig((prev: any) => ({
-      ...prev,
-      hero: {
-        ...prev.hero,
-        [boxKey]: {
-          ...prev.hero[boxKey],
-          type,
-          buttonPosition: prev.hero[boxKey]?.buttonPosition || 'bottom-left',
+  // Helper to handle Hero box type change (product | category | brand | custom | banner | slider)
+  const handleHeroTypeChange = (
+    boxKey: 'mainBox' | 'sideBox1' | 'sideBox2',
+    type: 'category' | 'product' | 'brand' | 'custom' | 'banner' | 'slider'
+  ) => {
+    setConfig((prev: any) => {
+      const box = prev.hero[boxKey] || {};
+      let slides = box.slides;
+      if (type === 'slider' && (!slides || slides.length === 0)) {
+        slides = [
+          {
+            id: `slide-${Date.now()}-1`,
+            image: box.image || '/media/categories/smartwatches-T800-Ultra-Smart-Watch-1.jpg',
+            title: 'Featured Promotion 1',
+            link: box.link || '/shop',
+            buttonText: box.buttonText || 'SHOP ALL PRODUCTS',
+            buttonLink: box.buttonLink || '/shop',
+            buttonPosition: box.buttonPosition || 'bottom-left',
+          },
+        ];
+      }
+      return {
+        ...prev,
+        hero: {
+          ...prev.hero,
+          [boxKey]: {
+            ...box,
+            type,
+            slides,
+            buttonPosition: box.buttonPosition || 'bottom-left',
+          },
         },
-      },
-    }));
+      };
+    });
   };
 
   // Helper when a product is picked for a Hero box
@@ -1090,6 +1123,9 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                   { id: 'brand', label: 'Feature a Brand', icon: Tags },
                   { id: 'custom', label: 'Fully Custom Copy', icon: Sliders },
                   { id: 'banner', label: 'Banner Image Only', icon: ImageIcon },
+                  ...(activeHeroBox === 'mainBox'
+                    ? [{ id: 'slider', label: 'Auto-Sliding Banners', icon: Sparkles }]
+                    : []),
                 ].map((typeItem) => {
                   const Icon = typeItem.icon;
                   const isSelected = currentBoxConfig.type === typeItem.id;
@@ -1219,7 +1255,409 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
             )}
 
             {/* Content Fields */}
-            {currentBoxConfig.type === 'banner' ? (
+            {currentBoxConfig.type === 'slider' ? (
+              <div className="d-flex flex-column gap-3">
+                {/* Size recommendation alert */}
+                <div
+                  className="alert alert-primary py-2.5 px-3 d-flex align-items-center justify-content-between m-0"
+                  style={{ fontSize: '12px', borderRadius: '10px' }}
+                >
+                  <div className="d-flex align-items-center gap-2">
+                    <Sparkles size={16} className="text-primary flex-shrink-0" />
+                    <div>
+                      <strong>Auto-Sliding Banners Carousel: </strong>
+                      Add multiple slides with custom graphics, destination links, and CTA buttons.
+                      <span className="d-block text-muted mt-0.5" style={{ fontSize: '11px' }}>
+                        Recommended Dimensions: 1200 x 500 px (or 800 x 440 px). Auto-advances every 5 seconds on web & mobile.
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentSlides = Array.isArray(currentBoxConfig.slides) && currentBoxConfig.slides.length > 0
+                        ? [...currentBoxConfig.slides]
+                        : [{
+                            id: `slide-${Date.now()}-1`,
+                            image: currentBoxConfig.image || '',
+                            title: 'Slide 1',
+                            link: currentBoxConfig.link || '/shop',
+                            buttonText: currentBoxConfig.buttonText || 'SHOP NOW',
+                            buttonLink: currentBoxConfig.buttonLink || '/shop',
+                            buttonPosition: currentBoxConfig.buttonPosition || 'bottom-left',
+                          }];
+                      const newSlide = {
+                        id: `slide-${Date.now()}-${currentSlides.length + 1}`,
+                        image: '',
+                        title: `Slide ${currentSlides.length + 1}`,
+                        link: '/shop',
+                        buttonText: 'EXPLORE DEALS',
+                        buttonLink: '/shop',
+                        buttonPosition: 'bottom-left',
+                      };
+                      const updatedSlides = [...currentSlides, newSlide];
+                      setConfig((prev: any) => ({
+                        ...prev,
+                        hero: {
+                          ...prev.hero,
+                          [activeHeroBox]: {
+                            ...prev.hero[activeHeroBox],
+                            slides: updatedSlides,
+                          },
+                        },
+                      }));
+                      setActiveSlideIndex(updatedSlides.length - 1);
+                    }}
+                    className="btn btn-sm btn-primary d-flex align-items-center gap-1.5 flex-shrink-0"
+                    style={{ borderRadius: '8px', fontSize: '12px' }}
+                  >
+                    <Plus size={14} />
+                    <span>Add Slide</span>
+                  </button>
+                </div>
+
+                {/* Slides Tabs / List */}
+                {(() => {
+                  const slides: any[] = Array.isArray(currentBoxConfig.slides) && currentBoxConfig.slides.length > 0
+                    ? currentBoxConfig.slides
+                    : [{
+                        id: 'slide-1',
+                        image: currentBoxConfig.image || '',
+                        title: 'Slide 1',
+                        link: currentBoxConfig.link || '/shop',
+                        buttonText: currentBoxConfig.buttonText || '',
+                        buttonLink: currentBoxConfig.buttonLink || '',
+                        buttonPosition: currentBoxConfig.buttonPosition || 'bottom-left',
+                      }];
+                  const safeActiveIndex = activeSlideIndex >= slides.length ? Math.max(0, slides.length - 1) : activeSlideIndex;
+                  const activeSlide = slides[safeActiveIndex] || slides[0] || {};
+
+                  const updateActiveSlide = (fields: Partial<any>) => {
+                    const newSlides = [...slides];
+                    newSlides[safeActiveIndex] = { ...newSlides[safeActiveIndex], ...fields };
+                    setConfig((prev: any) => ({
+                      ...prev,
+                      hero: {
+                        ...prev.hero,
+                        [activeHeroBox]: {
+                          ...prev.hero[activeHeroBox],
+                          slides: newSlides,
+                        },
+                      },
+                    }));
+                  };
+
+                  const removeSlide = (idx: number) => {
+                    if (slides.length <= 1) {
+                      showNotification('At least 1 slide is required in the carousel.');
+                      return;
+                    }
+                    const newSlides = slides.filter((_, i) => i !== idx);
+                    setConfig((prev: any) => ({
+                      ...prev,
+                      hero: {
+                        ...prev.hero,
+                        [activeHeroBox]: {
+                          ...prev.hero[activeHeroBox],
+                          slides: newSlides,
+                        },
+                      },
+                    }));
+                    if (safeActiveIndex >= newSlides.length) {
+                      setActiveSlideIndex(Math.max(0, newSlides.length - 1));
+                    }
+                  };
+
+                  const moveSlide = (idx: number, dir: -1 | 1) => {
+                    const targetIdx = idx + dir;
+                    if (targetIdx < 0 || targetIdx >= slides.length) return;
+                    const newSlides = [...slides];
+                    const temp = newSlides[idx];
+                    newSlides[idx] = newSlides[targetIdx];
+                    newSlides[targetIdx] = temp;
+                    setConfig((prev: any) => ({
+                      ...prev,
+                      hero: {
+                        ...prev.hero,
+                        [activeHeroBox]: {
+                          ...prev.hero[activeHeroBox],
+                          slides: newSlides,
+                        },
+                      },
+                    }));
+                    setActiveSlideIndex(targetIdx);
+                  };
+
+                  return (
+                    <div className="d-flex flex-column gap-3">
+                      {/* Slide Tabs Bar */}
+                      <div className="d-flex align-items-center gap-2 overflow-auto pb-1">
+                        {slides.map((s, idx) => (
+                          <div
+                            key={s.id || idx}
+                            className={`d-flex align-items-center gap-1.5 px-3 py-2 border rounded-3 cursor-pointer transition ${
+                              idx === safeActiveIndex
+                                ? 'bg-primary text-white border-primary shadow-sm'
+                                : 'bg-white text-dark hover-bg-light'
+                            }`}
+                            style={{ fontSize: '12px', fontWeight: 600, minWidth: '130px' }}
+                            onClick={() => setActiveSlideIndex(idx)}
+                          >
+                            <span className="badge bg-dark-subtle text-dark" style={{ fontSize: '10px' }}>
+                              #{idx + 1}
+                            </span>
+                            <span className="text-truncate flex-grow-1" style={{ maxWidth: '90px' }}>
+                              {s.title || `Slide ${idx + 1}`}
+                            </span>
+                            <div className="d-flex align-items-center gap-0.5 ms-1" onClick={(e) => e.stopPropagation()}>
+                              {idx > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => moveSlide(idx, -1)}
+                                  className="btn btn-link p-0 text-reset opacity-75 hover-opacity-100"
+                                  title="Move Left"
+                                >
+                                  <ArrowUp size={11} style={{ transform: 'rotate(-90deg)' }} />
+                                </button>
+                              )}
+                              {idx < slides.length - 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => moveSlide(idx, 1)}
+                                  className="btn btn-link p-0 text-reset opacity-75 hover-opacity-100"
+                                  title="Move Right"
+                                >
+                                  <ArrowDown size={11} style={{ transform: 'rotate(-90deg)' }} />
+                                </button>
+                              )}
+                              {slides.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeSlide(idx)}
+                                  className="btn btn-link p-0 text-danger ms-1"
+                                  title="Delete Slide"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Active Slide Form */}
+                      <div className="p-3 border rounded-3 bg-light" style={{ borderColor: 'var(--border)' }}>
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                          <h6 className="m-0 fw-bold d-flex align-items-center gap-2" style={{ fontSize: '13px' }}>
+                            <span className="badge bg-primary">Slide #{safeActiveIndex + 1}</span>
+                            <span>Slide Details & Banner Image</span>
+                          </h6>
+                        </div>
+
+                        {/* Slide Title / Label */}
+                        <div className="mb-3">
+                          <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>
+                            Slide Title / Admin Note:
+                          </label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            style={{ borderRadius: '8px', fontSize: '13px' }}
+                            placeholder={`e.g. Slide ${safeActiveIndex + 1} - Flash Deal`}
+                            value={activeSlide.title || ''}
+                            onChange={(e) => updateActiveSlide({ title: e.target.value })}
+                          />
+                        </div>
+
+                        {/* Banner Image Input & Uploader */}
+                        <div className="mb-3">
+                          <label className="form-label fw-bold mb-1" style={{ fontSize: '12px' }}>
+                            Banner Image URL (VPS Media Storage):
+                          </label>
+                          <div className="d-flex gap-2">
+                            <input
+                              type="text"
+                              className="form-control"
+                              style={{ borderRadius: '8px', fontSize: '13px' }}
+                              placeholder="/media/home-customizer/banner-1.jpg or https://..."
+                              value={activeSlide.image || ''}
+                              onChange={(e) => updateActiveSlide({ image: e.target.value })}
+                            />
+                            <label
+                              className="btn btn-primary d-flex align-items-center gap-1.5 flex-shrink-0 shadow-sm"
+                              style={{ borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}
+                            >
+                              <Upload size={14} />
+                              <span>Upload Banner</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  const url = await uploadBannerFile(file);
+                                  if (url) {
+                                    updateActiveSlide({ image: url });
+                                    showNotification('Slide banner uploaded to VPS media successfully!');
+                                  }
+                                  e.target.value = '';
+                                }}
+                              />
+                            </label>
+                          </div>
+
+                          {activeSlide.image && (
+                            <div className="mt-2 p-2 border rounded-3 bg-white d-flex align-items-center gap-3">
+                              <div
+                                style={{
+                                  width: '80px',
+                                  height: '45px',
+                                  borderRadius: '6px',
+                                  overflow: 'hidden',
+                                  background: '#0f172a',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <img
+                                  src={resolveImageUrl(activeSlide.image)}
+                                  alt="Slide banner preview"
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              </div>
+                              <div className="flex-grow-1 overflow-hidden">
+                                <small className="d-block text-truncate fw-semibold text-body" style={{ fontSize: '11px' }}>
+                                  {activeSlide.image}
+                                </small>
+                                <small className="text-success fw-bold" style={{ fontSize: '10px' }}>
+                                  ✓ Slide Banner Ready
+                                </small>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Whole Slide Click Link */}
+                        <div className="mb-3">
+                          <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>
+                            Whole Slide Click Link (If no button is clicked):
+                          </label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            style={{ borderRadius: '8px', fontSize: '13px' }}
+                            placeholder="/shop or /category/... or /product/..."
+                            value={activeSlide.link || ''}
+                            onChange={(e) => updateActiveSlide({ link: e.target.value })}
+                          />
+                        </div>
+
+                        {/* Slide CTA Button Settings */}
+                        <div className="p-3 border rounded-3 bg-white">
+                          <div className="form-check form-switch mb-3">
+                            <input
+                              className="form-check-input cursor-pointer"
+                              type="checkbox"
+                              id={`slideBtnSwitch-${safeActiveIndex}`}
+                              checked={Boolean(activeSlide.buttonText)}
+                              onChange={(e) => {
+                                const enabled = e.target.checked;
+                                updateActiveSlide({
+                                  buttonText: enabled ? 'SHOP NOW' : '',
+                                  buttonPosition: activeSlide.buttonPosition || 'bottom-left',
+                                });
+                              }}
+                            />
+                            <label
+                              className="form-check-label fw-bold cursor-pointer"
+                              htmlFor={`slideBtnSwitch-${safeActiveIndex}`}
+                              style={{ fontSize: '13px' }}
+                            >
+                              Add Clickable Call-to-Action Button on this Slide
+                            </label>
+                          </div>
+
+                          {Boolean(activeSlide.buttonText) && (
+                            <div className="row g-3">
+                              <div className="col-12 col-md-6">
+                                <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>
+                                  Button Text / Label:
+                                </label>
+                                <input
+                                  type="text"
+                                  className="form-control"
+                                  style={{ borderRadius: '8px', fontSize: '13px' }}
+                                  placeholder="e.g. SHOP NOW, VIEW DEAL"
+                                  value={activeSlide.buttonText || ''}
+                                  onChange={(e) => updateActiveSlide({ buttonText: e.target.value })}
+                                />
+                              </div>
+
+                              <div className="col-12 col-md-6">
+                                <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>
+                                  Button Destination Link:
+                                </label>
+                                <input
+                                  type="text"
+                                  className="form-control"
+                                  style={{ borderRadius: '8px', fontSize: '13px' }}
+                                  placeholder="e.g. /shop or /category/..."
+                                  value={activeSlide.buttonLink || activeSlide.link || ''}
+                                  onChange={(e) => updateActiveSlide({ buttonLink: e.target.value })}
+                                />
+                              </div>
+
+                              {/* 9 Positions Interactive Grid */}
+                              <div className="col-12">
+                                <label className="form-label fw-bold mb-1.5 d-block" style={{ fontSize: '12px' }}>
+                                  Button Position on this Banner (1 of 9 Positions):
+                                </label>
+                                <div
+                                  className="d-grid gap-1.5 p-2 bg-light rounded-3 border"
+                                  style={{ gridTemplateColumns: 'repeat(3, 1fr)', maxWidth: '360px' }}
+                                >
+                                  {[
+                                    { id: 'top-left', label: 'Top Left' },
+                                    { id: 'top-center', label: 'Top Center' },
+                                    { id: 'top-right', label: 'Top Right' },
+                                    { id: 'middle-left', label: 'Middle Left' },
+                                    { id: 'middle-center', label: 'Middle Center' },
+                                    { id: 'middle-right', label: 'Middle Right' },
+                                    { id: 'bottom-left', label: 'Bottom Left' },
+                                    { id: 'bottom-center', label: 'Bottom Center' },
+                                    { id: 'bottom-right', label: 'Bottom Right' },
+                                  ].map((pos) => {
+                                    const isSelected = (activeSlide.buttonPosition || 'bottom-left') === pos.id;
+                                    return (
+                                      <button
+                                        key={pos.id}
+                                        type="button"
+                                        onClick={() => updateActiveSlide({ buttonPosition: pos.id })}
+                                        className={`btn btn-sm py-1.5 px-1 d-flex align-items-center justify-content-center text-center ${
+                                          isSelected ? 'btn-primary' : 'btn-outline-secondary'
+                                        }`}
+                                        style={{ fontSize: '11px', borderRadius: '6px', fontWeight: isSelected ? 700 : 500 }}
+                                      >
+                                        {isSelected ? `✓ ${pos.label}` : pos.label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                <small className="text-muted d-block mt-1" style={{ fontSize: '11px' }}>
+                                  Current position: <strong>{activeSlide.buttonPosition || 'bottom-left'}</strong>
+                                </small>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : currentBoxConfig.type === 'banner' ? (
               <div className="d-flex flex-column gap-3">
                 {/* Size recommendation alert */}
                 <div
@@ -1929,7 +2367,125 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
 
             {/* 1. Main Hero Card Preview */}
             {activeHeroBox === 'mainBox' && (
-              currentBoxConfig.type === 'banner' ? (
+              currentBoxConfig.type === 'slider' ? (
+                (() => {
+                  const slides = Array.isArray(currentBoxConfig.slides) && currentBoxConfig.slides.length > 0
+                    ? currentBoxConfig.slides
+                    : [{ image: currentBoxConfig.image, buttonText: currentBoxConfig.buttonText, buttonPosition: currentBoxConfig.buttonPosition }];
+                  const safeIdx = activeSlideIndex >= slides.length ? 0 : activeSlideIndex;
+                  const activeSlide = slides[safeIdx] || slides[0] || {};
+                  return (
+                    <div>
+                      <div
+                        className="rounded-4 position-relative overflow-hidden shadow-sm border d-flex align-items-center justify-content-center"
+                        style={{
+                          minHeight: '380px',
+                          background: '#0f172a',
+                          borderColor: '#334155',
+                        }}
+                      >
+                        {activeSlide.image ? (
+                          <img
+                            src={resolveImageUrl(activeSlide.image)}
+                            alt="Active Slide Preview"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
+                          />
+                        ) : (
+                          <div className="text-center p-4 text-white">
+                            <Sparkles size={36} className="text-primary mb-2" />
+                            <h6 className="m-0 fw-bold">Slider Slide #{safeIdx + 1} Preview</h6>
+                            <small className="text-muted">Recommended: 1200 x 500 px (or 800 x 440 px)</small>
+                          </div>
+                        )}
+
+                        {/* Overlay Button at chosen position */}
+                        {Boolean(activeSlide.buttonText) && (
+                          <div
+                            className="position-absolute"
+                            style={{
+                              zIndex: 10,
+                              ...getAdminPositionStyle(activeSlide.buttonPosition),
+                            }}
+                          >
+                            <span
+                              className="btn btn-primary btn-sm fw-bold shadow-md d-inline-flex align-items-center gap-1.5"
+                              style={{ fontSize: '12px', borderRadius: '8px', padding: '8px 16px' }}
+                            >
+                              <span>{activeSlide.buttonText}</span>
+                              <ArrowRight size={13} />
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Slider indicator dots */}
+                        {slides.length > 1 && (
+                          <div
+                            className="position-absolute d-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill"
+                            style={{
+                              bottom: '12px',
+                              right: '12px',
+                              background: 'rgba(0,0,0,0.6)',
+                              backdropFilter: 'blur(4px)',
+                              zIndex: 15,
+                            }}
+                          >
+                            {slides.map((_: any, i: number) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => setActiveSlideIndex(i)}
+                                className="border-0 p-0"
+                                style={{
+                                  width: i === safeIdx ? '18px' : '6px',
+                                  height: '6px',
+                                  borderRadius: '3px',
+                                  background: i === safeIdx ? '#3b82f6' : 'rgba(255,255,255,0.4)',
+                                  transition: 'all 0.2s',
+                                  cursor: 'pointer',
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Slide Thumbnail Strip */}
+                      {slides.length > 1 && (
+                        <div className="d-flex gap-2 mt-2 overflow-auto py-1">
+                          {slides.map((s: any, idx: number) => (
+                            <div
+                              key={idx}
+                              onClick={() => setActiveSlideIndex(idx)}
+                              className={`border rounded-3 p-1 cursor-pointer transition flex-shrink-0 ${
+                                idx === safeIdx ? 'border-primary shadow-xs' : 'border-secondary'
+                              }`}
+                              style={{
+                                width: '64px',
+                                height: '40px',
+                                background: '#1e293b',
+                                opacity: idx === safeIdx ? 1 : 0.6,
+                                overflow: 'hidden',
+                              }}
+                            >
+                              {s.image ? (
+                                <img
+                                  src={resolveImageUrl(s.image)}
+                                  alt={`Slide ${idx + 1}`}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }}
+                                />
+                              ) : (
+                                <div className="w-100 h-100 d-flex align-items-center justify-content-center text-white" style={{ fontSize: '10px' }}>
+                                  #{idx + 1}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()
+              ) : currentBoxConfig.type === 'banner' ? (
                 <div
                   className="rounded-4 position-relative overflow-hidden shadow-sm border d-flex align-items-center justify-content-center"
                   style={{
