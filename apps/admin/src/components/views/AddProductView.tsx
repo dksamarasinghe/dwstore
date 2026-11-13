@@ -991,7 +991,11 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       warrantyPeriod: warrantyPeriod.trim(),
       shipping: shippingInfo,
       attributes: finalAttributes,
-      variations: formattedVariations
+      variations: formattedVariations,
+      createdAt: initialProduct?.createdAt || new Date().toISOString(),
+      createdAtTimestamp: initialProduct?.createdAtTimestamp || Date.now(),
+      updatedAt: new Date().toISOString(),
+      updatedAtTimestamp: Date.now(),
     };
 
     if (isEditing && onUpdateProduct) {

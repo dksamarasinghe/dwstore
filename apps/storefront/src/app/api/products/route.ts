@@ -136,9 +136,12 @@ export async function POST(req: NextRequest) {
       ? Math.min(...formattedVariations.map((v: any) => v.salePriceMinor || v.regularPriceMinor || saleMinor))
       : (saleMinor > 0 ? saleMinor : regMinor);
 
+    const nowIso = new Date().toISOString();
+    const nowTs = Date.now();
+
     if (existingIndex >= 0) {
       // Update existing product
-      products[existingIndex] = {
+      const updatedProduct = {
         ...products[existingIndex],
         type: isVariable ? 'variable' : 'simple',
         name: body.name || products[existingIndex].name,
@@ -156,7 +159,13 @@ export async function POST(req: NextRequest) {
         imageUrls: galleryList,
         attributes: normalizedAttributes,
         variations: formattedVariations,
+        updatedAt: nowIso,
+        updatedAtTimestamp: nowTs,
       };
+
+      // Move newly edited product to the front (top) of catalog
+      products.splice(existingIndex, 1);
+      products.unshift(updatedProduct);
     } else {
       // Create new product
       const newProduct = {
@@ -181,6 +190,10 @@ export async function POST(req: NextRequest) {
         displayImage: primaryImage,
         variations: formattedVariations,
         sourceSystem: 'admin',
+        createdAt: nowIso,
+        createdAtTimestamp: nowTs,
+        updatedAt: nowIso,
+        updatedAtTimestamp: nowTs,
       };
       products.unshift(newProduct);
     }

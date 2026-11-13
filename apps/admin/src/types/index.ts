@@ -76,6 +76,10 @@ export interface ProductItem {
   shipping?: ShippingDetails;
   attributes?: AttributeItem[];
   variations?: ProductVariationItem[];
+  createdAt?: string;
+  createdAtTimestamp?: number;
+  updatedAt?: string;
+  updatedAtTimestamp?: number;
 }
 
 export type ReturnReason =

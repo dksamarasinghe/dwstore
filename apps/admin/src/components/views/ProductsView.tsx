@@ -101,7 +101,24 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       return matchesTab && matchesSearch && matchesCat && matchesBrand;
     });
 
-    if (sortOption === 'high') {
+    if (sortOption === 'new') {
+      result = [...result].sort((a: any, b: any) => {
+        const timeA =
+          a.updatedAtTimestamp ||
+          (a.updatedAt ? new Date(a.updatedAt).getTime() : 0) ||
+          a.createdAtTimestamp ||
+          (a.createdAt ? new Date(a.createdAt).getTime() : 0) ||
+          0;
+        const timeB =
+          b.updatedAtTimestamp ||
+          (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) ||
+          b.createdAtTimestamp ||
+          (b.createdAt ? new Date(b.createdAt).getTime() : 0) ||
+          0;
+        if (timeA !== timeB) return timeB - timeA;
+        return 0;
+      });
+    } else if (sortOption === 'high') {
       result = [...result].sort((a, b) => b.salePrice - a.salePrice);
     } else if (sortOption === 'low') {
       result = [...result].sort((a, b) => a.salePrice - b.salePrice);
@@ -394,7 +411,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             value={sortOption}
             onChange={(e) => setSortOption(e.target.value)}
           >
-            <option value="new">Default Order</option>
+            <option value="new">Latest Added &amp; Edited First</option>
             <option value="high">Price: High to Low</option>
             <option value="low">Price: Low to High</option>
             <option value="stock">Stock: Low to High</option>

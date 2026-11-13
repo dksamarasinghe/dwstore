@@ -201,7 +201,29 @@ export default function App() {
                     displayImage: apiItem.displayImage || p.displayImage || rp?.displayImage || '',
                     imageUrls: apiItem.imageUrls || p.imageUrls || rp?.imageUrls || [],
                     galleryImages: apiItem.imageUrls || p.galleryImages || rp?.galleryImages || [],
+                    createdAt: apiItem.createdAt || p.createdAt,
+                    createdAtTimestamp: apiItem.createdAtTimestamp || p.createdAtTimestamp,
+                    updatedAt: apiItem.updatedAt || p.updatedAt,
+                    updatedAtTimestamp: apiItem.updatedAtTimestamp || p.updatedAtTimestamp,
                   };
+                })
+              );
+              setProducts((prev) =>
+                [...prev].sort((a: any, b: any) => {
+                  const timeA =
+                    a.updatedAtTimestamp ||
+                    (a.updatedAt ? new Date(a.updatedAt).getTime() : 0) ||
+                    a.createdAtTimestamp ||
+                    (a.createdAt ? new Date(a.createdAt).getTime() : 0) ||
+                    0;
+                  const timeB =
+                    b.updatedAtTimestamp ||
+                    (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) ||
+                    b.createdAtTimestamp ||
+                    (b.createdAt ? new Date(b.createdAt).getTime() : 0) ||
+                    0;
+                  if (timeA !== timeB) return timeB - timeA;
+                  return 0;
                 })
               );
               break;
@@ -961,9 +983,17 @@ export default function App() {
 
   // Products CRUD
   const handleAddProduct = async (newProd: ProductItem) => {
+    const withTimestamp: ProductItem = {
+      ...newProd,
+      createdAt: newProd.createdAt || new Date().toISOString(),
+      createdAtTimestamp: newProd.createdAtTimestamp || Date.now(),
+      updatedAt: new Date().toISOString(),
+      updatedAtTimestamp: Date.now(),
+    };
     setProducts((prev) => {
-      const next = [newProd, ...prev];
+      const next = [withTimestamp, ...prev];
       try {
+        localStorage.setItem('dwstore_admin_products_v5', JSON.stringify(next));
         localStorage.setItem('dwstore_admin_products_v4', JSON.stringify(next));
         localStorage.setItem('dwstore_admin_products_v2', JSON.stringify(next));
       } catch (e) {}
@@ -979,7 +1009,7 @@ export default function App() {
           const res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newProd),
+            body: JSON.stringify(withTimestamp),
           });
           if (res.ok) break;
         } catch {}
@@ -990,9 +1020,17 @@ export default function App() {
   };
 
   const handleUpdateProduct = async (updatedProduct: ProductItem) => {
+    const withTimestamp: ProductItem = {
+      ...updatedProduct,
+      updatedAt: new Date().toISOString(),
+      updatedAtTimestamp: Date.now(),
+    };
     setProducts((prev) => {
-      const next = prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p));
+      // Move newly edited product straight to the top of the list
+      const filtered = prev.filter((p) => p.id !== updatedProduct.id);
+      const next = [withTimestamp, ...filtered];
       try {
+        localStorage.setItem('dwstore_admin_products_v5', JSON.stringify(next));
         localStorage.setItem('dwstore_admin_products_v4', JSON.stringify(next));
         localStorage.setItem('dwstore_admin_products_v2', JSON.stringify(next));
       } catch (e) {}
@@ -1008,7 +1046,7 @@ export default function App() {
           const res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedProduct),
+            body: JSON.stringify(withTimestamp),
           });
           if (res.ok) break;
         } catch {}

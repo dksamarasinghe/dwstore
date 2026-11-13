@@ -1,22 +1,80 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ShoppingCart, Star } from 'lucide-react';
 import productsData from '@/data/products.json';
-import { formatPriceLKR } from '@/lib/catalog';
+import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
 import { resolveImageUrl } from '@/lib/image';
 
 export default function CategoryShowcase() {
-  // Real SmartWatches from CSV
-  const smartwatches = (productsData as any[])
-    .filter((p) => p.categorySlugs?.includes('smartwatches'))
-    .slice(0, 5);
+  const [allProducts, setAllProducts] = useState<any[]>(() => productsData as any[]);
 
-  // Real Power Banks & Charging from CSV
-  const powerbanks = (productsData as any[])
-    .filter((p) => p.categorySlugs?.includes('power-banks'))
-    .slice(0, 5);
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/api/products?t=' + Date.now(), { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setAllProducts(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Helper to sort products: In-stock first, then newest added & recently edited first
+  const sortProductsByNewestAndStock = (items: any[]) => {
+    return [...items].sort((a, b) => {
+      // 1. In-stock products first
+      const stockA = isProductInStock(a) ? 1 : 0;
+      const stockB = isProductInStock(b) ? 1 : 0;
+      if (stockA !== stockB) return stockB - stockA;
+
+      // 2. Latest updated or created timestamp
+      const timeA =
+        a.updatedAtTimestamp ||
+        (a.updatedAt ? new Date(a.updatedAt).getTime() : 0) ||
+        a.createdAtTimestamp ||
+        (a.createdAt ? new Date(a.createdAt).getTime() : 0) ||
+        0;
+      const timeB =
+        b.updatedAtTimestamp ||
+        (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) ||
+        b.createdAtTimestamp ||
+        (b.createdAt ? new Date(b.createdAt).getTime() : 0) ||
+        0;
+      if (timeA !== timeB) return timeB - timeA;
+
+      return 0;
+    });
+  };
+
+  // Real SmartWatches from CSV / Storefront API - newest & edited first
+  const smartwatches = useMemo(() => {
+    const list = allProducts.filter(
+      (p) =>
+        p.categorySlugs?.some((s: string) => s.toLowerCase().includes('smartwatch')) ||
+        (p.name && p.name.toLowerCase().includes('smartwatch')) ||
+        (p.name && p.name.toLowerCase().includes('smart watch'))
+    );
+    return sortProductsByNewestAndStock(list).slice(0, 5);
+  }, [allProducts]);
+
+  // Real Power Banks & Charging from CSV / Storefront API - newest & edited first
+  const powerbanks = useMemo(() => {
+    const list = allProducts.filter(
+      (p) =>
+        p.categorySlugs?.some((s: string) =>
+          s.toLowerCase().includes('power-bank') || s.toLowerCase().includes('powerbank')
+        ) ||
+        (p.name && p.name.toLowerCase().includes('power bank')) ||
+        (p.name && p.name.toLowerCase().includes('powerbank'))
+    );
+    return sortProductsByNewestAndStock(list).slice(0, 5);
+  }, [allProducts]);
 
   return (
     <section className="w-full bg-white py-8 border-t border-slate-100">

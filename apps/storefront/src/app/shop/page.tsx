@@ -271,11 +271,33 @@ function ShopContent() {
         return true;
       })
       .sort((a, b) => {
+        // 1. In stock products come first; out-of-stock products are pushed to the bottom
+        const stockA = isProductInStock(a) ? 1 : 0;
+        const stockB = isProductInStock(b) ? 1 : 0;
+        if (stockA !== stockB) return stockB - stockA;
+
+        // 2. Custom sorting options
         const priceA = a.salePriceMinor || a.regularPriceMinor || 0;
         const priceB = b.salePriceMinor || b.regularPriceMinor || 0;
         if (sortBy === 'price-asc') return priceA - priceB;
         if (sortBy === 'price-desc') return priceB - priceA;
         if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
+
+        // 3. Default ('featured' / 'latest'): Newly added and edited products first
+        const timeA =
+          a.updatedAtTimestamp ||
+          (a.updatedAt ? new Date(a.updatedAt).getTime() : 0) ||
+          a.createdAtTimestamp ||
+          (a.createdAt ? new Date(a.createdAt).getTime() : 0) ||
+          0;
+        const timeB =
+          b.updatedAtTimestamp ||
+          (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) ||
+          b.createdAtTimestamp ||
+          (b.createdAt ? new Date(b.createdAt).getTime() : 0) ||
+          0;
+        if (timeA !== timeB) return timeB - timeA;
+
         return 0;
       });
   }, [selectedCategory, selectedBrand, searchQuery, onlyDeals, stockFilter, minPrice, maxPrice, sortBy]);
@@ -723,9 +745,9 @@ function ShopContent() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-600 font-medium"
                 >
-                  <option value="featured">Featured / Default</option>
+                  <option value="featured">Latest &amp; In-Stock First</option>
                   <option value="price-asc">Price: Low to High</option>
                   <option value="price-desc">Price: High to Low</option>
                   <option value="name">Product Name (A-Z)</option>
