@@ -26,7 +26,7 @@ const ALLOWED_FOLDERS = [
 ];
 
 /**
- * Returns all candidate directories where public/media lives
+ * Returns all candidate directories where public/media lives across local dev & VPS deployments
  */
 function getMediaBaseDirs(): string[] {
   const candidates = [
@@ -41,11 +41,25 @@ function getMediaBaseDirs(): string[] {
 }
 
 /**
- * Returns candidate directory paths for a specific folder
+ * Returns all candidate directory paths for a specific folder, including legacy product image paths
  */
 function getTargetFolderDirs(folder: string): string[] {
   const safeFolder = ALLOWED_FOLDERS.includes(folder) ? folder : 'products';
-  return getMediaBaseDirs().map((base) => path.join(base, safeFolder));
+  const dirs = getMediaBaseDirs().map((base) => path.join(base, safeFolder));
+
+  // If products folder, also include products/images directories
+  if (safeFolder === 'products') {
+    dirs.push(
+      path.join(process.cwd(), 'apps', 'storefront', 'public', 'products', 'images'),
+      path.join(process.cwd(), 'public', 'products', 'images'),
+      '/var/www/dwstore/apps/storefront/public/products/images',
+      '/var/www/dwstore/public/products/images',
+      path.resolve(process.cwd(), '..', 'storefront', 'public', 'products', 'images'),
+      path.resolve(process.cwd(), '..', 'public', 'products', 'images')
+    );
+  }
+
+  return Array.from(new Set(dirs));
 }
 
 function formatBytes(bytes: number): string {
@@ -53,7 +67,57 @@ function formatBytes(bytes: number): string {
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  const safeIndex = Math.min(sizes.length - 1, Math.max(0, i));
+  return `${parseFloat((bytes / Math.pow(k, safeIndex)).toFixed(1))} ${sizes[safeIndex]}`;
+}
+
+export interface ScannedFileItem {
+  name: string;
+  url: string;
+  size: number;
+  sizeFormatted: string;
+  createdAt: Date;
+  folder: string;
+}
+
+/**
+ * Scans ALL existing candidate directories for a folder and merges files into a deduplicated list
+ */
+function scanFilesForFolder(folderName: string): ScannedFileItem[] {
+  const fileMap = new Map<string, ScannedFileItem>();
+  const dirs = getTargetFolderDirs(folderName);
+
+  for (const dir of dirs) {
+    if (!fs.existsSync(dir)) continue;
+    try {
+      const names = fs.readdirSync(dir);
+      for (const name of names) {
+        if (!/\.(jpg|jpeg|png|webp|svg|gif|avif|mp4)$/i.test(name)) continue;
+        const key = name.toLowerCase();
+        if (fileMap.has(key)) continue;
+
+        const filePath = path.join(dir, name);
+        let size = 0;
+        let createdAt = new Date();
+        try {
+          const stats = fs.statSync(filePath);
+          size = stats.size;
+          createdAt = stats.birthtime || stats.mtime;
+        } catch {}
+
+        fileMap.set(key, {
+          name,
+          url: `/media/${folderName}/${name}`,
+          size,
+          sizeFormatted: formatBytes(size),
+          createdAt,
+          folder: folderName,
+        });
+      }
+    } catch {}
+  }
+
+  return Array.from(fileMap.values());
 }
 
 export async function GET(req: NextRequest) {
@@ -63,34 +127,28 @@ export async function GET(req: NextRequest) {
     const action = searchParams.get('action');
     const search = (searchParams.get('search') || '').toLowerCase().trim();
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const limit = Math.min(200, Math.max(10, parseInt(searchParams.get('limit') || '48', 10)));
 
-    // Return overview of all folders if requested
-    if (action === 'folders' || folder === 'all') {
+    const limitParam = searchParams.get('limit');
+    let limit = 48;
+    if (limitParam === 'all' || limitParam === '-1') {
+      limit = 10000;
+    } else if (limitParam) {
+      const parsed = parseInt(limitParam, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        limit = Math.min(10000, parsed);
+      }
+    }
+
+    // Return overview of all folders if explicitly requested via action=folders
+    if (action === 'folders') {
       const folderStats: any[] = [];
       let totalFiles = 0;
       let totalBytes = 0;
 
       for (const f of ALLOWED_FOLDERS) {
-        const dirs = getTargetFolderDirs(f);
-        const existingDir = dirs.find((d) => fs.existsSync(d));
-        let count = 0;
-        let bytes = 0;
-
-        if (existingDir) {
-          try {
-            const names = fs.readdirSync(existingDir);
-            for (const name of names) {
-              if (/\.(jpg|jpeg|png|webp|svg|gif|avif|mp4)$/i.test(name)) {
-                count++;
-                try {
-                  const s = fs.statSync(path.join(existingDir, name));
-                  bytes += s.size;
-                } catch {}
-              }
-            }
-          } catch {}
-        }
+        const fileList = scanFilesForFolder(f);
+        const count = fileList.length;
+        const bytes = fileList.reduce((acc, curr) => acc + curr.size, 0);
 
         totalFiles += count;
         totalBytes += bytes;
@@ -101,6 +159,14 @@ export async function GET(req: NextRequest) {
           sizeFormatted: formatBytes(bytes),
         });
       }
+
+      // Prepend 'all' folder stat for the All Media Files sidebar item
+      folderStats.unshift({
+        name: 'all',
+        count: totalFiles,
+        sizeBytes: totalBytes,
+        sizeFormatted: formatBytes(totalBytes),
+      });
 
       return NextResponse.json(
         {
@@ -117,78 +183,37 @@ export async function GET(req: NextRequest) {
     }
 
     // List files: either from 'all' folders or a specific folder
-    let files: any[] = [];
+    let files: ScannedFileItem[] = [];
     let targetFolder = folder;
 
     if (folder === 'all') {
       targetFolder = 'all';
+      const fileMap = new Map<string, ScannedFileItem>();
       for (const f of ALLOWED_FOLDERS) {
-        const dirs = getTargetFolderDirs(f);
-        const existingDir = dirs.find((d) => fs.existsSync(d));
-        if (existingDir) {
-          try {
-            const fileNames = fs.readdirSync(existingDir);
-            for (const name of fileNames) {
-              if (/\.(jpg|jpeg|png|webp|svg|gif|avif|mp4)$/i.test(name)) {
-                const filePath = path.join(existingDir, name);
-                let size = 0;
-                let createdAt = new Date();
-                try {
-                  const stats = fs.statSync(filePath);
-                  size = stats.size;
-                  createdAt = stats.birthtime || stats.mtime;
-                } catch {}
-                files.push({
-                  name,
-                  url: `/media/${f}/${name}`,
-                  size,
-                  sizeFormatted: formatBytes(size),
-                  createdAt,
-                  folder: f,
-                });
-              }
-            }
-          } catch {}
+        const folderFiles = scanFilesForFolder(f);
+        for (const item of folderFiles) {
+          const key = `${item.folder}/${item.name}`.toLowerCase();
+          if (!fileMap.has(key)) {
+            fileMap.set(key, item);
+          }
         }
       }
+      files = Array.from(fileMap.values());
     } else {
       targetFolder = ALLOWED_FOLDERS.includes(folder) ? folder : 'products';
-      const dirs = getTargetFolderDirs(targetFolder);
-      const existingDir = dirs.find((d) => fs.existsSync(d));
-
-      if (existingDir) {
-        try {
-          const fileNames = fs.readdirSync(existingDir);
-          files = fileNames
-            .filter((name) => /\.(jpg|jpeg|png|webp|svg|gif|avif|mp4)$/i.test(name))
-            .map((name) => {
-              const filePath = path.join(existingDir, name);
-              let size = 0;
-              let createdAt = new Date();
-              try {
-                const stats = fs.statSync(filePath);
-                size = stats.size;
-                createdAt = stats.birthtime || stats.mtime;
-              } catch {}
-              return {
-                name,
-                url: `/media/${targetFolder}/${name}`,
-                size,
-                sizeFormatted: formatBytes(size),
-                createdAt,
-                folder: targetFolder,
-              };
-            });
-        } catch {}
-      }
+      files = scanFilesForFolder(targetFolder);
     }
 
     if (search) {
       files = files.filter((f) => f.name.toLowerCase().includes(search));
     }
 
-    // Sort newest first
-    files.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Sort newest first (or by filename if timestamps match)
+    files.sort((a, b) => {
+      const timeDiff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (timeDiff !== 0) return timeDiff;
+      return a.name.localeCompare(b.name);
+    });
 
     const total = files.length;
     const totalPages = Math.ceil(total / limit) || 1;
@@ -202,6 +227,7 @@ export async function GET(req: NextRequest) {
         total,
         page,
         totalPages,
+        limit,
       },
       { headers: CORS_HEADERS }
     );

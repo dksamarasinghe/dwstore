@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Folder,
   FolderOpen,
@@ -22,7 +22,11 @@ import {
   LayoutTemplate,
   FileText,
   AlertCircle,
-  Sparkles
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react';
 import { getStorefrontUrl } from '../../config';
 import { resolveImageUrl } from '../../utils/image';
@@ -93,6 +97,10 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
     totalSizeFormatted: '0 B',
   });
   const [files, setFiles] = useState<MediaFileItem[]>([]);
+  const [totalFiles, setTotalFiles] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(48);
+  const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState('');
@@ -104,10 +112,13 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch folder statistics overview
-  const fetchFoldersOverview = async () => {
+  // Fetch folder statistics overview across all folders
+  const fetchFoldersOverview = useCallback(async () => {
     try {
-      const endpoints = ['/api/upload?action=folders', `${getStorefrontUrl()}/api/upload?action=folders`];
+      const endpoints = [
+        `${getStorefrontUrl()}/api/upload?action=folders&t=${Date.now()}`,
+        `/api/upload?action=folders&t=${Date.now()}`,
+      ];
       for (const ep of endpoints) {
         try {
           const res = await fetch(ep, { cache: 'no-store' });
@@ -129,44 +140,97 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
     } catch (e) {
       console.warn('Could not fetch folder overview:', e);
     }
-  };
-
-  // Fetch files inside the currently selected folder
-  const fetchFolderFiles = async (folderName: string) => {
-    setLoading(true);
-    try {
-      const endpoints = [
-        `/api/upload?folder=${encodeURIComponent(folderName)}&limit=150`,
-        `${getStorefrontUrl()}/api/upload?folder=${encodeURIComponent(folderName)}&limit=150`,
-      ];
-      for (const ep of endpoints) {
-        try {
-          const res = await fetch(ep, { cache: 'no-store' });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.success && Array.isArray(data.files)) {
-              setFiles(data.files);
-              setLoading(false);
-              return;
-            }
-          }
-        } catch {}
-      }
-      setFiles([]);
-    } catch (e) {
-      console.error('Error fetching files:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchFoldersOverview();
   }, []);
 
+  // Fetch files inside the currently selected folder with pagination and search
+  const fetchFolderFiles = useCallback(
+    async (folderName: string, page = currentPage, limit = pageSize, query = search) => {
+      setLoading(true);
+      try {
+        const queryParam = query.trim() ? `&search=${encodeURIComponent(query.trim())}` : '';
+        const limitParam = limit === -1 ? 'all' : limit;
+        const endpoints = [
+          `${getStorefrontUrl()}/api/upload?folder=${encodeURIComponent(folderName)}&page=${page}&limit=${limitParam}${queryParam}&t=${Date.now()}`,
+          `/api/upload?folder=${encodeURIComponent(folderName)}&page=${page}&limit=${limitParam}${queryParam}&t=${Date.now()}`,
+        ];
+
+        for (const ep of endpoints) {
+          try {
+            const res = await fetch(ep, { cache: 'no-store' });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.success && Array.isArray(data.files)) {
+                setFiles(data.files);
+                const count = typeof data.total === 'number' ? data.total : data.files.length;
+                setTotalFiles(count);
+                setTotalPages(data.totalPages || Math.ceil(count / (limit === -1 ? count || 1 : limit)) || 1);
+
+                // Dynamically update the count in folders stat for instant reactivity
+                setFolders((prev) => {
+                  const existingIdx = prev.findIndex((f) => f.name === folderName);
+                  if (existingIdx !== -1) {
+                    const next = [...prev];
+                    next[existingIdx] = { ...next[existingIdx], count };
+                    return next;
+                  }
+                  return [...prev, { name: folderName, count, sizeBytes: 0, sizeFormatted: '' }];
+                });
+
+                setLoading(false);
+                return;
+              }
+            }
+          } catch {}
+        }
+        setFiles([]);
+        setTotalFiles(0);
+        setTotalPages(1);
+      } catch (e) {
+        console.error('Error fetching files:', e);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [currentPage, pageSize, search]
+  );
+
+  // Initial load
   useEffect(() => {
-    fetchFolderFiles(selectedFolder);
-  }, [selectedFolder]);
+    fetchFoldersOverview();
+    fetchFolderFiles(selectedFolder, 1, pageSize, '');
+  }, []);
+
+  // When folder changes
+  const handleSelectFolder = (folderKey: string) => {
+    if (folderKey === selectedFolder) return;
+    setSelectedFolder(folderKey);
+    setCurrentPage(1);
+    setSearch('');
+    fetchFolderFiles(folderKey, 1, pageSize, '');
+  };
+
+  // When page changes
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
+    setCurrentPage(newPage);
+    fetchFolderFiles(selectedFolder, newPage, pageSize, search);
+  };
+
+  // When page size changes
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+    fetchFolderFiles(selectedFolder, 1, newSize, search);
+  };
+
+  // Search input handler with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+      fetchFolderFiles(selectedFolder, 1, pageSize, search);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // Handle image upload from PC
   const handleUploadFile = async (file: File) => {
@@ -175,9 +239,13 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('folder', selectedFolder);
+      const uploadTarget = selectedFolder === 'all' ? 'products' : selectedFolder;
+      fd.append('folder', uploadTarget);
 
-      const endpoints = ['/api/upload', `${getStorefrontUrl()}/api/upload`];
+      const endpoints = [
+        `${getStorefrontUrl()}/api/upload`,
+        '/api/upload',
+      ];
       let uploadedData: any = null;
 
       for (const ep of endpoints) {
@@ -194,11 +262,11 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
       }
 
       if (uploadedData) {
-        showNotification(`Successfully uploaded "${file.name}" to ${selectedFolder}!`);
-        await fetchFolderFiles(selectedFolder);
+        showNotification(`Successfully uploaded "${file.name}" to ${uploadTarget}!`);
+        await fetchFolderFiles(selectedFolder, 1, pageSize, search);
         await fetchFoldersOverview();
       } else {
-        showNotification('Failed to upload image. Please check file size.');
+        showNotification('Failed to upload image. Please check file format and size.');
       }
     } catch (e: any) {
       showNotification(`Upload error: ${e.message}`);
@@ -210,7 +278,10 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
   // Handle image delete
   const handleDeleteFile = async (item: MediaFileItem) => {
     try {
-      const endpoints = ['/api/upload', `${getStorefrontUrl()}/api/upload`];
+      const endpoints = [
+        `${getStorefrontUrl()}/api/upload`,
+        '/api/upload',
+      ];
       let deleted = false;
 
       for (const ep of endpoints) {
@@ -234,7 +305,7 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
         showNotification(`Deleted "${item.name}" successfully.`);
         setDeleteConfirmItem(null);
         if (previewItem?.name === item.name) setPreviewItem(null);
-        await fetchFolderFiles(selectedFolder);
+        await fetchFolderFiles(selectedFolder, currentPage, pageSize, search);
         await fetchFoldersOverview();
       } else {
         showNotification('Could not delete file from server.');
@@ -251,13 +322,19 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
     setTimeout(() => setCopiedUrl(null), 2500);
   };
 
-  const filteredFiles = useMemo(() => {
-    if (!search.trim()) return files;
-    const q = search.toLowerCase();
-    return files.filter((f) => f.name.toLowerCase().includes(q));
-  }, [files, search]);
-
   const currentFolderStat = folders.find((f) => f.name === selectedFolder);
+  const activeCount = totalFiles > 0 ? totalFiles : (currentFolderStat?.count || files.length);
+
+  // Compute calculated total across all known folders if overallStats is still zero
+  const calculatedTotalMedia = useMemo(() => {
+    if (overallStats.totalFiles > 0) return overallStats.totalFiles;
+    const allStat = folders.find((f) => f.name === 'all');
+    if (allStat && allStat.count > 0) return allStat.count;
+    const sum = folders
+      .filter((f) => f.name !== 'all')
+      .reduce((acc, curr) => acc + (curr.count || 0), 0);
+    return sum > 0 ? sum : totalFiles;
+  }, [overallStats, folders, totalFiles]);
 
   return (
     <div className="content">
@@ -287,7 +364,7 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
             style={{ borderRadius: '10px', fontSize: '13px' }}
             onClick={() => {
               fetchFoldersOverview();
-              fetchFolderFiles(selectedFolder);
+              fetchFolderFiles(selectedFolder, currentPage, pageSize, search);
               showNotification('Refreshed media files.');
             }}
             disabled={loading}
@@ -334,7 +411,7 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
               <small className="text-muted d-block fw-semibold" style={{ fontSize: '11px' }}>
                 TOTAL STORE MEDIA
               </small>
-              <b className="fs-5 text-body">{overallStats.totalFiles.toLocaleString()} Items</b>
+              <b className="fs-5 text-body">{calculatedTotalMedia.toLocaleString()} Items</b>
             </div>
           </div>
         </div>
@@ -351,7 +428,7 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
               <small className="text-muted d-block fw-semibold" style={{ fontSize: '11px' }}>
                 DISK USAGE
               </small>
-              <b className="fs-5 text-body">{overallStats.totalSizeFormatted}</b>
+              <b className="fs-5 text-body">{overallStats.totalSizeFormatted || 'Available'}</b>
             </div>
           </div>
         </div>
@@ -369,7 +446,7 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
                 SELECTED FOLDER
               </small>
               <b className="fs-5 text-body">
-                {currentFolderStat ? currentFolderStat.count : files.length} Files
+                {activeCount.toLocaleString()} Files
               </b>
             </div>
           </div>
@@ -410,6 +487,16 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
                 const isSelected = selectedFolder === folderKey;
                 const IconComponent = conf.icon;
 
+                // Priority: stat.count -> if currently selected, use totalFiles -> fallback to 0
+                let countDisplay = 0;
+                if (stat && typeof stat.count === 'number') {
+                  countDisplay = stat.count;
+                } else if (isSelected && totalFiles > 0) {
+                  countDisplay = totalFiles;
+                } else if (folderKey === 'all') {
+                  countDisplay = calculatedTotalMedia;
+                }
+
                 return (
                   <button
                     key={folderKey}
@@ -420,7 +507,7 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
                         : 'bg-transparent text-body hover-bg'
                     }`}
                     style={{ cursor: 'pointer' }}
-                    onClick={() => setSelectedFolder(folderKey)}
+                    onClick={() => handleSelectFolder(folderKey)}
                   >
                     <div className="d-flex align-items-center gap-2.5" style={{ minWidth: 0 }}>
                       <IconComponent
@@ -446,7 +533,7 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
                       }`}
                       style={{ fontSize: '11px' }}
                     >
-                      {stat ? stat.count : 0}
+                      {countDisplay.toLocaleString()}
                     </span>
                   </button>
                 );
@@ -477,7 +564,7 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
                 Drop image here to upload
               </b>
               <small className="text-muted d-block" style={{ fontSize: '10px' }}>
-                Directly saves to /media/{selectedFolder}/
+                Directly saves to /media/{selectedFolder === 'all' ? 'products' : selectedFolder}/
               </small>
             </div>
           </div>
@@ -497,15 +584,25 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
                   type="text"
                   className="form-control ps-5"
                   style={{ borderRadius: '10px', fontSize: '13px', height: '38px' }}
-                  placeholder={`Search ${filteredFiles.length} files in "${FOLDER_CONFIGS[selectedFolder]?.label || selectedFolder}"...`}
+                  placeholder={`Search in "${FOLDER_CONFIGS[selectedFolder]?.label || selectedFolder}" (${activeCount.toLocaleString()} files)...`}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
+                {search && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-link position-absolute text-muted p-0"
+                    style={{ top: '8px', right: '12px' }}
+                    onClick={() => setSearch('')}
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </div>
 
               <div className="d-flex align-items-center gap-2 flex-shrink-0">
                 <span className="text-muted fw-semibold" style={{ fontSize: '12px' }}>
-                  {filteredFiles.length} file{filteredFiles.length === 1 ? '' : 's'}
+                  {totalFiles.toLocaleString()} file{totalFiles === 1 ? '' : 's'}
                 </span>
 
                 <div className="btn-group btn-group-sm" role="group">
@@ -536,7 +633,7 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
               <RefreshCw size={28} className="spin mb-2 text-primary" />
               <p className="m-0 fw-semibold">Loading media from VPS storage...</p>
             </div>
-          ) : filteredFiles.length === 0 ? (
+          ) : files.length === 0 ? (
             <div className="card-x p-5 text-center text-muted">
               <FolderOpen size={48} className="mb-2 opacity-40 text-muted" />
               <h5 className="text-body fw-bold">No images found in this folder</h5>
@@ -554,10 +651,10 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
           ) : viewMode === 'grid' ? (
             /* Grid View */
             <div className="row g-3">
-              {filteredFiles.map((file) => {
+              {files.map((file) => {
                 const resolved = resolveImageUrl(file.url);
                 return (
-                  <div key={file.name} className="col-6 col-sm-4 col-md-3 col-xl-2">
+                  <div key={`${file.folder}-${file.name}`} className="col-6 col-sm-4 col-md-3 col-xl-2">
                     <div
                       className="card-x h-100 p-2 position-relative overflow-hidden group shadow-xs hover-shadow"
                       style={{ transition: 'all 0.2s', borderRadius: '12px' }}
@@ -591,7 +688,7 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
                         </strong>
                         <div className="d-flex align-items-center justify-content-between mt-1">
                           <small className="text-muted" style={{ fontSize: '10px' }}>
-                            {file.sizeFormatted}
+                            {file.sizeFormatted || 'File'}
                           </small>
                           <div className="d-flex align-items-center gap-1">
                             <button
@@ -643,8 +740,8 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
                     </tr>
                   </thead>
                   <tbody style={{ fontSize: '12px' }}>
-                    {filteredFiles.map((file) => (
-                      <tr key={file.name}>
+                    {files.map((file) => (
+                      <tr key={`${file.folder}-${file.name}`}>
                         <td>
                           <div
                             className="rounded-2 overflow-hidden bg-light d-flex align-items-center justify-content-center"
@@ -689,6 +786,88 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ showNotifica
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* Pagination Controls Bar */}
+          {totalFiles > 0 && (
+            <div className="card-x p-3 mt-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+              <div className="text-muted" style={{ fontSize: '12px' }}>
+                Showing{' '}
+                <b className="text-body">
+                  {Math.min((currentPage - 1) * (pageSize === -1 ? totalFiles : pageSize) + 1, totalFiles)}
+                </b>{' '}
+                to{' '}
+                <b className="text-body">
+                  {pageSize === -1 ? totalFiles : Math.min(currentPage * pageSize, totalFiles)}
+                </b>{' '}
+                of <b className="text-body">{totalFiles.toLocaleString()}</b> media files
+              </div>
+
+              {/* Navigation buttons */}
+              {pageSize !== -1 && totalPages > 1 && (
+                <div className="d-flex align-items-center gap-1">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary px-2"
+                    disabled={currentPage <= 1 || loading}
+                    onClick={() => handlePageChange(1)}
+                    title="First Page"
+                  >
+                    <ChevronsLeft size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary px-2"
+                    disabled={currentPage <= 1 || loading}
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    title="Previous Page"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+
+                  <span className="px-2 text-body fw-bold" style={{ fontSize: '12px' }}>
+                    Page {currentPage} of {totalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary px-2"
+                    disabled={currentPage >= totalPages || loading}
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    title="Next Page"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary px-2"
+                    disabled={currentPage >= totalPages || loading}
+                    onClick={() => handlePageChange(totalPages)}
+                    title="Last Page"
+                  >
+                    <ChevronsRight size={14} />
+                  </button>
+                </div>
+              )}
+
+              {/* Items Per Page Selector */}
+              <div className="d-flex align-items-center gap-2">
+                <small className="text-muted" style={{ fontSize: '11px' }}>Per page:</small>
+                <select
+                  className="form-select form-select-sm"
+                  style={{ width: 'auto', fontSize: '12px', borderRadius: '8px' }}
+                  value={pageSize}
+                  onChange={(e) => handlePageSizeChange(parseInt(e.target.value, 10))}
+                >
+                  <option value={24}>24</option>
+                  <option value={48}>48</option>
+                  <option value={96}>96</option>
+                  <option value={200}>200</option>
+                  <option value={500}>500</option>
+                  <option value={-1}>All ({totalFiles > 0 ? totalFiles : 'All'})</option>
+                </select>
               </div>
             </div>
           )}
