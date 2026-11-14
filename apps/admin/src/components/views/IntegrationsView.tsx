@@ -128,7 +128,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
   });
   const [isLoggingOutWhatsApp, setIsLoggingOutWhatsApp] = useState(false);
 
-  // Email Integration State (Resend API)
+  // Email & WhatsApp Integration State (Resend API & Alerts)
   const [emailConfig, setEmailConfig] = useState({
     enabled: true,
     resendApiKey: '',
@@ -136,11 +136,15 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
     adminEmail: 'support@dwstore.lk',
     customerEmailNotifications: true,
     adminEmailNotifications: true,
+    ownerWhatsApp: '0756693358',
+    ownerWhatsAppNotifications: true,
+    customerWhatsAppNotifications: true,
     hasApiKey: false,
   });
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [isTestingEmail, setIsTestingEmail] = useState(false);
+  const [isTestingWhatsApp, setIsTestingWhatsApp] = useState(false);
   const [testEmailAddress, setTestEmailAddress] = useState('support@dwstore.lk');
   const [showResendKey, setShowResendKey] = useState(false);
 
@@ -176,13 +180,13 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
       });
       const data = await res.json();
       if (data?.success) {
-        showNotification('Resend Email configuration saved successfully!');
+        showNotification('Order notification settings saved successfully!');
         setEmailModalOpen(false);
       } else {
-        showNotification('Failed to save email settings: ' + (data?.error || 'Unknown error'));
+        showNotification('Failed to save settings: ' + (data?.error || 'Unknown error'));
       }
     } catch (err: any) {
-      showNotification('Error saving email settings: ' + err.message);
+      showNotification('Error saving settings: ' + err.message);
     } finally {
       setIsSavingEmail(false);
     }
@@ -215,6 +219,30 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
       showNotification('Error sending test email: ' + err.message);
     } finally {
       setIsTestingEmail(false);
+    }
+  };
+
+  const handleTestWhatsApp = async () => {
+    setIsTestingWhatsApp(true);
+    try {
+      const res = await fetch(`${getStorefrontUrl()}/api/integrations/email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'test-whatsapp',
+          phone: emailConfig.ownerWhatsApp || '0756693358',
+        }),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        showNotification(data.message || 'Test WhatsApp message sent successfully!');
+      } else {
+        showNotification('WhatsApp test failed: ' + (data?.error || 'Make sure WhatsApp Gateway is running.'));
+      }
+    } catch (err: any) {
+      showNotification('Error sending WhatsApp test: ' + err.message);
+    } finally {
+      setIsTestingWhatsApp(false);
     }
   };
 
@@ -1733,7 +1761,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
               {/* Sender Email */}
               <div>
                 <label className="d-block mb-1 text-muted" style={{ fontSize: '12.5px', fontWeight: 600 }}>
-                  Sender Display Name &amp; Email
+                  Sender Display Name &amp; Email (Orders outgoing)
                 </label>
                 <input
                   type="text"
@@ -1744,31 +1772,49 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                   onChange={(e) => setEmailConfig({ ...emailConfig, fromEmail: e.target.value })}
                 />
                 <small className="text-muted d-block mt-1">
-                  Must use your verified domain address (e.g. <code>DWstore.lk &lt;orders@dwstore.lk&gt;</code>).
+                  Sent via your verified domain (e.g. <code>DWstore.lk &lt;orders@dwstore.lk&gt;</code>). Customers see this as sender.
                 </small>
               </div>
 
-              {/* Admin Notification Email */}
+              {/* Admin / Owner Notification Email */}
               <div>
                 <label className="d-block mb-1 text-muted" style={{ fontSize: '12.5px', fontWeight: 600 }}>
-                  Admin Notification Email
+                  Store Owner Notification Email (e.g. Your personal Gmail)
                 </label>
                 <input
                   type="email"
-                  placeholder="support@dwstore.lk"
+                  placeholder="e.g. yourname@gmail.com"
                   className="w-100 p-2 rounded-2"
                   style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '13px' }}
                   value={emailConfig.adminEmail}
                   onChange={(e) => setEmailConfig({ ...emailConfig, adminEmail: e.target.value })}
                 />
                 <small className="text-muted d-block mt-1">
-                  Receives an immediate notification with full customer &amp; item details whenever an order is placed.
+                  💡 <b>No domain inbox needed!</b> Enter your personal Gmail here. Whenever an order is placed on the website, you will receive an instant email alert directly on your phone!
+                </small>
+              </div>
+
+              {/* Owner WhatsApp Number */}
+              <div>
+                <label className="d-block mb-1 text-muted" style={{ fontSize: '12.5px', fontWeight: 600 }}>
+                  Store Owner WhatsApp Phone Number (for Instant WhatsApp Alerts)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 0756693358 or +94 75 669 3358"
+                  className="w-100 p-2 rounded-2"
+                  style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '13px' }}
+                  value={emailConfig.ownerWhatsApp || ''}
+                  onChange={(e) => setEmailConfig({ ...emailConfig, ownerWhatsApp: e.target.value })}
+                />
+                <small className="text-muted d-block mt-1">
+                  Whenever an order is placed, an instant WhatsApp message with customer name, items and delivery address is sent to this number.
                 </small>
               </div>
 
               {/* Notification Toggles */}
               <div className="p-3 rounded-2 border border-border" style={{ background: 'var(--hover)' }}>
-                <b className="d-block mb-2" style={{ fontSize: '13px' }}>Automatic Email Triggers:</b>
+                <b className="d-block mb-2" style={{ fontSize: '13px' }}>Automatic Order Alert Triggers:</b>
                 <div className="d-flex flex-column gap-2" style={{ fontSize: '13px' }}>
                   <label className="d-flex align-items-center gap-2 cursor-pointer">
                     <input
@@ -1777,7 +1823,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                       onChange={(e) => setEmailConfig({ ...emailConfig, customerEmailNotifications: e.target.checked })}
                       style={{ width: '16px', height: '16px' }}
                     />
-                    <span>Send instant Order Confirmation receipt to Customer</span>
+                    <span>📧 Send instant Order Confirmation receipt to Customer via Email</span>
                   </label>
                   <label className="d-flex align-items-center gap-2 cursor-pointer">
                     <input
@@ -1786,33 +1832,74 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                       onChange={(e) => setEmailConfig({ ...emailConfig, adminEmailNotifications: e.target.checked })}
                       style={{ width: '16px', height: '16px' }}
                     />
-                    <span>Send instant New Order Alert to Admin</span>
+                    <span>📧 Send instant New Order Alert to Store Owner via Email (Gmail)</span>
+                  </label>
+                  <label className="d-flex align-items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={emailConfig.ownerWhatsAppNotifications}
+                      onChange={(e) => setEmailConfig({ ...emailConfig, ownerWhatsAppNotifications: e.target.checked })}
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <span>💬 Send instant New Order Alert to Store Owner via WhatsApp</span>
+                  </label>
+                  <label className="d-flex align-items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={emailConfig.customerWhatsAppNotifications}
+                      onChange={(e) => setEmailConfig({ ...emailConfig, customerWhatsAppNotifications: e.target.checked })}
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <span>💬 Send instant Order Confirmation to Customer via WhatsApp</span>
                   </label>
                 </div>
               </div>
 
               {/* Test Email Section */}
               <div className="p-3 rounded-2 border border-border" style={{ background: 'var(--hover)' }}>
-                <b className="d-block mb-2" style={{ fontSize: '13px' }}>Dispatch Test Email:</b>
-                <div className="d-flex gap-2">
-                  <input
-                    type="email"
-                    placeholder="Recipient email (e.g. your personal email)"
-                    className="flex-grow-1 p-2 rounded-2"
-                    style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12.5px' }}
-                    value={testEmailAddress}
-                    onChange={(e) => setTestEmailAddress(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="btn-soft d-flex align-items-center gap-1.5"
-                    disabled={isTestingEmail}
-                    onClick={handleTestEmail}
-                    style={{ whiteSpace: 'nowrap' }}
-                  >
-                    <Send size={14} className={isTestingEmail ? 'animate-spin' : ''} />
-                    {isTestingEmail ? 'Sending...' : 'Send Test'}
-                  </button>
+                <b className="d-block mb-2" style={{ fontSize: '13px' }}>Test Notifications:</b>
+                <div className="d-flex flex-column gap-2">
+                  <div className="d-flex gap-2">
+                    <input
+                      type="email"
+                      placeholder="Recipient email (e.g. your personal Gmail)"
+                      className="flex-grow-1 p-2 rounded-2"
+                      style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12.5px' }}
+                      value={testEmailAddress}
+                      onChange={(e) => setTestEmailAddress(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="btn-soft d-flex align-items-center gap-1.5"
+                      disabled={isTestingEmail}
+                      onClick={handleTestEmail}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      <Send size={14} className={isTestingEmail ? 'animate-spin' : ''} />
+                      {isTestingEmail ? 'Sending...' : 'Send Test Email'}
+                    </button>
+                  </div>
+
+                  <div className="d-flex gap-2 pt-2 border-top border-border">
+                    <input
+                      type="text"
+                      placeholder="WhatsApp phone (e.g. 0756693358)"
+                      className="flex-grow-1 p-2 rounded-2"
+                      style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12.5px' }}
+                      value={emailConfig.ownerWhatsApp || ''}
+                      onChange={(e) => setEmailConfig({ ...emailConfig, ownerWhatsApp: e.target.value })}
+                    />
+                    <button
+                      type="button"
+                      className="btn-soft d-flex align-items-center gap-1.5"
+                      disabled={isTestingWhatsApp}
+                      onClick={handleTestWhatsApp}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      <MessageCircle size={14} className={isTestingWhatsApp ? 'animate-spin' : ''} />
+                      {isTestingWhatsApp ? 'Sending...' : 'Send Test WhatsApp'}
+                    </button>
+                  </div>
                 </div>
               </div>
 

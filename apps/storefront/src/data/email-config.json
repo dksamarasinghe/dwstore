@@ -4,5 +4,8 @@
   "fromEmail": "DWstore.lk <orders@dwstore.lk>",
   "adminEmail": "support@dwstore.lk",
   "customerEmailNotifications": true,
-  "adminEmailNotifications": true
+  "adminEmailNotifications": true,
+  "ownerWhatsApp": "0756693358",
+  "ownerWhatsAppNotifications": true,
+  "customerWhatsAppNotifications": true
 }

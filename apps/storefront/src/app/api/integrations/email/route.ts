@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readDataJson, writeDataJson } from '@/lib/data-paths';
+import { dispatchSingleWhatsAppMessage } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,11 +22,15 @@ export async function GET() {
     adminEmail: 'support@dwstore.lk',
     customerEmailNotifications: true,
     adminEmailNotifications: true,
+    ownerWhatsApp: '0756693358',
+    ownerWhatsAppNotifications: true,
+    customerWhatsAppNotifications: true,
   });
 
   const resendApiKey = fileConfig?.resendApiKey || process.env.RESEND_API_KEY || '';
   const fromEmail = fileConfig?.fromEmail || process.env.RESEND_FROM_EMAIL || 'DWstore.lk <orders@dwstore.lk>';
   const adminEmail = fileConfig?.adminEmail || process.env.ADMIN_NOTIFICATION_EMAIL || 'support@dwstore.lk';
+  const ownerWhatsApp = fileConfig?.ownerWhatsApp || process.env.OWNER_WHATSAPP_PHONE || '0756693358';
 
   return NextResponse.json(
     {
@@ -37,6 +42,9 @@ export async function GET() {
         adminEmail,
         customerEmailNotifications: fileConfig?.customerEmailNotifications !== false,
         adminEmailNotifications: fileConfig?.adminEmailNotifications !== false,
+        ownerWhatsApp,
+        ownerWhatsAppNotifications: fileConfig?.ownerWhatsAppNotifications !== false,
+        customerWhatsAppNotifications: fileConfig?.customerWhatsAppNotifications !== false,
         hasApiKey: Boolean(resendApiKey && resendApiKey.startsWith('re_')),
       },
     },
@@ -78,9 +86,9 @@ export async function POST(req: NextRequest) {
               <div style="background: #f8fafc; border-radius: 8px; padding: 12px; font-size: 13px; color: #334155;">
                 <p style="margin: 4px 0;"><strong>Sender:</strong> ${fromEmail}</p>
                 <p style="margin: 4px 0;"><strong>Recipient:</strong> ${targetEmail}</p>
-                <p style="margin: 4px 0;"><strong>Status:</strong> Ready to deliver customer order receipts and admin alerts!</p>
+                <p style="margin: 4px 0;"><strong>Status:</strong> Ready to deliver customer order receipts and owner alerts!</p>
               </div>
-              <p style="font-size: 12px; color: #64748b; margin-top: 16px;">Sent from DWstore.lk Admin Integration Engine.</p>
+              <p style="font-size: 12px; color: #64748b; margin-top: 16px;">Sent from DWstore.lk Notification Engine.</p>
             </div>
           `,
         }),
@@ -100,7 +108,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Save email configuration
+    // 2. Send test WhatsApp message action
+    if (body.action === 'test-whatsapp') {
+      const targetPhone = body.phone || body.ownerWhatsApp || '0756693358';
+      const testMsg = `🔔 *DWstore.lk WhatsApp Notification Test!*\nThis is a test notification confirming that your WhatsApp order alert system is working. When a customer places an order on DWstore.lk, you will receive full details immediately!`;
+      const result = await dispatchSingleWhatsAppMessage(targetPhone, testMsg, body);
+      if (result.success) {
+        return NextResponse.json(
+          { success: true, message: `Test WhatsApp message sent successfully to ${targetPhone}!` },
+          { headers: CORS_HEADERS }
+        );
+      } else {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              result.error ||
+              'Failed to reach WhatsApp Gateway. Make sure the WhatsApp Gateway is running (or QR code is linked).',
+          },
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+    }
+
+    // 3. Save notification configuration
     const current = readDataJson<any>('email-config.json', {});
     const updated = {
       ...current,
@@ -110,17 +141,20 @@ export async function POST(req: NextRequest) {
       adminEmail: body.adminEmail ? body.adminEmail.trim() : (current.adminEmail || 'support@dwstore.lk'),
       customerEmailNotifications: body.customerEmailNotifications !== false,
       adminEmailNotifications: body.adminEmailNotifications !== false,
+      ownerWhatsApp: body.ownerWhatsApp !== undefined ? body.ownerWhatsApp.trim() : (current.ownerWhatsApp || '0756693358'),
+      ownerWhatsAppNotifications: body.ownerWhatsAppNotifications !== false,
+      customerWhatsAppNotifications: body.customerWhatsAppNotifications !== false,
     };
 
     writeDataJson('email-config.json', updated);
 
     return NextResponse.json(
-      { success: true, message: 'Email settings saved successfully!', config: updated },
+      { success: true, message: 'Notification settings saved successfully!', config: updated },
       { headers: CORS_HEADERS }
     );
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err.message || 'Failed to update email settings' },
+      { success: false, error: err.message || 'Failed to update notification settings' },
       { status: 500, headers: CORS_HEADERS }
     );
   }
