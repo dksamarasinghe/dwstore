@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "resendApiKey": "",
+  "fromEmail": "DWstore.lk <orders@dwstore.lk>",
+  "adminEmail": "support@dwstore.lk",
+  "customerEmailNotifications": true,
+  "adminEmailNotifications": true
+}

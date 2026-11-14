@@ -1,4 +1,5 @@
 import { formatPriceLKR } from '@/lib/catalog';
+import { readDataJson } from '@/lib/data-paths';
 
 interface OrderItem {
   id: string | number;
@@ -272,7 +273,7 @@ function generateAdminEmailHtml(order: OrderData): string {
     </table>
 
     <div style="margin-top: 24px; text-align: center;">
-      <a href="http://localhost:3001" style="background: #2563eb; color: #ffffff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 13px;">
+      <a href="https://dwstore.lk/sudo-sudo/admin" style="background: #2563eb; color: #ffffff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block;">
         Open in DWstore Admin Dashboard
       </a>
     </div>
@@ -285,19 +286,22 @@ function generateAdminEmailHtml(order: OrderData): string {
 /**
  * Dispatch emails via Resend REST API
  */
-export async function sendOrderEmails(order: OrderData) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'support@dwstore.lk';
-  // Free tier default on Resend is 'onboarding@resend.dev' until custom domain is verified
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'DWstore.lk <onboarding@resend.dev>';
+export async function sendOrderEmails(order: any) {
+  const emailConfig = readDataJson<any>('email-config.json', null) || {};
+  const apiKey = emailConfig.resendApiKey || process.env.RESEND_API_KEY;
+  const adminEmail = emailConfig.adminEmail || process.env.ADMIN_NOTIFICATION_EMAIL || 'support@dwstore.lk';
+  // With dwstore.lk verified on Resend, default to orders@dwstore.lk
+  const fromEmail = emailConfig.fromEmail || process.env.RESEND_FROM_EMAIL || 'DWstore.lk <orders@dwstore.lk>';
+  const customerNotifyEnabled = emailConfig.customerEmailNotifications !== false;
+  const adminNotifyEnabled = emailConfig.adminEmailNotifications !== false;
 
   if (!apiKey) {
     console.log(
-      `[Resend Info] RESEND_API_KEY is not set in environment. Order #${order.orderId} confirmation email logged locally.`
+      `[Resend Info] RESEND_API_KEY is not set. Order #${order.orderId} confirmation email logged locally.`
     );
     return {
       success: false,
-      message: 'RESEND_API_KEY not configured. Please add RESEND_API_KEY to .env.local to send live emails.',
+      message: 'RESEND_API_KEY not configured. Add Resend API Key in Admin > Integrations or in .env.local to send live emails.',
     };
   }
 
@@ -305,8 +309,10 @@ export async function sendOrderEmails(order: OrderData) {
     errors: [],
   };
 
+  const customerEmail = (order?.customer?.email || order?.customerEmail || order?.email || '').trim();
+
   // 1. Send confirmation email to Customer (if email is provided)
-  if (order.customer.email && order.customer.email.includes('@')) {
+  if (customerNotifyEnabled && customerEmail && customerEmail.includes('@')) {
     try {
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -316,7 +322,7 @@ export async function sendOrderEmails(order: OrderData) {
         },
         body: JSON.stringify({
           from: fromEmail,
-          to: [order.customer.email],
+          to: [customerEmail],
           subject: `Order Confirmation #${order.orderId} - DWstore.lk`,
           html: generateCustomerEmailHtml(order),
         }),
@@ -325,7 +331,7 @@ export async function sendOrderEmails(order: OrderData) {
       const data = await res.json();
       if (res.ok) {
         results.customerEmailSent = true;
-        console.log(`[Resend Success] Customer email sent for order #${order.orderId} (ID: ${data.id})`);
+        console.log(`[Resend Success] Customer email sent to ${customerEmail} for order #${order.orderId} (ID: ${data.id})`);
       } else {
         results.errors.push({ type: 'customer', error: data });
         console.error(`[Resend Error] Customer email failed for order #${order.orderId}:`, data);
@@ -337,8 +343,9 @@ export async function sendOrderEmails(order: OrderData) {
   }
 
   // 2. Send notification email to Admin
-  if (adminEmail && adminEmail.includes('@')) {
+  if (adminNotifyEnabled && adminEmail && adminEmail.includes('@')) {
     try {
+      const totalDisplay = order.totalMinor ? formatPriceLKR(order.totalMinor) : (order.total ? order.total.toLocaleString() : '0');
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -348,7 +355,7 @@ export async function sendOrderEmails(order: OrderData) {
         body: JSON.stringify({
           from: fromEmail,
           to: [adminEmail],
-          subject: `🔔 New Order Received: #${order.orderId} (LKR ${formatPriceLKR(order.totalMinor)})`,
+          subject: `🔔 New Order Received: #${order.orderId} (LKR ${totalDisplay})`,
           html: generateAdminEmailHtml(order),
         }),
       });
@@ -356,7 +363,7 @@ export async function sendOrderEmails(order: OrderData) {
       const data = await res.json();
       if (res.ok) {
         results.adminEmailSent = true;
-        console.log(`[Resend Success] Admin notification email sent for order #${order.orderId} (ID: ${data.id})`);
+        console.log(`[Resend Success] Admin notification email sent to ${adminEmail} for order #${order.orderId} (ID: ${data.id})`);
       } else {
         results.errors.push({ type: 'admin', error: data });
         console.error(`[Resend Error] Admin email failed for order #${order.orderId}:`, data);

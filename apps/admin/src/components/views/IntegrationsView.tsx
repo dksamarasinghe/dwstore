@@ -25,6 +25,8 @@ import {
   Plus,
   Trash2,
   Sparkles,
+  Mail,
+  Send,
 } from 'lucide-react';
 import { getStorefrontUrl } from '../../config';
 
@@ -126,7 +128,23 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
   });
   const [isLoggingOutWhatsApp, setIsLoggingOutWhatsApp] = useState(false);
 
-  // Fetch gateway configs on mount
+  // Email Integration State (Resend API)
+  const [emailConfig, setEmailConfig] = useState({
+    enabled: true,
+    resendApiKey: '',
+    fromEmail: 'DWstore.lk <orders@dwstore.lk>',
+    adminEmail: 'support@dwstore.lk',
+    customerEmailNotifications: true,
+    adminEmailNotifications: true,
+    hasApiKey: false,
+  });
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
+  const [testEmailAddress, setTestEmailAddress] = useState('support@dwstore.lk');
+  const [showResendKey, setShowResendKey] = useState(false);
+
+  // Fetch gateway configs & email config on mount
   useEffect(() => {
     fetch(`${getStorefrontUrl()}/api/integrations/payment-gateways`)
       .then((r) => r.json())
@@ -136,7 +154,69 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
         }
       })
       .catch(() => {});
+
+    fetch(`${getStorefrontUrl()}/api/integrations/email`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.config) {
+          setEmailConfig(data.config);
+          setTestEmailAddress(data.config.adminEmail || 'support@dwstore.lk');
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  const handleSaveEmailConfig = async () => {
+    setIsSavingEmail(true);
+    try {
+      const res = await fetch(`${getStorefrontUrl()}/api/integrations/email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(emailConfig),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        showNotification('Resend Email configuration saved successfully!');
+        setEmailModalOpen(false);
+      } else {
+        showNotification('Failed to save email settings: ' + (data?.error || 'Unknown error'));
+      }
+    } catch (err: any) {
+      showNotification('Error saving email settings: ' + err.message);
+    } finally {
+      setIsSavingEmail(false);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    if (!emailConfig.resendApiKey && !emailConfig.hasApiKey) {
+      showNotification('Please enter a Resend API Key first!');
+      return;
+    }
+    setIsTestingEmail(true);
+    try {
+      const res = await fetch(`${getStorefrontUrl()}/api/integrations/email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'test',
+          resendApiKey: emailConfig.resendApiKey,
+          fromEmail: emailConfig.fromEmail,
+          testEmail: testEmailAddress || emailConfig.adminEmail,
+        }),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        showNotification(data.message || 'Test email dispatched successfully via Resend!');
+      } else {
+        showNotification('Test email failed: ' + (data?.error || 'Unknown error'));
+      }
+    } catch (err: any) {
+      showNotification('Error sending test email: ' + err.message);
+    } finally {
+      setIsTestingEmail(false);
+    }
+  };
 
   const fetchWhatsAppStatus = async () => {
     try {
@@ -609,6 +689,44 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
             </div>
             <div className="pt-2 border-top border-border text-muted" style={{ fontSize: '12px' }}>
               Standard E-commerce Tracking Enabled
+            </div>
+          </div>
+        </div>
+
+        {/* 9. Resend Email Gateway */}
+        <div className="col-12 col-md-6 col-xl-4">
+          <div className="card-x h-100 d-flex flex-column justify-content-between">
+            <div>
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <span className="thumb" style={{ background: 'var(--hover)', color: '#2563eb' }}>
+                  <Mail size={22} />
+                </span>
+                <div className="d-flex align-items-center gap-1.5 flex-wrap justify-content-end">
+                  <span className="badge-x" style={{ fontSize: '10px', background: 'rgba(37, 99, 235, 0.12)', color: '#2563eb' }}>
+                    dwstore.lk Verified
+                  </span>
+                  <span
+                    className={`badge-x ${emailConfig.hasApiKey || emailConfig.resendApiKey ? 's-Delivered' : 's-Shipped'}`}
+                    style={{ fontSize: '11px' }}
+                  >
+                    {emailConfig.hasApiKey || emailConfig.resendApiKey ? 'Connected' : 'Setup Key'}
+                  </span>
+                </div>
+              </div>
+              <h5 className="mb-1">Resend Email Gateway</h5>
+              <p className="text-muted mb-3" style={{ fontSize: '13px' }}>
+                Automated order confirmation receipts to customers & new order alerts to store admin from <b>orders@dwstore.lk</b>.
+              </p>
+            </div>
+            <div className="pt-2 border-top border-border">
+              <button
+                className="btn-dark-x w-100 d-flex align-items-center justify-content-center gap-2"
+                onClick={() => setEmailModalOpen(true)}
+                type="button"
+                style={{ fontSize: '13px' }}
+              >
+                <Settings size={15} /> Configure Resend API & Alerts
+              </button>
             </div>
           </div>
         </div>
@@ -1527,6 +1645,193 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                   onClick={() => handleSaveGateway('cod')}
                 >
                   <Save size={15} /> {isSaving ? 'Saving...' : 'Save COD Settings'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* RESEND EMAIL MODAL POPUP */}
+      {/* ========================================================================= */}
+      {emailModalOpen && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
+          style={{ background: 'rgba(0,0,0,0.7)', zIndex: 9999 }}
+        >
+          <div
+            className="card-x w-100 shadow-lg"
+            style={{ maxWidth: '580px', maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            <div className="d-flex align-items-center justify-content-between pb-3 border-bottom border-border mb-3">
+              <h4 className="m-0 d-flex align-items-center gap-2">
+                <Mail size={20} className="text-primary" /> Resend Email Integration
+              </h4>
+              <button
+                type="button"
+                className="btn-link-x p-1 border-0 bg-transparent text-muted"
+                onClick={() => setEmailModalOpen(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Verified Domain Banner */}
+            <div
+              className="p-3 rounded-3 mb-3 d-flex align-items-center gap-3"
+              style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)' }}
+            >
+              <div
+                className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                style={{ width: '36px', height: '36px', background: '#10b981', color: '#fff' }}
+              >
+                <CheckCircle2 size={20} />
+              </div>
+              <div style={{ fontSize: '12.5px' }}>
+                <b className="text-success d-block mb-0.5">dwstore.lk Domain Verified on Resend</b>
+                <span className="text-muted">
+                  DKIM &amp; SPF verified in Tokyo (ap-northeast-1). You can send live transactional emails from <b>orders@dwstore.lk</b>.
+                </span>
+              </div>
+            </div>
+
+            <div className="d-flex flex-column gap-3">
+              {/* Resend API Key */}
+              <div>
+                <label className="d-block mb-1 text-muted" style={{ fontSize: '12.5px', fontWeight: 600 }}>
+                  Resend API Key (re_...) *
+                </label>
+                <div className="position-relative">
+                  <input
+                    type={showResendKey ? 'text' : 'password'}
+                    placeholder="re_123456789_abcdef..."
+                    className="w-100 p-2 rounded-2"
+                    style={{
+                      background: 'var(--bg)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text)',
+                      fontSize: '13px',
+                      paddingRight: '40px',
+                    }}
+                    value={emailConfig.resendApiKey}
+                    onChange={(e) => setEmailConfig({ ...emailConfig, resendApiKey: e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    className="position-absolute top-50 end-0 translate-middle-y me-2 p-1 border-0 bg-transparent text-muted"
+                    onClick={() => setShowResendKey(!showResendKey)}
+                  >
+                    {showResendKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <small className="text-muted d-block mt-1">
+                  Get your free API key from <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary">resend.com/api-keys</a> (3,000 free emails/month).
+                </small>
+              </div>
+
+              {/* Sender Email */}
+              <div>
+                <label className="d-block mb-1 text-muted" style={{ fontSize: '12.5px', fontWeight: 600 }}>
+                  Sender Display Name &amp; Email
+                </label>
+                <input
+                  type="text"
+                  placeholder="DWstore.lk <orders@dwstore.lk>"
+                  className="w-100 p-2 rounded-2"
+                  style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '13px' }}
+                  value={emailConfig.fromEmail}
+                  onChange={(e) => setEmailConfig({ ...emailConfig, fromEmail: e.target.value })}
+                />
+                <small className="text-muted d-block mt-1">
+                  Must use your verified domain address (e.g. <code>DWstore.lk &lt;orders@dwstore.lk&gt;</code>).
+                </small>
+              </div>
+
+              {/* Admin Notification Email */}
+              <div>
+                <label className="d-block mb-1 text-muted" style={{ fontSize: '12.5px', fontWeight: 600 }}>
+                  Admin Notification Email
+                </label>
+                <input
+                  type="email"
+                  placeholder="support@dwstore.lk"
+                  className="w-100 p-2 rounded-2"
+                  style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '13px' }}
+                  value={emailConfig.adminEmail}
+                  onChange={(e) => setEmailConfig({ ...emailConfig, adminEmail: e.target.value })}
+                />
+                <small className="text-muted d-block mt-1">
+                  Receives an immediate notification with full customer &amp; item details whenever an order is placed.
+                </small>
+              </div>
+
+              {/* Notification Toggles */}
+              <div className="p-3 rounded-2 border border-border" style={{ background: 'var(--hover)' }}>
+                <b className="d-block mb-2" style={{ fontSize: '13px' }}>Automatic Email Triggers:</b>
+                <div className="d-flex flex-column gap-2" style={{ fontSize: '13px' }}>
+                  <label className="d-flex align-items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={emailConfig.customerEmailNotifications}
+                      onChange={(e) => setEmailConfig({ ...emailConfig, customerEmailNotifications: e.target.checked })}
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <span>Send instant Order Confirmation receipt to Customer</span>
+                  </label>
+                  <label className="d-flex align-items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={emailConfig.adminEmailNotifications}
+                      onChange={(e) => setEmailConfig({ ...emailConfig, adminEmailNotifications: e.target.checked })}
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <span>Send instant New Order Alert to Admin</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Test Email Section */}
+              <div className="p-3 rounded-2 border border-border" style={{ background: 'var(--hover)' }}>
+                <b className="d-block mb-2" style={{ fontSize: '13px' }}>Dispatch Test Email:</b>
+                <div className="d-flex gap-2">
+                  <input
+                    type="email"
+                    placeholder="Recipient email (e.g. your personal email)"
+                    className="flex-grow-1 p-2 rounded-2"
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '12.5px' }}
+                    value={testEmailAddress}
+                    onChange={(e) => setTestEmailAddress(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="btn-soft d-flex align-items-center gap-1.5"
+                    disabled={isTestingEmail}
+                    onClick={handleTestEmail}
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    <Send size={14} className={isTestingEmail ? 'animate-spin' : ''} />
+                    {isTestingEmail ? 'Sending...' : 'Send Test'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="d-flex justify-content-end gap-2 pt-2 border-top border-border">
+                <button
+                  type="button"
+                  className="btn-soft"
+                  onClick={() => setEmailModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-dark-x d-flex align-items-center gap-2"
+                  disabled={isSavingEmail}
+                  onClick={handleSaveEmailConfig}
+                >
+                  <Save size={15} /> {isSavingEmail ? 'Saving...' : 'Save Email Settings'}
                 </button>
               </div>
             </div>

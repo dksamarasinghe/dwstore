@@ -77,8 +77,25 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   const [claimingReturnOrder, setClaimingReturnOrder] = useState<OrderItem | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
+
+  // Helper to robustly parse timestamps
+  const parseOrderTime = (val?: string): number => {
+    if (!val) return 0;
+    const t = new Date(val).getTime();
+    if (!isNaN(t)) return t;
+    const t2 = new Date(val.replace(/-/g, '/')).getTime();
+    if (!isNaN(t2)) return t2;
+    return 0;
+  };
+
+  const parseOrderNumericId = (id?: string): number => {
+    if (!id) return 0;
+    const num = id.replace(/\D/g, '');
+    return num ? parseInt(num, 10) : 0;
+  };
 
   // Real Counts calculated from actual orders
   const totalCount = orders.length;
@@ -88,9 +105,9 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   const returnedCount = orders.filter((o) => o?.status === 'returned' || Boolean(o?.returnRecord)).length;
   const cancelledCount = orders.filter((o) => o?.status === 'cancelled' || o?.status === 'failed').length;
 
-  // Filtered orders
+  // Filtered & strictly sorted orders (latest to oldest by default)
   const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
+    const list = orders.filter((order) => {
       const oStatus = (order?.status || '').toLowerCase();
       let matchesTab = true;
       if (activeTab === 'pending') {
@@ -120,7 +137,21 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       const matchesPayment = !paymentFilter || order?.paymentStatus === paymentFilter;
       return matchesTab && matchesSearch && matchesPayment;
     });
-  }, [orders, activeTab, searchTerm, paymentFilter]);
+
+    return [...list].sort((a, b) => {
+      const timeA = parseOrderTime(a?.createdAt);
+      const timeB = parseOrderTime(b?.createdAt);
+      if (timeA !== timeB && timeA > 0 && timeB > 0) {
+        return sortOrder === 'latest' ? timeB - timeA : timeA - timeB;
+      }
+      const idA = parseOrderNumericId(a?.orderId);
+      const idB = parseOrderNumericId(b?.orderId);
+      if (idA !== idB && idA > 0 && idB > 0) {
+        return sortOrder === 'latest' ? idB - idA : idA - idB;
+      }
+      return 0;
+    });
+  }, [orders, activeTab, searchTerm, paymentFilter, sortOrder]);
 
   // Pagination calculation
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
@@ -416,6 +447,18 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
             <option value="Paid">Paid</option>
             <option value="Unpaid">Unpaid / COD</option>
           </select>
+          <select
+            className="sel-x"
+            value={sortOrder}
+            onChange={(e) => {
+              setSortOrder(e.target.value as 'latest' | 'oldest');
+              setCurrentPage(1);
+            }}
+            title="Sort orders by date"
+          >
+            <option value="latest">↓ Latest to Oldest (Newest First)</option>
+            <option value="oldest">↑ Oldest to Latest</option>
+          </select>
         </div>
 
         {/* Bulk Action Bar */}
@@ -478,7 +521,15 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     onChange={handleSelectAll}
                   />
                 </th>
-                <th>Order</th>
+                <th
+                  style={{ cursor: 'pointer', userSelect: 'none' }}
+                  onClick={() => setSortOrder((prev) => (prev === 'latest' ? 'oldest' : 'latest'))}
+                  title="Click to toggle sorting (Latest vs Oldest)"
+                >
+                  <span className="d-inline-flex align-items-center gap-1">
+                    Order <span style={{ color: '#2563eb', fontWeight: 800 }}>{sortOrder === 'latest' ? '↓ (Latest)' : '↑ (Oldest)'}</span>
+                  </span>
+                </th>
                 <th>Customer</th>
                 <th>Purchased Items</th>
                 <th>Total (LKR)</th>

@@ -623,6 +623,7 @@ export default function App() {
           const normalized = data.orders.map(normalizeOrder);
           setOrders((prev) => {
             const map = new Map(prev.map((o) => [o.orderId, o]));
+            const newlyAdded: OrderItem[] = [];
             normalized.forEach((n) => {
               const existing = map.get(n.orderId);
               if (existing) {
@@ -634,9 +635,12 @@ export default function App() {
                 }
                 map.set(n.orderId, { ...existing, ...n });
               } else {
-                map.set(n.orderId, n);
+                newlyAdded.push(n);
               }
             });
+            if (newlyAdded.length > 0) {
+              return [...newlyAdded, ...Array.from(map.values())];
+            }
             return Array.from(map.values());
           });
         }
