@@ -230,5 +230,24 @@
         "image": "/media/categories/phone-accessories-m-6.jpg"
       }
     ]
+  },
+  "certifiedSpotlight": {
+    "enabled": true,
+    "title": "DWstore Certified Spotlight",
+    "subtitle": "Top trending genuine electronic picks with island-wide Cash on Delivery",
+    "productIds": [
+      "29517",
+      "29518",
+      "29534"
+    ]
+  },
+  "entryPopup": {
+    "enabled": true,
+    "title": "Clearance sale",
+    "subtitle": "Up to 70% OFF\nSelected tech & accessories · While stocks last",
+    "image": "/media/home-customizer/clearance-sale.png",
+    "buttonText": "Browse Deals",
+    "buttonLink": "/shop",
+    "buttonAlignment": "center"
   }
 }

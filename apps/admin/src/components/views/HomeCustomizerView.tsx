@@ -49,12 +49,13 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
   showNotification,
   setActiveTab,
 }) => {
-  const [activeSection, setActiveSection] = useState<'hero' | 'brands' | 'banners' | 'categories' | 'deals' | 'bento'>('hero');
+  const [activeSection, setActiveSection] = useState<'hero' | 'brands' | 'banners' | 'categories' | 'deals' | 'bento' | 'spotlight' | 'popup'>('hero');
   const [activeHeroBox, setActiveHeroBox] = useState<'mainBox' | 'sideBox1' | 'sideBox2'>('mainBox');
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
   const [activeBentoBoxIndex, setActiveBentoBoxIndex] = useState<number>(0);
   const [categorySearch, setCategorySearch] = useState('');
   const [brandSearch, setBrandSearch] = useState('');
+  const [spotlightSearch, setSpotlightSearch] = useState('');
   const [saving, setSaving] = useState(false);
 
   // Default initial configuration
@@ -226,6 +227,21 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
         }
       ]
     },
+    certifiedSpotlight: {
+      enabled: true,
+      title: 'DWstore Certified Spotlight',
+      subtitle: 'Top trending genuine electronic picks with island-wide Cash on Delivery',
+      productIds: ['29517', '29518', '29534']
+    },
+    entryPopup: {
+      enabled: true,
+      title: 'Clearance sale',
+      subtitle: 'Up to 70% OFF\nSelected tech & accessories · While stocks last',
+      image: '/media/home-customizer/clearance-sale.png',
+      buttonText: 'Browse Deals',
+      buttonLink: '/shop',
+      buttonAlignment: 'center'
+    }
   };
 
   const [config, setConfig] = useState<any>(() => {
@@ -985,6 +1001,36 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
           {config?.bentoGrid?.enabled !== false && (
             <span className="ms-2 badge bg-warning-subtle text-warning border border-warning-subtle" style={{ fontSize: '10px' }}>
               5 Boxes
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          className={activeSection === 'spotlight' ? 'on' : ''}
+          onClick={() => setActiveSection('spotlight')}
+        >
+          <Award size={16} className="me-1.5 text-primary" />
+          Certified Spotlight
+          {config?.certifiedSpotlight?.enabled !== false && (
+            <span className="ms-2 badge bg-primary-subtle text-primary border border-primary-subtle" style={{ fontSize: '10px' }}>
+              {config?.certifiedSpotlight?.productIds?.length || 0} Products
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          className={activeSection === 'popup' ? 'on' : ''}
+          onClick={() => setActiveSection('popup')}
+        >
+          <Sparkles size={16} className="me-1.5 text-warning" />
+          Welcome Popup Banner
+          {config?.entryPopup?.enabled ? (
+            <span className="ms-2 badge bg-success-subtle text-success border border-success-subtle" style={{ fontSize: '10px' }}>
+              Active
+            </span>
+          ) : (
+            <span className="ms-2 badge bg-secondary-subtle text-muted" style={{ fontSize: '10px' }}>
+              Disabled
             </span>
           )}
         </button>
@@ -4585,6 +4631,774 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────────── */}
+      {/* SECTION 7: DWSTORE CERTIFIED SPOTLIGHT                         */}
+      {/* ────────────────────────────────────────────────────────────── */}
+      {activeSection === 'spotlight' && (
+        <div className="d-flex flex-column gap-4">
+          {/* Header & Toggle */}
+          <div className="card-x p-3 d-flex justify-content-between align-items-center">
+            <div>
+              <div className="d-flex align-items-center gap-2">
+                <Award size={20} className="text-primary" />
+                <h3 className="m-0" style={{ fontSize: '16px', fontWeight: 700 }}>
+                  DWstore Certified Spotlight (Trending Electronic Picks)
+                </h3>
+              </div>
+              <p className="m-0 text-muted mt-1" style={{ fontSize: '13px' }}>
+                Select and reorder products to feature prominently under the Certified Spotlight section on the homepage.
+              </p>
+            </div>
+            <div className="d-flex align-items-center gap-2">
+              <span className="text-muted" style={{ fontSize: '13px' }}>
+                {config?.certifiedSpotlight?.enabled !== false ? 'Section Enabled' : 'Section Disabled'}
+              </span>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={config?.certifiedSpotlight?.enabled !== false}
+                  onChange={(e) => {
+                    const enabled = e.target.checked;
+                    const updated = {
+                      ...config,
+                      certifiedSpotlight: {
+                        ...(config.certifiedSpotlight || {}),
+                        enabled,
+                      },
+                    };
+                    setConfig(updated);
+                    saveConfigImmediately(updated, enabled ? 'Spotlight enabled' : 'Spotlight disabled');
+                  }}
+                />
+                <span className="slider round"></span>
+              </label>
+            </div>
+          </div>
+
+          <div className="row g-4">
+            {/* Left Column: Management */}
+            <div className="col-12 col-xl-7 d-flex flex-column gap-4">
+              {/* Section Details */}
+              <div className="card-x p-4">
+                <h5 className="fw-bold mb-3" style={{ fontSize: '14px' }}>
+                  Section Titles
+                </h5>
+                <div className="row g-3">
+                  <div className="col-12 col-md-6">
+                    <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>
+                      Section Heading
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      style={{ borderRadius: '8px', fontSize: '13px' }}
+                      value={config?.certifiedSpotlight?.title || 'DWstore Certified Spotlight'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setConfig((prev: any) => ({
+                          ...prev,
+                          certifiedSpotlight: {
+                            ...(prev.certifiedSpotlight || {}),
+                            title: val,
+                          },
+                        }));
+                      }}
+                    />
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>
+                      Subtitle / Tagline
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      style={{ borderRadius: '8px', fontSize: '13px' }}
+                      value={config?.certifiedSpotlight?.subtitle || 'Top trending genuine electronic picks with island-wide Cash on Delivery'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setConfig((prev: any) => ({
+                          ...prev,
+                          certifiedSpotlight: {
+                            ...(prev.certifiedSpotlight || {}),
+                            subtitle: val,
+                          },
+                        }));
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Picker */}
+              <div className="card-x p-4">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h5 className="fw-bold m-0" style={{ fontSize: '14px' }}>
+                      Add Products to Spotlight
+                    </h5>
+                    <small className="text-muted">
+                      Search catalog by name, brand, or SKU to feature in this section
+                    </small>
+                  </div>
+                  <span className="badge bg-primary-subtle text-primary border border-primary-subtle" style={{ fontSize: '11px' }}>
+                    {config?.certifiedSpotlight?.productIds?.length || 0} Added
+                  </span>
+                </div>
+
+                <div className="position-relative mb-3">
+                  <Search size={15} className="position-absolute text-muted" style={{ left: '12px', top: '11px' }} />
+                  <input
+                    type="text"
+                    className="form-control ps-5"
+                    style={{ borderRadius: '8px', fontSize: '13px' }}
+                    placeholder="Search products by title, SKU, brand..."
+                    value={spotlightSearch}
+                    onChange={(e) => setSpotlightSearch(e.target.value)}
+                  />
+                </div>
+
+                <div className="border rounded-3 p-2 bg-light overflow-auto" style={{ maxHeight: '220px' }}>
+                  {products
+                    .filter((p) => {
+                      if (!spotlightSearch.trim()) return true;
+                      const q = spotlightSearch.toLowerCase();
+                      return (
+                        p.name.toLowerCase().includes(q) ||
+                        (p.sku && p.sku.toLowerCase().includes(q)) ||
+                        (p.brand && p.brand.toLowerCase().includes(q))
+                      );
+                    })
+                    .slice(0, 20)
+                    .map((p) => {
+                      const isAdded = (config?.certifiedSpotlight?.productIds || []).includes(String(p.id));
+                      return (
+                        <div
+                          key={p.id}
+                          className="d-flex align-items-center justify-content-between p-2 mb-1 bg-white rounded-2 border"
+                          style={{ fontSize: '12px' }}
+                        >
+                          <div className="d-flex align-items-center gap-2 overflow-hidden me-2">
+                            <img
+                              src={resolveImageUrl(p.displayImage || p.image)}
+                              alt={p.name}
+                              style={{ width: '32px', height: '32px', objectFit: 'contain', borderRadius: '4px' }}
+                            />
+                            <div className="overflow-hidden">
+                              <span className="fw-bold d-block text-truncate" style={{ maxWidth: '320px' }}>
+                                {p.name}
+                              </span>
+                              <small className="text-muted">
+                                SKU: {p.sku || p.id} • Rs. {((p as any).salePrice || (p as any).regularPrice || (p as any).salePriceMinor || 0).toLocaleString()}
+                              </small>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={isAdded}
+                            onClick={() => {
+                              const currentIds = config?.certifiedSpotlight?.productIds || [];
+                              const updatedIds = [...currentIds, String(p.id)];
+                              const updated = {
+                                ...config,
+                                certifiedSpotlight: {
+                                  ...(config.certifiedSpotlight || {}),
+                                  productIds: updatedIds,
+                                },
+                              };
+                              setConfig(updated);
+                              saveConfigImmediately(updated, `Added "${p.name}" to Spotlight`);
+                            }}
+                            className={`btn btn-sm ${isAdded ? 'btn-light border text-muted' : 'btn-primary'} flex-shrink-0`}
+                            style={{ fontSize: '11px', borderRadius: '6px' }}
+                          >
+                            {isAdded ? '✓ Added' : '+ Add'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* Reorder & Manage Current Spotlight Products */}
+              <div className="card-x p-4">
+                <h5 className="fw-bold mb-3" style={{ fontSize: '14px' }}>
+                  Current Spotlight Products ({config?.certifiedSpotlight?.productIds?.length || 0})
+                </h5>
+                {(!config?.certifiedSpotlight?.productIds || config.certifiedSpotlight.productIds.length === 0) ? (
+                  <div className="text-center py-4 text-muted">
+                    <Award size={32} className="text-muted mb-2 opacity-50" />
+                    <p className="m-0" style={{ fontSize: '13px' }}>
+                      No custom products selected. Using automatic fallback products.
+                    </p>
+                    <small>Search above and click &quot;+ Add&quot; to customize.</small>
+                  </div>
+                ) : (
+                  <div className="d-flex flex-column gap-2">
+                    {config.certifiedSpotlight.productIds.map((id: string, idx: number) => {
+                      const prod = products.find((p) => String(p.id) === String(id));
+                      return (
+                        <div
+                          key={id}
+                          className="d-flex align-items-center justify-content-between p-2.5 bg-white border rounded-3 shadow-2xs"
+                        >
+                          <div className="d-flex align-items-center gap-2.5 overflow-hidden me-2">
+                            <span className="badge bg-dark-subtle text-dark" style={{ fontSize: '11px' }}>
+                              #{idx + 1}
+                            </span>
+                            {prod?.displayImage ? (
+                              <img
+                                src={resolveImageUrl(prod.displayImage)}
+                                alt={prod.name}
+                                style={{ width: '40px', height: '40px', objectFit: 'contain', borderRadius: '6px' }}
+                              />
+                            ) : (
+                              <div className="w-10 h-10 bg-light rounded d-flex align-items-center justify-center text-muted">
+                                ?
+                              </div>
+                            )}
+                            <div className="overflow-hidden">
+                              <span className="fw-bold d-block text-truncate" style={{ fontSize: '13px', maxWidth: '300px' }}>
+                                {prod ? prod.name : `Product ID: ${id}`}
+                              </span>
+                              <div className="d-flex align-items-center gap-2 mt-0.5">
+                                <span className="text-muted" style={{ fontSize: '11px' }}>
+                                  Rs. {((prod as any)?.salePrice || (prod as any)?.regularPrice || (prod as any)?.salePriceMinor || 0).toLocaleString()}
+                                </span>
+                                {prod && (
+                                  <span
+                                    className={`badge ${
+                                      ((prod as any).inStock !== false && prod.status !== 'Out of stock') ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'
+                                    }`}
+                                    style={{ fontSize: '10px' }}
+                                  >
+                                    {((prod as any).inStock !== false && prod.status !== 'Out of stock') ? 'In Stock' : 'Out of Stock'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="d-flex align-items-center gap-1">
+                            {idx > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const arr = [...config.certifiedSpotlight.productIds];
+                                  const temp = arr[idx];
+                                  arr[idx] = arr[idx - 1];
+                                  arr[idx - 1] = temp;
+                                  const updated = {
+                                    ...config,
+                                    certifiedSpotlight: {
+                                      ...(config.certifiedSpotlight || {}),
+                                      productIds: arr,
+                                    },
+                                  };
+                                  setConfig(updated);
+                                }}
+                                className="btn btn-sm btn-outline-secondary p-1"
+                                title="Move Left / Up"
+                              >
+                                <ArrowUp size={13} />
+                              </button>
+                            )}
+                            {idx < config.certifiedSpotlight.productIds.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const arr = [...config.certifiedSpotlight.productIds];
+                                  const temp = arr[idx];
+                                  arr[idx] = arr[idx + 1];
+                                  arr[idx + 1] = temp;
+                                  const updated = {
+                                    ...config,
+                                    certifiedSpotlight: {
+                                      ...(config.certifiedSpotlight || {}),
+                                      productIds: arr,
+                                    },
+                                  };
+                                  setConfig(updated);
+                                }}
+                                className="btn btn-sm btn-outline-secondary p-1"
+                                title="Move Right / Down"
+                              >
+                                <ArrowDown size={13} />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const arr = config.certifiedSpotlight.productIds.filter((x: string) => x !== id);
+                                const updated = {
+                                  ...config,
+                                  certifiedSpotlight: {
+                                    ...(config.certifiedSpotlight || {}),
+                                    productIds: arr,
+                                  },
+                                };
+                                setConfig(updated);
+                                saveConfigImmediately(updated, 'Removed from Spotlight');
+                              }}
+                              className="btn btn-sm btn-outline-danger p-1 ms-1"
+                              title="Remove"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column: Live Storefront Card Preview */}
+            <div className="col-12 col-xl-5">
+              <div className="card-x p-3 sticky-top" style={{ top: '80px' }}>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <span className="fw-bold text-muted" style={{ fontSize: '12px' }}>
+                    Live Preview: DWstore Certified Spotlight
+                  </span>
+                  <span className="badge bg-primary text-white" style={{ fontSize: '10px' }}>
+                    Storefront Appearance
+                  </span>
+                </div>
+
+                <div className="p-3 bg-light rounded-4 border">
+                  <div className="mb-3">
+                    <h6 className="fw-black m-0" style={{ fontSize: '15px' }}>
+                      {config?.certifiedSpotlight?.title || 'DWstore Certified Spotlight'}
+                    </h6>
+                    <small className="text-muted d-block mt-0.5" style={{ fontSize: '11px' }}>
+                      {config?.certifiedSpotlight?.subtitle || 'Top trending genuine electronic picks with island-wide Cash on Delivery'}
+                    </small>
+                  </div>
+
+                  <div className="d-flex flex-column gap-2.5">
+                    {((config?.certifiedSpotlight?.productIds || []).length > 0
+                      ? config.certifiedSpotlight.productIds.slice(0, 3)
+                      : ['29517', '29518', '29534']
+                    ).map((id: string) => {
+                      const prod = products.find((p) => String(p.id) === String(id));
+                      return (
+                        <div
+                          key={id}
+                          className="bg-white rounded-3 p-2.5 border shadow-2xs d-flex align-items-center justify-content-between"
+                        >
+                          <div className="d-flex align-items-center gap-2 overflow-hidden me-2">
+                            <img
+                              src={resolveImageUrl(prod?.displayImage || '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg')}
+                              alt={prod?.name || 'Spotlight'}
+                              style={{ width: '48px', height: '48px', objectFit: 'contain' }}
+                            />
+                            <div className="overflow-hidden">
+                              <span className="badge bg-primary-subtle text-primary mb-1" style={{ fontSize: '9px' }}>
+                                {prod?.brand || 'ORIGINAL'}
+                              </span>
+                              <span className="d-block fw-bold text-truncate" style={{ fontSize: '12px', maxWidth: '200px' }}>
+                                {prod ? prod.name : `Product ${id}`}
+                              </span>
+                              <div className="d-flex align-items-center gap-2 mt-0.5">
+                                <span className="fw-bold text-primary" style={{ fontSize: '11px' }}>
+                                  Rs. {((prod as any)?.salePrice || (prod as any)?.regularPrice || (prod as any)?.salePriceMinor || 1990).toLocaleString()}
+                                </span>
+                                <span className="badge bg-success-subtle text-success" style={{ fontSize: '9px' }}>
+                                  ✓ In Stock
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <span className="btn btn-primary btn-sm py-1 px-2 flex-shrink-0" style={{ fontSize: '11px', borderRadius: '6px' }}>
+                            View Deal
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────────── */}
+      {/* SECTION 8: WELCOME / ENTRY POPUP BANNER                        */}
+      {/* ────────────────────────────────────────────────────────────── */}
+      {activeSection === 'popup' && (
+        <div className="d-flex flex-column gap-4">
+          {/* Header & Toggle */}
+          <div className="card-x p-3 d-flex justify-content-between align-items-center">
+            <div>
+              <div className="d-flex align-items-center gap-2">
+                <Sparkles size={20} className="text-warning" />
+                <h3 className="m-0" style={{ fontSize: '16px', fontWeight: 700 }}>
+                  Welcome / Promotional Entry Modal Popup (Site Load)
+                </h3>
+              </div>
+              <p className="m-0 text-muted mt-1" style={{ fontSize: '13px' }}>
+                Display a high-converting promotional modal banner when customers visit the store. Replicates the exact layout of Image 4.
+              </p>
+            </div>
+            <div className="d-flex align-items-center gap-2">
+              <span className="text-muted" style={{ fontSize: '13px' }}>
+                {config?.entryPopup?.enabled ? 'Popup Active' : 'Popup Disabled'}
+              </span>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={Boolean(config?.entryPopup?.enabled)}
+                  onChange={(e) => {
+                    const enabled = e.target.checked;
+                    const updated = {
+                      ...config,
+                      entryPopup: {
+                        ...(config.entryPopup || {}),
+                        enabled,
+                      },
+                    };
+                    setConfig(updated);
+                    saveConfigImmediately(updated, enabled ? 'Welcome popup activated' : 'Welcome popup disabled');
+                  }}
+                />
+                <span className="slider round"></span>
+              </label>
+            </div>
+          </div>
+
+          <div className="row g-4">
+            {/* Left Column: Form Settings */}
+            <div className="col-12 col-xl-6 d-flex flex-column gap-3">
+              {/* Title & Subtitle */}
+              <div className="card-x p-4">
+                <h5 className="fw-bold mb-3" style={{ fontSize: '14px' }}>
+                  Popup Copy &amp; Header
+                </h5>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>
+                    Top Header Banner Title:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    style={{ borderRadius: '8px', fontSize: '13px' }}
+                    placeholder="e.g. Clearance sale"
+                    value={config?.entryPopup?.title || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setConfig((prev: any) => ({
+                        ...prev,
+                        entryPopup: { ...(prev.entryPopup || {}), title: val },
+                      }));
+                    }}
+                  />
+                  <small className="text-muted" style={{ fontSize: '11px' }}>
+                    Displays boldly across the top header ribbon.
+                  </small>
+                </div>
+
+                <div className="mb-2">
+                  <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>
+                    Promo Message &amp; Subtitle (Multi-line supported):
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="form-control"
+                    style={{ borderRadius: '8px', fontSize: '13px' }}
+                    placeholder="e.g. Up to 70% OFF&#10;Selected tech & accessories · While stocks last"
+                    value={config?.entryPopup?.subtitle || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setConfig((prev: any) => ({
+                        ...prev,
+                        entryPopup: { ...(prev.entryPopup || {}), subtitle: val },
+                      }));
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Graphic Banner Image */}
+              <div className="card-x p-4">
+                <h5 className="fw-bold mb-3" style={{ fontSize: '14px' }}>
+                  Center Promo Graphic Image
+                </h5>
+                <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>
+                  Banner Image URL (VPS Storage or External):
+                </label>
+                <div className="d-flex gap-2">
+                  <input
+                    type="text"
+                    className="form-control"
+                    style={{ borderRadius: '8px', fontSize: '13px' }}
+                    placeholder="/media/home-customizer/clearance-sale.png or https://..."
+                    value={config?.entryPopup?.image || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setConfig((prev: any) => ({
+                        ...prev,
+                        entryPopup: { ...(prev.entryPopup || {}), image: val },
+                      }));
+                    }}
+                  />
+                  <label
+                    className="btn btn-primary d-flex align-items-center gap-1.5 flex-shrink-0 shadow-sm"
+                    style={{ borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}
+                  >
+                    <Upload size={14} />
+                    <span>Upload Image</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const url = await uploadBannerFile(file);
+                        if (url) {
+                          setConfig((prev: any) => ({
+                            ...prev,
+                            entryPopup: { ...(prev.entryPopup || {}), image: url },
+                          }));
+                          showNotification('Popup banner graphic uploaded to VPS media successfully!');
+                        }
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+                {config?.entryPopup?.image && (
+                  <div className="mt-2 p-2 border rounded-3 bg-light d-flex align-items-center gap-3">
+                    <img
+                      src={resolveImageUrl(config.entryPopup.image)}
+                      alt="Popup preview"
+                      style={{ width: '60px', height: '40px', objectFit: 'contain' }}
+                    />
+                    <small className="text-truncate flex-grow-1" style={{ fontSize: '11px' }}>
+                      {config.entryPopup.image}
+                    </small>
+                  </div>
+                )}
+              </div>
+
+              {/* Button Settings & Alignment */}
+              <div className="card-x p-4">
+                <h5 className="fw-bold mb-3" style={{ fontSize: '14px' }}>
+                  Call-to-Action Button &amp; Position Alignment
+                </h5>
+                <div className="row g-3 mb-3">
+                  <div className="col-12 col-md-6">
+                    <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>
+                      Button Text / Label:
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      style={{ borderRadius: '8px', fontSize: '13px' }}
+                      placeholder="e.g. Browse Deals"
+                      value={config?.entryPopup?.buttonText || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setConfig((prev: any) => ({
+                          ...prev,
+                          entryPopup: { ...(prev.entryPopup || {}), buttonText: val },
+                        }));
+                      }}
+                    />
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>
+                      Button Destination Link:
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      style={{ borderRadius: '8px', fontSize: '13px' }}
+                      placeholder="e.g. /shop or /category/..."
+                      value={config?.entryPopup?.buttonLink || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setConfig((prev: any) => ({
+                          ...prev,
+                          entryPopup: { ...(prev.entryPopup || {}), buttonLink: val },
+                        }));
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Button Alignment Selector */}
+                <div>
+                  <label className="form-label fw-bold mb-2 d-block" style={{ fontSize: '12px' }}>
+                    Button Alignment in Modal:
+                  </label>
+                  <div className="d-flex gap-2">
+                    {[
+                      { id: 'left', label: 'Left Aligned' },
+                      { id: 'center', label: 'Center (Default)' },
+                      { id: 'right', label: 'Right Aligned' },
+                    ].map((align) => {
+                      const isSelected = (config?.entryPopup?.buttonAlignment || 'center') === align.id;
+                      return (
+                        <button
+                          key={align.id}
+                          type="button"
+                          onClick={() => {
+                            setConfig((prev: any) => ({
+                              ...prev,
+                              entryPopup: { ...(prev.entryPopup || {}), buttonAlignment: align.id as any },
+                            }));
+                          }}
+                          className={`btn btn-sm flex-grow-1 py-2 ${isSelected ? 'btn-dark' : 'btn-light border'}`}
+                          style={{
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: isSelected ? 700 : 500,
+                            background: isSelected ? '#0f172a' : undefined,
+                            color: isSelected ? '#fff' : undefined,
+                          }}
+                        >
+                          {isSelected ? `✓ ${align.label}` : align.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <small className="text-muted d-block mt-1.5" style={{ fontSize: '11px' }}>
+                    Aligns the main CTA button towards the left, center, or right of the modal card.
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Live Modal Card Preview (Replica of Image 4) */}
+            <div className="col-12 col-xl-6">
+              <div className="card-x p-3 sticky-top" style={{ top: '80px' }}>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <span className="fw-bold text-muted" style={{ fontSize: '12px' }}>
+                    Live Modal Preview (Replica of Image 4)
+                  </span>
+                  <span className="badge bg-warning text-dark fw-bold" style={{ fontSize: '10px' }}>
+                    Site Load Popup
+                  </span>
+                </div>
+
+                {/* Backdrop Simulation */}
+                <div
+                  className="rounded-4 p-4 d-flex align-items-center justify-content-center"
+                  style={{
+                    background: 'rgba(15, 23, 42, 0.75)',
+                    minHeight: '440px',
+                    backdropFilter: 'blur(2px)',
+                  }}
+                >
+                  {/* Modal Card */}
+                  <div
+                    className="bg-white rounded-4 shadow-xl overflow-hidden position-relative w-100"
+                    style={{ maxWidth: '380px' }}
+                  >
+                    {/* Header Ribbon */}
+                    <div
+                      className="p-3 text-center text-white position-relative"
+                      style={{
+                        background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #4338ca 100%)',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-light position-absolute rounded-circle p-0 d-flex align-items-center justify-content-center"
+                        style={{ top: '10px', right: '10px', width: '26px', height: '26px', opacity: 0.9 }}
+                        title="Close Preview"
+                      >
+                        ✕
+                      </button>
+
+                      <h5 className="fw-black text-uppercase m-0 tracking-tight" style={{ fontSize: '18px', fontWeight: 900 }}>
+                        {config?.entryPopup?.title || 'Clearance sale'}
+                      </h5>
+
+                      {/* Subtitle Box */}
+                      <div
+                        className="mt-2 mx-auto p-2 bg-white text-dark rounded-3 shadow-xs"
+                        style={{ maxWidth: '300px' }}
+                      >
+                        {(config?.entryPopup?.subtitle || 'Up to 70% OFF\nSelected tech & accessories · While stocks last')
+                          .split('\n')
+                          .map((line: string, i: number) => (
+                            <div
+                              key={i}
+                              className={i === 0 ? 'fw-black text-primary text-uppercase' : 'text-muted mt-0.5'}
+                              style={{ fontSize: i === 0 ? '12px' : '10px' }}
+                            >
+                              {line}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Image Graphic */}
+                    <div
+                      className="p-3 d-flex align-items-center justify-content-center"
+                      style={{
+                        background: 'radial-gradient(circle, #eff6ff 0%, #ffffff 80%)',
+                        minHeight: '140px',
+                      }}
+                    >
+                      {config?.entryPopup?.image ? (
+                        <img
+                          src={resolveImageUrl(config.entryPopup.image)}
+                          alt="Graphic"
+                          style={{ maxHeight: '140px', maxWidth: '100%', objectFit: 'contain' }}
+                        />
+                      ) : (
+                        <div className="text-center text-muted py-3">
+                          <ImageIcon size={32} className="opacity-50 mb-1" />
+                          <small className="d-block">Upload promo graphic</small>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions & Alignment */}
+                    <div className="p-3 bg-white">
+                      <div
+                        className={`d-flex w-100 ${
+                          config?.entryPopup?.buttonAlignment === 'left'
+                            ? 'justify-content-start'
+                            : config?.entryPopup?.buttonAlignment === 'right'
+                            ? 'justify-content-end'
+                            : 'justify-content-center'
+                        }`}
+                      >
+                        <span
+                          className="btn btn-warning fw-black d-inline-flex align-items-center gap-1.5 shadow-sm"
+                          style={{
+                            background: '#f59e0b',
+                            borderColor: '#f59e0b',
+                            color: '#0f172a',
+                            borderRadius: '12px',
+                            padding: '10px 24px',
+                            fontSize: '13px',
+                            fontWeight: 800,
+                          }}
+                        >
+                          <span>{config?.entryPopup?.buttonText || 'Browse Deals'}</span>
+                          <ArrowRight size={14} />
+                        </span>
+                      </div>
+                      <div className="text-center mt-2">
+                        <small className="text-muted" style={{ fontSize: '11px', cursor: 'pointer' }}>
+                          Maybe later
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

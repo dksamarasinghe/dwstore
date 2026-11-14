@@ -34,7 +34,25 @@ interface CategoryCirclesProps {
 export default function CategoryCircles({ initialConfig }: CategoryCirclesProps) {
   const [config, setConfig] = useState(initialConfig);
   const [categoriesList, setCategoriesList] = useState<any[]>(categoriesData);
+  const [isPaused, setIsPaused] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll every 5000ms
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      if (scrollContainerRef.current) {
+        const el = scrollContainerRef.current;
+        const maxScroll = el.scrollWidth - el.clientWidth;
+        if (el.scrollLeft >= maxScroll - 15) {
+          el.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          el.scrollBy({ left: 300, behavior: 'smooth' });
+        }
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isPaused]);
 
   useEffect(() => {
     // 1. Fetch categories from live API
@@ -144,6 +162,10 @@ export default function CategoryCircles({ initialConfig }: CategoryCirclesProps)
         {/* Category Carousel / Grid */}
         <div
           ref={scrollContainerRef}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
           className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-2"
         >
           {displayCategories.map((cat: any) => {

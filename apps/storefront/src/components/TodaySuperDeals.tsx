@@ -26,9 +26,27 @@ interface TodaySuperDealsProps {
 export default function TodaySuperDeals({ initialConfig }: TodaySuperDealsProps) {
   const [dealsConfig, setDealsConfig] = useState<any>(initialConfig ?? initialHomepageData.superDeals);
   const [timeLeft, setTimeLeft] = useState({ hours: 14, minutes: 28, seconds: 45 });
+  const [isPaused, setIsPaused] = useState(false);
   const sliderRef = useRef<HTMLDivElement>(null);
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+
+  // Auto-scroll every 5000ms
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      if (sliderRef.current) {
+        const el = sliderRef.current;
+        const maxScroll = el.scrollWidth - el.clientWidth;
+        if (el.scrollLeft >= maxScroll - 15) {
+          el.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          el.scrollBy({ left: 320, behavior: 'smooth' });
+        }
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isPaused]);
 
   // Keep state synchronized with prop updates
   useEffect(() => {
@@ -170,6 +188,10 @@ export default function TodaySuperDeals({ initialConfig }: TodaySuperDealsProps)
         {/* Horizontal Slider */}
         <div
           ref={sliderRef}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
           className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-3 -mx-4 px-4 sm:mx-0 sm:px-0"
         >
           {dealProducts.map((product: any) => {

@@ -202,11 +202,7 @@ export default function PaymentInstallmentBoxes({
             }`}
           />
           <span>
-            {stockQty !== undefined && stockQty > 0
-              ? `${stockQty} in stock`
-              : inStock
-              ? 'In stock'
-              : 'Out of stock'}
+            {inStock ? 'In stock' : 'Out of stock'}
           </span>
         </div>
 

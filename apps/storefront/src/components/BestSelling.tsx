@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Star, ShoppingCart, Heart } from 'lucide-react';
+import { Star, ShoppingCart, Heart, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import productsData from '@/data/products.json';
-import { formatPriceLKR } from '@/lib/catalog';
+import ordersData from '@/data/orders.json';
+import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
 import { useWishlist } from '@/context/WishlistContext';
 import { resolveImageUrl } from '@/lib/image';
 
@@ -18,16 +19,73 @@ const TABS = [
 
 export default function BestSelling() {
   const [activeTab, setActiveTab] = useState('all');
+  const [isPaused, setIsPaused] = useState(false);
+  const sliderRef = useRef<HTMLDivElement>(null);
   const { isInWishlist, toggleWishlist } = useWishlist();
 
-  const allProducts = (productsData as any[]).filter(
-    (p) => p.displayImage && p.regularPriceMinor > 0
-  );
+  // 1. Calculate total order sales count per product from orders.json
+  const salesCountMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    if (Array.isArray(ordersData)) {
+      ordersData.forEach((order: any) => {
+        (order.items || []).forEach((item: any) => {
+          const id = String(item.productId || item.id || '');
+          if (id) {
+            map[id] = (map[id] || 0) + (Number(item.quantity) || 1);
+          }
+        });
+      });
+    }
+    return map;
+  }, []);
 
-  const filteredProducts = (activeTab === 'all'
-    ? allProducts
-    : allProducts.filter((p) => p.categorySlugs?.includes(activeTab))
-  ).slice(0, 5);
+  // 2. Filter products: Exclude out of stock, sort by order frequency (highest first)
+  const sortedInStockProducts = useMemo(() => {
+    return (productsData as any[])
+      .filter((p) => p.displayImage && p.regularPriceMinor > 0 && isProductInStock(p))
+      .sort((a, b) => {
+        const countA = salesCountMap[String(a.id)] || 0;
+        const countB = salesCountMap[String(b.id)] || 0;
+        if (countA !== countB) return countB - countA;
+        return (b.id || 0) - (a.id || 0);
+      });
+  }, [salesCountMap]);
+
+  // 3. Tab filtration (shows top 12 best-sellers per category)
+  const filteredProducts = useMemo(() => {
+    if (activeTab === 'all') return sortedInStockProducts.slice(0, 15);
+    return sortedInStockProducts
+      .filter((p) =>
+        p.categorySlugs?.some((cat: string) =>
+          cat.toLowerCase().includes(activeTab.toLowerCase())
+        )
+      )
+      .slice(0, 15);
+  }, [sortedInStockProducts, activeTab]);
+
+  // 4. Auto-scroll every 5000ms
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      if (sliderRef.current) {
+        const el = sliderRef.current;
+        const maxScroll = el.scrollWidth - el.clientWidth;
+        if (el.scrollLeft >= maxScroll - 15) {
+          el.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          el.scrollBy({ left: 300, behavior: 'smooth' });
+        }
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isPaused]);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (sliderRef.current) {
+      const scrollAmount = direction === 'left' ? -320 : 320;
+      sliderRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   return (
     <section className="w-full bg-slate-50/50 py-8">
@@ -39,29 +97,59 @@ export default function BestSelling() {
               Best <span className="text-blue-600">Selling</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Live products from DWstore.lk catalog with genuine warranty
+              Most popular customer picks with genuine importer warranty
             </p>
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-            {TABS.map((tab) => (
+          <div className="flex items-center gap-3">
+            {/* Category Filter Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.category}
+                  onClick={() => setActiveTab(tab.category)}
+                  type="button"
+                  className={`text-xs font-bold px-3.5 py-1.5 rounded-full transition whitespace-nowrap cursor-pointer ${
+                    activeTab === tab.category
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Slider Navigation Arrows */}
+            <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
               <button
-                key={tab.category}
-                onClick={() => setActiveTab(tab.category)}
                 type="button"
-                className={`text-xs font-bold px-4 py-2 rounded-full transition whitespace-nowrap ${
-                  activeTab === tab.category
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }`}
+                onClick={() => scroll('left')}
+                className="w-8 h-8 rounded-full border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 flex items-center justify-center transition shadow-2xs cursor-pointer"
+                aria-label="Previous"
               >
-                {tab.label}
+                <ChevronLeft className="w-4 h-4" />
               </button>
-            ))}
+              <button
+                type="button"
+                onClick={() => scroll('right')}
+                className="w-8 h-8 rounded-full border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 flex items-center justify-center transition shadow-2xs cursor-pointer"
+                aria-label="Next"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {/* Horizontal Auto-Sliding Carousel */}
+        <div
+          ref={sliderRef}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
+          className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-3"
+        >
           {filteredProducts.map((product) => {
             const displayPrice = product.salePriceMinor || product.minPriceMinor || product.regularPriceMinor || 0;
             const regularPrice = product.regularPriceMinor && product.regularPriceMinor > displayPrice ? product.regularPriceMinor : null;
@@ -70,11 +158,12 @@ export default function BestSelling() {
               ? Math.round(((regularPrice - displayPrice) / regularPrice) * 100)
               : null;
             const isVariable = product.type === 'variable' || (product.variations && product.variations.length > 0);
+            const inStock = isProductInStock(product);
 
             return (
               <div
                 key={product.id}
-                className="group bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 hover:border-blue-400 hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+                className="w-56 sm:w-64 flex-shrink-0 group bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 hover:border-blue-400 hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
                   {/* Badges row */}
@@ -124,14 +213,28 @@ export default function BestSelling() {
                     />
                   </Link>
 
-                  {/* Brand & Rating */}
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block mb-1">
-                    {product.brand || 'Electronics'}
-                  </span>
+                  {/* Stock Status Badge & Rating */}
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block truncate max-w-[120px]">
+                      {product.brand || 'Electronics'}
+                    </span>
+                    {inStock ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        In Stock
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                        Out of Stock
+                      </span>
+                    )}
+                  </div>
+
                   <div className="flex items-center gap-1 mb-1.5">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                     <span className="text-[11px] font-bold text-slate-700">4.9</span>
-                    <span className="text-[10px] text-slate-400">(In Stock)</span>
+                    <span className="text-[10px] text-slate-400">({salesCountMap[String(product.id)] || 20}+ sold)</span>
                   </div>
 
                   {/* Title */}

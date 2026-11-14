@@ -14,6 +14,7 @@ import CategoryShowcase from '@/components/CategoryShowcase';
 import FindFavoriteProducts from '@/components/FindFavoriteProducts';
 import GoogleReviewsSlider from '@/components/GoogleReviewsSlider';
 import StoreVideoBanner from '@/components/StoreVideoBanner';
+import EntryPopupBanner from '@/components/EntryPopupBanner';
 import Footer from '@/components/Footer';
 
 import { readDataJson } from '@/lib/data-paths';
@@ -78,8 +79,8 @@ export default function HomePage() {
       {/* 10. Category Showcase Rows (Smartwatches & Power Banks) */}
       <CategoryShowcase />
 
-      {/* 11. Find Your Favorite Products */}
-      <FindFavoriteProducts />
+      {/* 11. DWstore Certified Spotlight */}
+      <FindFavoriteProducts initialConfig={config?.certifiedSpotlight} />
 
       {/* 12. Google Reviews Carousel (4.9 Rating / 111 Reviews) */}
       <GoogleReviewsSlider />
@@ -89,6 +90,9 @@ export default function HomePage() {
 
       {/* 14. Global Footer */}
       <Footer />
+
+      {/* 15. Welcome / Promotional Entry Modal Popup */}
+      <EntryPopupBanner initialConfig={config?.entryPopup} />
     </main>
   );
 }
