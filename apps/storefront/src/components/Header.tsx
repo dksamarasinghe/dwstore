@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -26,6 +26,7 @@ import productsData from '@/data/products.json';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { formatPriceLKR } from '@/lib/catalog';
+import { resolveImageUrl } from '@/lib/image';
 
 export default function Header() {
   const pathname = usePathname();
@@ -34,6 +35,8 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCat, setSelectedCat] = useState('All');
   const [catDropdownOpen, setCatDropdownOpen] = useState(false);
+  const [desktopSearchOpen, setDesktopSearchOpen] = useState(false);
+  const desktopSearchRef = useRef<HTMLDivElement>(null);
   const [megaOpen, setMegaOpen] = useState(false);
   const [compareCount, setCompareCount] = useState(0);
 
@@ -100,6 +103,40 @@ export default function Header() {
       })
       .slice(0, 6);
   }, [mobileSearchQuery]);
+
+  // Live matching products for desktop search input (triggers on 2-3 characters)
+  const desktopMatchingProducts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return (productsData as any[])
+      .filter((p) => {
+        const name = (p.name || '').toLowerCase();
+        const sku = (p.sku || '').toLowerCase();
+        const cat = (p.category || '').toLowerCase();
+        const brand = (p.brand || '').toLowerCase();
+        const matchesQuery = name.includes(q) || sku.includes(q) || cat.includes(q) || brand.includes(q);
+        if (!matchesQuery) return false;
+        if (selectedCat !== 'All') {
+          return (
+            (p.categorySlugs || []).some((s: string) => s.toLowerCase().includes(selectedCat.toLowerCase())) ||
+            (p.category && p.category.toLowerCase().includes(selectedCat.toLowerCase()))
+          );
+        }
+        return true;
+      })
+      .slice(0, 6);
+  }, [searchQuery, selectedCat]);
+
+  // Close desktop search dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (desktopSearchRef.current && !desktopSearchRef.current.contains(e.target as Node)) {
+        setDesktopSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleMobileSearchModalSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -233,8 +270,14 @@ export default function Header() {
         </div>
 
         {/* Search Bar — takes remaining space */}
-        <div className="flex-1 min-w-0">
-          <form onSubmit={handleSearch} className="flex items-center border-2 border-blue-600 rounded-full overflow-visible shadow-sm focus-within:shadow-md transition bg-white relative">
+        <div ref={desktopSearchRef} className="flex-1 min-w-0 relative">
+          <form
+            onSubmit={(e) => {
+              setDesktopSearchOpen(false);
+              handleSearch(e);
+            }}
+            className="flex items-center border-2 border-blue-600 rounded-full overflow-visible shadow-sm focus-within:shadow-md transition bg-white relative"
+          >
             {/* Category pill */}
             <div
               className="relative hidden sm:block flex-shrink-0"
@@ -274,7 +317,14 @@ export default function Header() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => {
+                if (searchQuery.trim().length >= 2) setDesktopSearchOpen(true);
+              }}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSearchQuery(val);
+                setDesktopSearchOpen(val.trim().length >= 2);
+              }}
               placeholder="Search in 407+ original products (e.g. Smart Watch, Aspor, Anker, JBL)..."
               className="w-full px-4 py-2.5 text-sm text-slate-800 focus:outline-none placeholder:text-slate-400 min-w-0"
             />
@@ -286,6 +336,86 @@ export default function Header() {
               <Search className="w-4 h-4" />
             </button>
           </form>
+
+          {/* Desktop Search Instant Suggestions Dropdown */}
+          {desktopSearchOpen && searchQuery.trim().length >= 2 && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                  Suggested Products ({desktopMatchingProducts.length})
+                </span>
+                <span className="text-slate-400 font-normal">Press Enter to view all</span>
+              </div>
+
+              {desktopMatchingProducts.length === 0 ? (
+                <div className="p-6 text-center text-xs text-slate-500">
+                  No products found matching &quot;{searchQuery}&quot;
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100 max-h-[380px] overflow-y-auto">
+                  {desktopMatchingProducts.map((p) => {
+                    const price = p.salePriceMinor || p.minPriceMinor || p.regularPriceMinor || 0;
+                    const regPrice = p.regularPriceMinor && p.regularPriceMinor > price ? p.regularPriceMinor : null;
+                    return (
+                      <Link
+                        key={p.id}
+                        href={`/product/${p.slug}`}
+                        onClick={() => setDesktopSearchOpen(false)}
+                        className="flex items-center gap-3.5 p-3 hover:bg-blue-50/50 transition group"
+                      >
+                        <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200/80 p-1 flex items-center justify-center flex-shrink-0 group-hover:border-blue-400 group-hover:bg-white transition">
+                          <img
+                            src={resolveImageUrl(p.displayImage || p.image || p.imageUrls?.[0], '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg')}
+                            alt={p.name}
+                            className="w-full h-full object-contain mix-blend-multiply"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.src = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-slate-800 group-hover:text-blue-600 truncate transition leading-tight">
+                            {p.name}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs font-black text-slate-900 font-mono">
+                              LKR {formatPriceLKR(price)}
+                            </span>
+                            {regPrice && (
+                              <span className="text-[10px] text-slate-400 line-through font-mono">
+                                LKR {formatPriceLKR(regPrice)}
+                              </span>
+                            )}
+                            {p.brand && (
+                              <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase">
+                                {p.brand}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="p-2.5 bg-slate-50 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    setDesktopSearchOpen(false);
+                    handleSearch(e);
+                  }}
+                  className="w-full py-2 text-center text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition cursor-pointer shadow-xs"
+                >
+                  View all results for &quot;{searchQuery}&quot; &rarr;
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right utilities */}

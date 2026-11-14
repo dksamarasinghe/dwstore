@@ -16,6 +16,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { CategoryItem } from '../../types';
+import { MediaPickerModal } from '../common/MediaPickerModal';
 
 interface CategoriesViewProps {
   categories: CategoryItem[];
@@ -51,6 +52,7 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
   const [formStatus, setFormStatus] = useState<'Active' | 'Hidden'>('Active');
   const [formIcon, setFormIcon] = useState<string>('');
   const [isUploadingIcon, setIsUploadingIcon] = useState<boolean>(false);
+  const [mediaPickerOpen, setMediaPickerOpen] = useState<boolean>(false);
 
   // Handle uploading category icon to dedicated VPS folder (/media/categories/)
   const handleUploadCategoryIcon = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -705,12 +707,21 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
 
                   <div className="flex-grow-1">
                     <div className="d-flex gap-2 mb-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setMediaPickerOpen(true)}
+                        className="btn btn-sm btn-outline-secondary fw-semibold d-inline-flex align-items-center gap-1.5"
+                        style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '8px' }}
+                      >
+                        <ImageIcon size={14} />
+                        Choose from Media
+                      </button>
                       <label
                         className="btn btn-sm btn-outline-primary fw-semibold d-inline-flex align-items-center gap-1.5 cursor-pointer mb-0"
                         style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '8px' }}
                       >
                         <Upload size={14} />
-                        {isUploadingIcon ? 'Uploading to /media/categories/...' : formIcon ? 'Change Icon' : 'Upload Icon'}
+                        {isUploadingIcon ? 'Uploading to /media/categories/...' : formIcon ? 'Upload PC' : 'Upload Icon'}
                         <input
                           type="file"
                           accept="image/*"
@@ -806,6 +817,18 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Media Picker Modal */}
+      <MediaPickerModal
+        isOpen={mediaPickerOpen}
+        onClose={() => setMediaPickerOpen(false)}
+        defaultFolder="categories"
+        title="Choose Category Image from Media"
+        onSelect={(url) => {
+          setFormIcon(url);
+          if (showNotification) showNotification('Category image selected from Media!');
+        }}
+      />
     </div>
   );
 };

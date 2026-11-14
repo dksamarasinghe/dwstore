@@ -1,7 +1,7 @@
 {
   "hero": {
     "mainBox": {
-      "type": "custom",
+      "type": "banner",
       "selectedId": "",
       "badge": "DWSTORE • SRI LANKA'S TRUSTED TECH STORE",
       "title": "PREMIUM TECH, SMARTWATCHES & ACCESSORIES",
@@ -10,19 +10,21 @@
       "button1Link": "/shop",
       "button2Text": "EXPLORE DEALS",
       "button2Link": "/shop",
-      "image": "/media/categories/smartwatches-T800-Ultra-Smart-Watch-1.jpg",
-      "secondaryImage": "/media/products/RPP2921_5d0c7431.jpg"
+      "image": "/media/home-customizer/871_msep_banner_he_pe_1920x1080_2_87_2-1794555681255.jpg",
+      "secondaryImage": "/media/products/RPP2921_5d0c7431.jpg",
+      "buttonPosition": "bottom-left"
     },
     "sideBox1": {
-      "type": "product",
+      "type": "banner",
       "selectedId": "29517",
       "badge": "BEST SELLER",
       "title": "T800 Ultra Series 8",
       "subtitle": "Large HD Display • Bluetooth Call • Sports Modes",
       "priceText": "Rs. 1,990",
-      "buttonText": "Order now",
+      "buttonText": "",
       "link": "/product/t800-ultra-smartwatch-series-8-29517",
-      "image": "/media/categories/smartwatches-T800-Ultra-Smart-Watch-1.jpg"
+      "image": "/media/home-customizer/download---2026-11-13t130616244-1794555405212.webp",
+      "buttonPosition": "bottom-left"
     },
     "sideBox2": {
       "type": "product",
@@ -161,13 +163,10 @@
     "subtitle": "Limited time mega discounts with express island-wide cash on delivery",
     "endTimeHours": 14,
     "productIds": [
-      "29528",
-      "29522",
+      "31806",
+      "31891",
       "33554",
-      "29532",
-      "31905",
-      "32146",
-      "33412"
+      "34887"
     ],
     "countdownHours": 18
   },
@@ -236,16 +235,19 @@
     "title": "DWstore Certified Spotlight",
     "subtitle": "Top trending genuine electronic picks with island-wide Cash on Delivery",
     "productIds": [
-      "29517",
       "29518",
-      "29534"
+      "29534",
+      "29537",
+      "29535",
+      "29526",
+      "29519"
     ]
   },
   "entryPopup": {
     "enabled": true,
     "title": "Clearance sale",
     "subtitle": "Up to 70% OFF\nSelected tech & accessories · While stocks last",
-    "image": "/media/home-customizer/clearance-sale.png",
+    "image": "/media/home-customizer/clearance-offer-70-orbit-1794623867481.webp",
     "buttonText": "Browse Deals",
     "buttonLink": "/shop",
     "buttonAlignment": "center"

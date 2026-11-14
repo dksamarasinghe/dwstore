@@ -33,6 +33,7 @@ import {
 import { ProductItem, CategoryItem, BrandItem } from '../../types';
 import { getStorefrontUrl } from '../../config';
 import { resolveImageUrl } from '../../utils/image';
+import { MediaPickerModal } from '../common/MediaPickerModal';
 
 interface HomeCustomizerViewProps {
   products: ProductItem[];
@@ -57,6 +58,12 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
   const [brandSearch, setBrandSearch] = useState('');
   const [spotlightSearch, setSpotlightSearch] = useState('');
   const [saving, setSaving] = useState(false);
+  const [mediaPickerConfig, setMediaPickerConfig] = useState<{
+    open: boolean;
+    folder: string;
+    onSelect: (url: string) => void;
+    title?: string;
+  } | null>(null);
 
   // Default initial configuration
   const defaultConfig = {
@@ -1529,12 +1536,29 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                               value={activeSlide.image || ''}
                               onChange={(e) => updateActiveSlide({ image: e.target.value })}
                             />
+                            <button
+                              type="button"
+                              onClick={() => setMediaPickerConfig({
+                                open: true,
+                                folder: 'home-customizer',
+                                title: 'Choose Slide Banner from Media',
+                                onSelect: (url) => {
+                                  updateActiveSlide({ image: url });
+                                  showNotification('Slide banner selected from Media!');
+                                }
+                              })}
+                              className="btn btn-outline-secondary d-flex align-items-center gap-1.5 flex-shrink-0"
+                              style={{ borderRadius: '8px', fontSize: '12px' }}
+                            >
+                              <ImageIcon size={14} />
+                              <span>Choose from Media</span>
+                            </button>
                             <label
                               className="btn btn-primary d-flex align-items-center gap-1.5 flex-shrink-0 shadow-sm"
                               style={{ borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}
                             >
                               <Upload size={14} />
-                              <span>Upload Banner</span>
+                              <span>Upload PC</span>
                               <input
                                 type="file"
                                 accept="image/*"
@@ -1745,12 +1769,35 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                         }));
                       }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setMediaPickerConfig({
+                        open: true,
+                        folder: 'home-customizer',
+                        title: 'Choose Hero Banner from Media',
+                        onSelect: (url) => {
+                          setConfig((prev: any) => ({
+                            ...prev,
+                            hero: {
+                              ...prev.hero,
+                              [activeHeroBox]: { ...prev.hero[activeHeroBox], image: url },
+                            },
+                          }));
+                          showNotification('Hero banner selected from Media!');
+                        }
+                      })}
+                      className="btn btn-outline-secondary d-flex align-items-center gap-1.5 flex-shrink-0"
+                      style={{ borderRadius: '10px', fontSize: '13px' }}
+                    >
+                      <ImageIcon size={14} />
+                      <span>Choose from Media</span>
+                    </button>
                     <label
                       className="btn btn-primary d-flex align-items-center gap-1.5 flex-shrink-0 shadow-sm"
                       style={{ borderRadius: '10px', fontSize: '13px', cursor: 'pointer' }}
                     >
                       <Upload size={14} />
-                      <span>Upload Banner</span>
+                      <span>Upload PC</span>
                       <input
                         type="file"
                         accept="image/*"
@@ -4329,214 +4376,476 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                   <div className="card-x p-3">
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <h4 className="m-0" style={{ fontSize: '15px', fontWeight: 700 }}>
-                        Customize Box #{activeBentoBoxIndex + 1}: {currentBox.title || 'Category Box'}
+                        Customize Box #{activeBentoBoxIndex + 1}: {currentBox.title || (currentBox.type === 'banner' ? 'Banner Box' : 'Category Box')}
                       </h4>
                       <span className="badge bg-dark text-white" style={{ fontSize: '11px' }}>
                         Box {activeBentoBoxIndex + 1} of 5
                       </span>
                     </div>
 
-                    {/* Step 1: Select Category */}
-                    <div className="p-3 mb-3 rounded-3 bg-light border">
-                      <label className="fw-bold mb-1.5 d-block text-primary" style={{ fontSize: '13px' }}>
-                        1. Select Store Category:
+                    {/* Showcase Mode Toggle: Category Feature vs Banner Image Only */}
+                    <div className="mb-3 p-2.5 rounded-3 border bg-light">
+                      <label className="fw-bold mb-1.5 d-block text-body" style={{ fontSize: '12px' }}>
+                        Showcase Mode:
                       </label>
-                      <select
-                        className="input-x"
-                        value={currentBox.categorySlug || ''}
-                        onChange={(e) => handleSelectCategoryForBentoBox(activeBentoBoxIndex, e.target.value)}
-                        style={{ height: '38px', fontSize: '13px' }}
-                      >
-                        <option value="">-- Choose a category from your store --</option>
-                        {categories.map((c) => (
-                          <option key={c.slug} value={c.slug}>
-                            {c.name} ({c.productCount} products)
-                          </option>
-                        ))}
-                      </select>
-                      <small className="text-muted d-block mt-1" style={{ fontSize: '11px' }}>
-                        Selecting a category automatically sets the title, link, subtitle/count, and provides product image suggestions below.
-                      </small>
+                      <div className="d-flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateBentoBox(activeBentoBoxIndex, 'type', 'category')}
+                          className={`btn btn-sm d-flex align-items-center gap-1.5 ${
+                            currentBox.type !== 'banner' ? 'btn-dark' : 'btn-light border'
+                          }`}
+                          style={{
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            background: currentBox.type !== 'banner' ? '#0f172a' : undefined,
+                            color: currentBox.type !== 'banner' ? '#fff' : undefined,
+                          }}
+                        >
+                          <Layers size={14} />
+                          <span>Category Feature</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateBentoBox(activeBentoBoxIndex, 'type', 'banner')}
+                          className={`btn btn-sm d-flex align-items-center gap-1.5 ${
+                            currentBox.type === 'banner' ? 'btn-dark' : 'btn-light border'
+                          }`}
+                          style={{
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            background: currentBox.type === 'banner' ? '#0f172a' : undefined,
+                            color: currentBox.type === 'banner' ? '#fff' : undefined,
+                          }}
+                        >
+                          <ImageIcon size={14} />
+                          <span>Banner Image Only</span>
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Step 2: Content Text Inputs */}
-                    <div className="d-flex flex-column gap-2.5">
-                      <div className="row g-2">
-                        <div className="col-12 col-sm-6">
-                          <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
-                            Top Badge:
-                          </label>
-                          <input
-                            type="text"
-                            className="input-x"
-                            value={currentBox.badge || ''}
-                            placeholder="e.g. STUDIO & WIRELESS, WEARABLE TECH"
-                            onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'badge', e.target.value)}
-                            style={{ height: '36px', fontSize: '12px' }}
-                          />
+                    {/* Dynamic Form: Banner Mode vs Category Feature Mode */}
+                    {currentBox.type === 'banner' ? (
+                      <div className="d-flex flex-column gap-3">
+                        {/* Recommendation alert */}
+                        <div className="alert alert-info py-2 px-3 d-flex align-items-center gap-2 m-0" style={{ fontSize: '12px', borderRadius: '10px' }}>
+                          <Info size={16} className="text-info flex-shrink-0" />
+                          <div>
+                            <strong>Recommended Dimensions for Box #{activeBentoBoxIndex + 1}: </strong>
+                            {activeBentoBoxIndex < 2
+                              ? '400 x 500 px (or 600 x 760 px) — Full vertical card graphic'
+                              : activeBentoBoxIndex === 4
+                              ? '800 x 240 px (or 1200 x 360 px) — Wide bottom banner graphic'
+                              : '400 x 240 px (or 600 x 360 px) — Compact horizontal banner graphic'}
+                            <span className="d-block text-muted mt-0.5" style={{ fontSize: '11px' }}>
+                              Clean graphic with no text overlays. Scales automatically to fill the card.
+                            </span>
+                          </div>
                         </div>
-                        <div className="col-12 col-sm-6">
-                          <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
-                            Card Title:
+
+                        {/* Banner Image URL / Picker */}
+                        <div>
+                          <label className="form-label fw-bold mb-1" style={{ fontSize: '12px' }}>
+                            Banner Graphic Image:
                           </label>
-                          <input
-                            type="text"
-                            className="input-x fw-bold"
-                            value={currentBox.title || ''}
-                            placeholder="e.g. Headphones & Earbuds"
-                            onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'title', e.target.value)}
-                            style={{ height: '36px', fontSize: '13px' }}
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
-                          Card Description:
-                        </label>
-                        <textarea
-                          rows={2}
-                          className="input-x"
-                          value={currentBox.description || ''}
-                          placeholder="e.g. Over-Ear Headsets, TWS Noise Cancelling & Wireless Earphones"
-                          onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'description', e.target.value)}
-                          style={{ fontSize: '12px' }}
-                        />
-                      </div>
-
-                      <div className="row g-2">
-                        <div className="col-12 col-sm-6">
-                          <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
-                            Subtitle / Models Count:
-                          </label>
-                          <input
-                            type="text"
-                            className="input-x"
-                            value={currentBox.subtitle || ''}
-                            placeholder="e.g. 55+ Models, 140+ Certified Accessories"
-                            onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'subtitle', e.target.value)}
-                            style={{ height: '36px', fontSize: '12px' }}
-                          />
-                        </div>
-                        <div className="col-12 col-sm-6">
-                          <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
-                            Button / Action Text:
-                          </label>
-                          <input
-                            type="text"
-                            className="input-x"
-                            value={currentBox.buttonText || ''}
-                            placeholder="e.g. Explore Headphones, Shop Speakers"
-                            onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'buttonText', e.target.value)}
-                            style={{ height: '36px', fontSize: '12px' }}
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
-                          Target Link (URL):
-                        </label>
-                        <input
-                          type="text"
-                          className="input-x font-monospace"
-                          value={currentBox.link || ''}
-                          placeholder="/category/smartwatches or /shop?category=..."
-                          onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'link', e.target.value)}
-                          style={{ height: '36px', fontSize: '12px' }}
-                        />
-                      </div>
-
-                      {/* Image Picker */}
-                      <div className="pt-2 border-top">
-                        <label className="fw-bold mb-1.5 d-block" style={{ fontSize: '12px' }}>
-                          Card Image:
-                        </label>
-                        <div className="d-flex gap-2 mb-2 align-items-center">
-                          <input
-                            type="text"
-                            className="input-x flex-grow-1"
-                            value={currentBox.image || ''}
-                            placeholder="Paste direct Image URL..."
-                            onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'image', e.target.value)}
-                            style={{ height: '36px', fontSize: '12px' }}
-                          />
-                          {currentBox.image && (
-                            <div
-                              style={{
-                                width: '36px',
-                                height: '36px',
-                                borderRadius: '6px',
-                                overflow: 'hidden',
-                                border: '1px solid var(--border)',
-                                background: '#fff',
-                                flexShrink: 0,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
+                          <div className="d-flex gap-2 mb-2 align-items-center">
+                            <input
+                              type="text"
+                              className="input-x flex-grow-1"
+                              value={currentBox.image || ''}
+                              placeholder="e.g. /media/home-customizer/bento-banner.jpg or https://..."
+                              onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'image', e.target.value)}
+                              style={{ height: '36px', fontSize: '12px' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setMediaPickerConfig({
+                                open: true,
+                                folder: 'home-customizer',
+                                title: `Choose Bento Box #${activeBentoBoxIndex + 1} Banner from Media`,
+                                onSelect: (url) => {
+                                  handleUpdateBentoBox(activeBentoBoxIndex, 'image', url);
+                                  showNotification('Bento banner image selected from Media!');
+                                }
+                              })}
+                              className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5 flex-shrink-0"
+                              style={{ height: '36px', fontSize: '12px', padding: '0 12px' }}
                             >
+                              <ImageIcon size={14} />
+                              <span>Choose from Media</span>
+                            </button>
+                            <label
+                              className="btn-soft d-inline-flex align-items-center gap-1.5 cursor-pointer flex-shrink-0"
+                              style={{ height: '36px', fontSize: '12px', padding: '0 12px' }}
+                              title="Upload Banner from PC"
+                            >
+                              <Upload size={14} />
+                              <span>Upload PC</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="d-none"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const uploadedUrl = await uploadBannerFile(file);
+                                    if (uploadedUrl) {
+                                      handleUpdateBentoBox(activeBentoBoxIndex, 'image', uploadedUrl);
+                                      showNotification('Bento banner uploaded successfully!');
+                                    }
+                                  }
+                                  e.target.value = '';
+                                }}
+                              />
+                            </label>
+                          </div>
+                          {currentBox.image && (
+                            <div className="p-2 border rounded-3 bg-light d-flex align-items-center gap-3">
                               <img
                                 src={resolveImageUrl(currentBox.image)}
-                                alt="Preview"
-                                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                                alt="Banner Preview"
+                                style={{ width: '80px', height: '48px', objectFit: 'cover', borderRadius: '6px' }}
                               />
+                              <small className="text-truncate flex-grow-1" style={{ fontSize: '11px' }}>
+                                {currentBox.image}
+                              </small>
                             </div>
                           )}
-                          <label
-                            className="btn-soft d-inline-flex align-items-center gap-1.5 cursor-pointer"
-                            style={{ height: '36px', fontSize: '12px', padding: '0 12px', cursor: 'pointer', flexShrink: 0 }}
-                            title="Upload Image from PC"
-                          >
-                            <Upload size={14} />
-                            <span>Upload PC</span>
+                        </div>
+
+                        {/* Whole Banner Target Link */}
+                        <div>
+                          <label className="form-label fw-bold mb-1" style={{ fontSize: '12px' }}>
+                            Whole Banner Click Destination Link:
+                          </label>
+                          <input
+                            type="text"
+                            className="input-x font-monospace"
+                            value={currentBox.link || ''}
+                            placeholder="/shop or /category/..."
+                            onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'link', e.target.value)}
+                            style={{ height: '36px', fontSize: '12px' }}
+                          />
+                          <small className="text-muted d-block mt-0.5" style={{ fontSize: '11px' }}>
+                            Clicking anywhere on this banner card will open this page.
+                          </small>
+                        </div>
+
+                        {/* Optional CTA Button on Banner */}
+                        <div className="p-3 border rounded-3 bg-light">
+                          <div className="form-check form-switch mb-3">
                             <input
-                              type="file"
-                              accept="image/*"
-                              className="d-none"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  const uploadedUrl = await uploadBannerFile(file);
-                                  if (uploadedUrl) {
-                                    handleUpdateBentoBox(activeBentoBoxIndex, 'image', uploadedUrl);
-                                    showNotification('Bento box image uploaded!');
-                                  }
+                              className="form-check-input cursor-pointer"
+                              type="checkbox"
+                              id={`bentoBtnSwitch-${activeBentoBoxIndex}`}
+                              checked={Boolean(currentBox.buttonText)}
+                              onChange={(e) => {
+                                const enabled = e.target.checked;
+                                handleUpdateBentoBox(activeBentoBoxIndex, 'buttonText', enabled ? 'SHOP NOW' : '');
+                                if (enabled && !currentBox.buttonPosition) {
+                                  handleUpdateBentoBox(activeBentoBoxIndex, 'buttonPosition', 'bottom-left');
                                 }
                               }}
                             />
-                          </label>
-                        </div>
-
-                        {/* Pick from category products thumbnails */}
-                        {categoryProductsForBento.length > 0 && (
-                          <div className="mt-2 p-2.5 rounded-3 bg-light border">
-                            <label className="text-muted d-block mb-1.5" style={{ fontSize: '11px', fontWeight: 600 }}>
-                              Or click any product from this category to use its image:
+                            <label className="form-check-label fw-bold cursor-pointer" htmlFor={`bentoBtnSwitch-${activeBentoBoxIndex}`} style={{ fontSize: '12px' }}>
+                              Add Clickable Call-to-Action Button on this Banner
                             </label>
-                            <div className="d-flex gap-2 overflow-x-auto pb-1">
-                              {categoryProductsForBento.slice(0, 10).map((prod) => (
-                                <div
-                                  key={prod.id}
-                                  onClick={() => prod.image && handleUpdateBentoBox(activeBentoBoxIndex, 'image', prod.image)}
-                                  className={`p-1 rounded-2 border bg-white flex-shrink-0 cursor-pointer ${
-                                    currentBox.image === prod.image ? 'border-primary ring-2' : 'border-secondary-subtle'
-                                  }`}
-                                  style={{ width: '48px', height: '48px', cursor: 'pointer' }}
-                                  title={prod.name}
-                                >
-                                  <img
-                                    src={resolveImageUrl(prod.image)}
-                                    alt={prod.name}
-                                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                          </div>
+
+                          {Boolean(currentBox.buttonText) && (
+                            <div className="d-flex flex-column gap-3">
+                              <div className="row g-2">
+                                <div className="col-12 col-sm-6">
+                                  <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
+                                    Button Text / Label:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    className="input-x"
+                                    value={currentBox.buttonText || ''}
+                                    placeholder="e.g. SHOP NOW, EXPLORE"
+                                    onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'buttonText', e.target.value)}
+                                    style={{ height: '36px', fontSize: '12px' }}
                                   />
                                 </div>
-                              ))}
+                                <div className="col-12 col-sm-6">
+                                  <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
+                                    Button Destination Link:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    className="input-x font-monospace"
+                                    value={currentBox.buttonLink || currentBox.link || ''}
+                                    placeholder="/shop or /category/..."
+                                    onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'buttonLink', e.target.value)}
+                                    style={{ height: '36px', fontSize: '12px' }}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* 9 Positions Interactive Grid */}
+                              <div>
+                                <label className="form-label fw-bold mb-1.5 d-block" style={{ fontSize: '11px' }}>
+                                  Button Position on Banner:
+                                </label>
+                                <div
+                                  className="d-grid gap-1.5 p-2 bg-white rounded-3 border"
+                                  style={{ gridTemplateColumns: 'repeat(3, 1fr)', maxWidth: '340px' }}
+                                >
+                                  {[
+                                    { id: 'top-left', label: 'Top Left' },
+                                    { id: 'top-center', label: 'Top Center' },
+                                    { id: 'top-right', label: 'Top Right' },
+                                    { id: 'middle-left', label: 'Mid Left' },
+                                    { id: 'middle-center', label: 'Mid Center' },
+                                    { id: 'middle-right', label: 'Mid Right' },
+                                    { id: 'bottom-left', label: 'Bottom Left' },
+                                    { id: 'bottom-center', label: 'Bottom Center' },
+                                    { id: 'bottom-right', label: 'Bottom Right' },
+                                  ].map((pos) => {
+                                    const isSelected = (currentBox.buttonPosition || 'bottom-left') === pos.id;
+                                    return (
+                                      <button
+                                        key={pos.id}
+                                        type="button"
+                                        onClick={() => handleUpdateBentoBox(activeBentoBoxIndex, 'buttonPosition', pos.id)}
+                                        className={`btn btn-sm ${isSelected ? 'btn-primary text-white shadow-xs' : 'btn-light border'}`}
+                                        style={{ fontSize: '11px', padding: '5px 4px', borderRadius: '6px' }}
+                                      >
+                                        {isSelected ? `✓ ${pos.label}` : pos.label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Step 1: Select Category */}
+                        <div className="p-3 mb-3 rounded-3 bg-light border">
+                          <label className="fw-bold mb-1.5 d-block text-primary" style={{ fontSize: '13px' }}>
+                            1. Select Store Category:
+                          </label>
+                          <select
+                            className="input-x"
+                            value={currentBox.categorySlug || ''}
+                            onChange={(e) => handleSelectCategoryForBentoBox(activeBentoBoxIndex, e.target.value)}
+                            style={{ height: '38px', fontSize: '13px' }}
+                          >
+                            <option value="">-- Choose a category from your store --</option>
+                            {categories.map((c) => (
+                              <option key={c.slug} value={c.slug}>
+                                {c.name} ({c.productCount} products)
+                              </option>
+                            ))}
+                          </select>
+                          <small className="text-muted d-block mt-1" style={{ fontSize: '11px' }}>
+                            Selecting a category automatically sets the title, link, subtitle/count, and provides product image suggestions below.
+                          </small>
+                        </div>
+
+                        {/* Step 2: Content Text Inputs */}
+                        <div className="d-flex flex-column gap-2.5">
+                          <div className="row g-2">
+                            <div className="col-12 col-sm-6">
+                              <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
+                                Top Badge:
+                              </label>
+                              <input
+                                type="text"
+                                className="input-x"
+                                value={currentBox.badge || ''}
+                                placeholder="e.g. STUDIO & WIRELESS, WEARABLE TECH"
+                                onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'badge', e.target.value)}
+                                style={{ height: '36px', fontSize: '12px' }}
+                              />
+                            </div>
+                            <div className="col-12 col-sm-6">
+                              <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
+                                Card Title:
+                              </label>
+                              <input
+                                type="text"
+                                className="input-x fw-bold"
+                                value={currentBox.title || ''}
+                                placeholder="e.g. Headphones & Earbuds"
+                                onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'title', e.target.value)}
+                                style={{ height: '36px', fontSize: '13px' }}
+                              />
                             </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
+
+                          <div>
+                            <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
+                              Card Description:
+                            </label>
+                            <textarea
+                              rows={2}
+                              className="input-x"
+                              value={currentBox.description || ''}
+                              placeholder="e.g. Over-Ear Headsets, TWS Noise Cancelling & Wireless Earphones"
+                              onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'description', e.target.value)}
+                              style={{ fontSize: '12px' }}
+                            />
+                          </div>
+
+                          <div className="row g-2">
+                            <div className="col-12 col-sm-6">
+                              <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
+                                Subtitle / Models Count:
+                              </label>
+                              <input
+                                type="text"
+                                className="input-x"
+                                value={currentBox.subtitle || ''}
+                                placeholder="e.g. 55+ Models, 140+ Certified Accessories"
+                                onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'subtitle', e.target.value)}
+                                style={{ height: '36px', fontSize: '12px' }}
+                              />
+                            </div>
+                            <div className="col-12 col-sm-6">
+                              <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
+                                Button / Action Text:
+                              </label>
+                              <input
+                                type="text"
+                                className="input-x"
+                                value={currentBox.buttonText || ''}
+                                placeholder="e.g. Explore Headphones, Shop Speakers"
+                                onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'buttonText', e.target.value)}
+                                style={{ height: '36px', fontSize: '12px' }}
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
+                              Target Link (URL):
+                            </label>
+                            <input
+                              type="text"
+                              className="input-x font-monospace"
+                              value={currentBox.link || ''}
+                              placeholder="/category/smartwatches or /shop?category=..."
+                              onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'link', e.target.value)}
+                              style={{ height: '36px', fontSize: '12px' }}
+                            />
+                          </div>
+
+                          {/* Image Picker */}
+                          <div className="pt-2 border-top">
+                            <label className="fw-bold mb-1.5 d-block" style={{ fontSize: '12px' }}>
+                              Card Image:
+                            </label>
+                            <div className="d-flex gap-2 mb-2 align-items-center">
+                              <input
+                                type="text"
+                                className="input-x flex-grow-1"
+                                value={currentBox.image || ''}
+                                placeholder="Paste direct Image URL..."
+                                onChange={(e) => handleUpdateBentoBox(activeBentoBoxIndex, 'image', e.target.value)}
+                                style={{ height: '36px', fontSize: '12px' }}
+                              />
+                              {currentBox.image && (
+                                <div
+                                  style={{
+                                    width: '36px',
+                                    height: '36px',
+                                    borderRadius: '6px',
+                                    overflow: 'hidden',
+                                    border: '1px solid var(--border)',
+                                    background: '#fff',
+                                    flexShrink: 0,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  <img
+                                    src={resolveImageUrl(currentBox.image)}
+                                    alt="Preview"
+                                    style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                                  />
+                                </div>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setMediaPickerConfig({
+                                  open: true,
+                                  folder: 'products',
+                                  title: `Choose Bento Box #${activeBentoBoxIndex + 1} Image from Media`,
+                                  onSelect: (url) => {
+                                    handleUpdateBentoBox(activeBentoBoxIndex, 'image', url);
+                                    showNotification('Bento box image selected from Media!');
+                                  }
+                                })}
+                                className="btn-soft d-inline-flex align-items-center gap-1.5 cursor-pointer"
+                                style={{ height: '36px', fontSize: '12px', padding: '0 12px', cursor: 'pointer', flexShrink: 0 }}
+                              >
+                                <ImageIcon size={14} />
+                                <span>Choose Media</span>
+                              </button>
+                              <label
+                                className="btn-soft d-inline-flex align-items-center gap-1.5 cursor-pointer"
+                                style={{ height: '36px', fontSize: '12px', padding: '0 12px', cursor: 'pointer', flexShrink: 0 }}
+                                title="Upload Image from PC"
+                              >
+                                <Upload size={14} />
+                                <span>Upload PC</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="d-none"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const uploadedUrl = await uploadBannerFile(file);
+                                      if (uploadedUrl) {
+                                        handleUpdateBentoBox(activeBentoBoxIndex, 'image', uploadedUrl);
+                                        showNotification('Bento box image uploaded!');
+                                      }
+                                    }
+                                  }}
+                                />
+                              </label>
+                            </div>
+
+                            {/* Pick from category products thumbnails */}
+                            {categoryProductsForBento.length > 0 && (
+                              <div className="mt-2 p-2.5 rounded-3 bg-light border">
+                                <label className="text-muted d-block mb-1.5" style={{ fontSize: '11px', fontWeight: 600 }}>
+                                  Or click any product from this category to use its image:
+                                </label>
+                                <div className="d-flex gap-2 overflow-x-auto pb-1">
+                                  {categoryProductsForBento.slice(0, 10).map((prod) => (
+                                    <div
+                                      key={prod.id}
+                                      onClick={() => prod.image && handleUpdateBentoBox(activeBentoBoxIndex, 'image', prod.image)}
+                                      className={`p-1 rounded-2 border bg-white flex-shrink-0 cursor-pointer ${
+                                        currentBox.image === prod.image ? 'border-primary ring-2' : 'border-secondary-subtle'
+                                      }`}
+                                      style={{ width: '48px', height: '48px', cursor: 'pointer' }}
+                                      title={prod.name}
+                                    >
+                                      <img
+                                        src={resolveImageUrl(prod.image)}
+                                        alt={prod.name}
+                                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -4552,65 +4861,107 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                       </span>
                     </div>
 
-                    <div
-                      className="rounded-4 p-4 text-white position-relative overflow-hidden d-flex flex-column justify-content-between shadow-lg"
-                      style={{
-                        minHeight: activeBentoBoxIndex < 2 ? '360px' : '220px',
-                        background:
-                          activeBentoBoxIndex === 0
-                            ? 'linear-gradient(180deg, #1c1917 0%, #0c0a09 100%)'
-                            : activeBentoBoxIndex === 1
-                            ? 'linear-gradient(180deg, #1a1210 0%, #0d0b09 100%)'
-                            : activeBentoBoxIndex === 2
-                            ? 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)'
-                            : activeBentoBoxIndex === 3
-                            ? 'linear-gradient(135deg, #0a1a0e 0%, #0f2d0e 100%)'
-                            : 'linear-gradient(90deg, #052e16 0%, #0f172a 60%, #000000 100%)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                      }}
-                    >
-                      <div className="position-relative" style={{ zIndex: 2 }}>
-                        {currentBox.badge && (
-                          <span
-                            className="text-uppercase fw-bold d-block mb-1"
+                    {currentBox.type === 'banner' ? (
+                      <div
+                        className="rounded-4 position-relative overflow-hidden shadow-lg d-flex align-items-center justify-content-center"
+                        style={{
+                          minHeight: activeBentoBoxIndex < 2 ? '360px' : '220px',
+                          background: '#0a0a0a',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                        }}
+                      >
+                        {currentBox.image ? (
+                          <img
+                            src={resolveImageUrl(currentBox.image)}
+                            alt={currentBox.title || 'Bento Banner'}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
+                          />
+                        ) : (
+                          <div className="text-center p-3 text-white">
+                            <ImageIcon size={32} className="text-muted mb-1 opacity-50" />
+                            <h6 className="m-0 fw-bold" style={{ fontSize: '13px' }}>No Banner Graphic</h6>
+                            <small className="text-muted" style={{ fontSize: '11px' }}>Upload or choose an image</small>
+                          </div>
+                        )}
+
+                        {Boolean(currentBox.buttonText) && (
+                          <div
+                            className="position-absolute"
                             style={{
-                              fontSize: '10px',
-                              letterSpacing: '1px',
-                              color: activeBentoBoxIndex === 1 ? '#fdba74' : activeBentoBoxIndex === 2 ? '#60a5fa' : '#34d399',
+                              zIndex: 10,
+                              ...getAdminPositionStyle(currentBox.buttonPosition),
                             }}
                           >
-                            {currentBox.badge}
-                          </span>
-                        )}
-                        <h3 className="fw-black text-white text-uppercase m-0" style={{ fontSize: '20px', lineHeight: 1.2 }}>
-                          {currentBox.title || 'Card Title'}
-                        </h3>
-                        {currentBox.description && (
-                          <p className="mt-1 text-white-50" style={{ fontSize: '12px', maxWidth: '240px' }}>
-                            {currentBox.description}
-                          </p>
-                        )}
-                        {currentBox.subtitle && (
-                          <p className="fw-bold mt-1" style={{ fontSize: '12px', color: '#34d399' }}>
-                            {currentBox.subtitle}
-                          </p>
+                            <span
+                              className="btn btn-primary btn-sm fw-bold shadow-md d-inline-flex align-items-center gap-1"
+                              style={{ fontSize: '11px', borderRadius: '6px', padding: '6px 14px' }}
+                            >
+                              <span>{currentBox.buttonText}</span>
+                              <ArrowRight size={12} />
+                            </span>
+                          </div>
                         )}
                       </div>
+                    ) : (
+                      <div
+                        className="rounded-4 p-4 text-white position-relative overflow-hidden d-flex flex-column justify-content-between shadow-lg"
+                        style={{
+                          minHeight: activeBentoBoxIndex < 2 ? '360px' : '220px',
+                          background:
+                            activeBentoBoxIndex === 0
+                              ? 'linear-gradient(180deg, #1c1917 0%, #0c0a09 100%)'
+                              : activeBentoBoxIndex === 1
+                              ? 'linear-gradient(180deg, #1a1210 0%, #0d0b09 100%)'
+                              : activeBentoBoxIndex === 2
+                              ? 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)'
+                              : activeBentoBoxIndex === 3
+                              ? 'linear-gradient(135deg, #0a1a0e 0%, #0f2d0e 100%)'
+                              : 'linear-gradient(90deg, #052e16 0%, #0f172a 60%, #000000 100%)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                        }}
+                      >
+                        <div className="position-relative" style={{ zIndex: 2 }}>
+                          {currentBox.badge && (
+                            <span
+                              className="text-uppercase fw-bold d-block mb-1"
+                              style={{
+                                fontSize: '10px',
+                                letterSpacing: '1px',
+                                color: activeBentoBoxIndex === 1 ? '#fdba74' : activeBentoBoxIndex === 2 ? '#60a5fa' : '#34d399',
+                              }}
+                            >
+                              {currentBox.badge}
+                            </span>
+                          )}
+                          <h3 className="fw-black text-white text-uppercase m-0" style={{ fontSize: '20px', lineHeight: 1.2 }}>
+                            {currentBox.title || 'Card Title'}
+                          </h3>
+                          {currentBox.description && (
+                            <p className="mt-1 text-white-50" style={{ fontSize: '12px', maxWidth: '240px' }}>
+                              {currentBox.description}
+                            </p>
+                          )}
+                          {currentBox.subtitle && (
+                            <p className="fw-bold mt-1" style={{ fontSize: '12px', color: '#34d399' }}>
+                              {currentBox.subtitle}
+                            </p>
+                          )}
+                        </div>
 
-                      <div className="position-relative d-flex align-items-center gap-1 fw-bold mt-3" style={{ zIndex: 2, fontSize: '12px', color: '#34d399' }}>
-                        <span>{currentBox.buttonText || 'Explore'}</span>
-                        <ArrowRight size={14} />
-                      </div>
+                        <div className="position-relative d-flex align-items-center gap-1 fw-bold mt-3" style={{ zIndex: 2, fontSize: '12px', color: '#34d399' }}>
+                          <span>{currentBox.buttonText || 'Explore'}</span>
+                          <ArrowRight size={14} />
+                        </div>
 
-                      {/* Card Image */}
-                      {currentBox.image && (
-                        <div
-                          className="position-absolute"
-                          style={{
-                            right: '12px',
-                            bottom: '12px',
-                            width: activeBentoBoxIndex < 2 ? '180px' : '120px',
-                            height: activeBentoBoxIndex < 2 ? '180px' : '120px',
+                        {/* Card Image */}
+                        {currentBox.image && (
+                          <div
+                            className="position-absolute"
+                            style={{
+                              right: '12px',
+                              bottom: '12px',
+                              width: activeBentoBoxIndex < 2 ? '180px' : '120px',
+                              height: activeBentoBoxIndex < 2 ? '180px' : '120px',
                             display: 'flex',
                             alignItems: 'flex-end',
                             justifyContent: 'flex-end',
@@ -4626,11 +4977,12 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                         </div>
                       )}
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
-            );
-          })()}
+            </div>
+          );
+        })()}
         </div>
       )}
 
@@ -5145,12 +5497,32 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
                       }));
                     }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setMediaPickerConfig({
+                      open: true,
+                      folder: 'home-customizer',
+                      title: 'Choose Popup Banner from Media',
+                      onSelect: (url) => {
+                        setConfig((prev: any) => ({
+                          ...prev,
+                          entryPopup: { ...(prev.entryPopup || {}), image: url },
+                        }));
+                        showNotification('Popup banner graphic selected from Media!');
+                      }
+                    })}
+                    className="btn btn-outline-secondary d-flex align-items-center gap-1.5 flex-shrink-0"
+                    style={{ borderRadius: '8px', fontSize: '12px' }}
+                  >
+                    <ImageIcon size={14} />
+                    <span>Choose from Media</span>
+                  </button>
                   <label
                     className="btn btn-primary d-flex align-items-center gap-1.5 flex-shrink-0 shadow-sm"
                     style={{ borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}
                   >
                     <Upload size={14} />
-                    <span>Upload Image</span>
+                    <span>Upload PC</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -5436,6 +5808,20 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Reusable Media Picker Modal */}
+      {mediaPickerConfig && (
+        <MediaPickerModal
+          isOpen={mediaPickerConfig.open}
+          onClose={() => setMediaPickerConfig(null)}
+          defaultFolder={mediaPickerConfig.folder || 'home-customizer'}
+          title={mediaPickerConfig.title || 'Choose from Media'}
+          onSelect={(url) => {
+            mediaPickerConfig.onSelect(url);
+            setMediaPickerConfig(null);
+          }}
+        />
+      )}
     </div>
   );
 };

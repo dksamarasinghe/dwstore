@@ -279,10 +279,10 @@ export default function TodaySuperDeals({ initialConfig }: TodaySuperDealsProps)
                     </div>
 
                     {/* KOKO installment tag */}
-                    <div className="flex items-center gap-1 text-[10px] text-slate-500 bg-slate-50 border border-slate-100 rounded-lg px-2 py-1 mb-3">
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500 bg-slate-50 border border-slate-100 rounded-lg px-2 py-1 mb-3">
                       <span>or 3x with</span>
-                      <span className="font-black text-purple-600">KOKO</span>
-                      <span className="text-slate-400 font-mono">
+                      <img src="/koko.png" alt="Koko" className="h-3.5 w-auto object-contain inline-block" />
+                      <span className="text-slate-600 font-mono font-medium">
                         LKR {formatPriceLKR(Math.round(selling / 3))}
                       </span>
                     </div>

@@ -29,9 +29,11 @@ import {
   Upload,
   Trash2,
   Star,
-  CheckCircle2
+  CheckCircle2,
+  FolderOpen
 } from 'lucide-react';
 import { AttributeItem, BrandItem, CategoryItem, ProductItem, ProductVariationItem, ShippingDetails, TabType } from '../../types';
+import { MediaPickerModal } from '../common/MediaPickerModal';
 
 interface AddProductViewProps {
   initialProduct?: ProductItem | null;
@@ -255,10 +257,16 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
     if (!initialProduct) return 'simple';
     const attrs = parseInitialAttributes(initialProduct);
     const vars = parseInitialVariations(initialProduct, attrs);
-    if (vars.length > 0 || attrs.length > 0 || isVariableProduct(initialProduct)) {
+    if (
+      vars.length > 0 ||
+      attrs.length > 0 ||
+      isVariableProduct(initialProduct) ||
+      initialProduct.productType === 'variable' ||
+      initialProduct.type === 'variable'
+    ) {
       return 'variable';
     }
-    return initialProduct?.productType === 'variable' ? 'variable' : 'simple';
+    return 'simple';
   });
 
   // 2. Basic Information (Completely blank if adding new!)
@@ -309,6 +317,11 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
     open: boolean;
     variationId: string;
     variationTitle?: string;
+  } | null>(null);
+  const [mediaPickerState, setMediaPickerState] = useState<{
+    open: boolean;
+    target: 'main' | 'gallery' | 'variation';
+    variationId?: string;
   } | null>(null);
 
   // VPS Media Upload Helper
@@ -551,8 +564,13 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       const parsedVars = parseInitialVariations(initialProduct, parsedAttrs);
       setVariations(parsedVars);
 
-      const isVar = isVariableProduct(initialProduct) || parsedAttrs.length > 0 || parsedVars.length > 0;
-      setProductType(isVar ? 'variable' : (initialProduct.productType || 'simple'));
+      const isVar =
+        isVariableProduct(initialProduct) ||
+        parsedAttrs.length > 0 ||
+        parsedVars.length > 0 ||
+        initialProduct.productType === 'variable' ||
+        initialProduct.type === 'variable';
+      setProductType(isVar ? 'variable' : (initialProduct.productType || initialProduct.type || 'simple'));
       setProductName(initialProduct.name || '');
       setSku(initialProduct.sku || '');
       setBrand(initialProduct.brand || '');
@@ -1547,6 +1565,14 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                           <CheckCircle2 size={12} className="me-1" /> Primary Image
                         </span>
                         <div className="d-flex gap-2">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            style={{ fontSize: '11px', padding: '3px 8px' }}
+                            onClick={() => setMediaPickerState({ open: true, target: 'main' })}
+                          >
+                            <ImageIcon size={12} className="me-1 inline" /> Media
+                          </button>
                           <label
                             className="btn btn-sm btn-outline-primary"
                             style={{ fontSize: '11px', padding: '3px 8px', cursor: 'pointer' }}
@@ -1574,11 +1600,10 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                       </small>
                     </div>
                   ) : (
-                    <label
-                      className="w-100 p-4 border border-dashed rounded-3 text-center d-flex flex-column align-items-center justify-content-center cursor-pointer transition hover-bg"
+                    <div
+                      className="w-100 p-4 border border-dashed rounded-3 text-center d-flex flex-column align-items-center justify-content-center transition hover-bg"
                       style={{
                         minHeight: '220px',
-                        cursor: 'pointer',
                         borderColor: 'var(--border, #cbd5e1)',
                         background: 'var(--bg, #f8fafc)',
                       }}
@@ -1587,22 +1612,38 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                         className="rounded-circle p-3 mb-2 d-flex align-items-center justify-content-center"
                         style={{ background: 'rgba(37, 99, 235, 0.1)', color: 'var(--primary, #2563eb)' }}
                       >
-                        <Upload size={24} />
+                        <ImageIcon size={24} />
                       </div>
-                      <b style={{ fontSize: '13px' }}>
-                        {isUploadingMain ? 'Uploading to VPS...' : 'Click to Upload Main Image'}
-                      </b>
-                      <small className="text-muted mt-1" style={{ fontSize: '11px' }}>
+                      <b style={{ fontSize: '13px' }}>Featured Product Image</b>
+                      <small className="text-muted mt-0.5 mb-3" style={{ fontSize: '11px' }}>
                         PNG, JPG, or WEBP up to 10MB
                       </small>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleMainImageChange}
-                        disabled={isUploadingMain}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
+                      <div className="d-flex gap-2 flex-wrap justify-content-center">
+                        <button
+                          type="button"
+                          onClick={() => setMediaPickerState({ open: true, target: 'main' })}
+                          className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5"
+                          style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '8px' }}
+                        >
+                          <ImageIcon size={14} />
+                          <span>Choose Media</span>
+                        </button>
+                        <label
+                          className="btn btn-sm btn-primary d-flex align-items-center gap-1.5 mb-0"
+                          style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer' }}
+                        >
+                          <Upload size={14} />
+                          <span>{isUploadingMain ? 'Uploading...' : 'Upload PC'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleMainImageChange}
+                            disabled={isUploadingMain}
+                            style={{ display: 'none' }}
+                          />
+                        </label>
+                      </div>
+                    </div>
                   )}
                 </div>
 
@@ -1617,21 +1658,32 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                         Additional angles, box views, and color variants. These can also be assigned to variations.
                       </small>
                     </div>
-                    <label
-                      className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 align-self-start align-self-sm-auto"
-                      style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer' }}
-                    >
-                      <Upload size={14} />
-                      {isUploadingGallery ? 'Uploading...' : '+ Upload Gallery Images'}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleGalleryImagesChange}
-                        disabled={isUploadingGallery}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
+                    <div className="d-flex gap-2 align-self-start align-self-sm-auto flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setMediaPickerState({ open: true, target: 'gallery' })}
+                        className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1.5"
+                        style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '8px' }}
+                      >
+                        <ImageIcon size={14} />
+                        <span>Choose from Media</span>
+                      </button>
+                      <label
+                        className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 cursor-pointer"
+                        style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer' }}
+                      >
+                        <Upload size={14} />
+                        {isUploadingGallery ? 'Uploading...' : '+ Upload PC'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleGalleryImagesChange}
+                          disabled={isUploadingGallery}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                    </div>
                   </div>
 
                   {/* Thumbnail Grid */}
@@ -3152,38 +3204,53 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
             {/* Option 2: Upload new image specifically for this variation */}
             <div className="mb-4 p-3 rounded-2 border" style={{ background: 'var(--hover)' }}>
               <label className="d-block mb-1 fw-semibold" style={{ fontSize: '13px' }}>
-                2. Or Upload a New Image from Computer
+                2. Or Upload or Choose from Media Library
               </label>
               <p className="text-muted mb-2" style={{ fontSize: '11px' }}>
-                Directly uploads to VPS storage (`/media/products/`) and links to this variation.
+                Directly uploads to VPS storage (`/media/products/`) or choose from existing media library.
               </p>
-              <label
-                className="btn-soft d-inline-flex align-items-center gap-2 mb-0"
-                style={{ cursor: 'pointer', fontSize: '12px', padding: '7px 14px' }}
-              >
-                <Upload size={14} />
-                Upload Variation Image to VPS
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="d-none"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const url = await uploadMediaFile(file, 'products');
-                    if (url) {
-                      handleUpdateVariation(variationImageModal.variationId, 'image', url);
-                      handleUpdateVariation(variationImageModal.variationId, 'displayImage', url);
-                      if (!galleryImages.includes(url)) {
-                        setGalleryImages((prev) => [...prev, url]);
+              <div className="d-flex flex-wrap gap-2">
+                <label
+                  className="btn-soft d-inline-flex align-items-center gap-2 mb-0"
+                  style={{ cursor: 'pointer', fontSize: '12px', padding: '7px 14px' }}
+                >
+                  <Upload size={14} />
+                  Upload Variation Image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="d-none"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const url = await uploadMediaFile(file, 'products');
+                      if (url) {
+                        handleUpdateVariation(variationImageModal.variationId, 'image', url);
+                        handleUpdateVariation(variationImageModal.variationId, 'displayImage', url);
+                        if (!galleryImages.includes(url)) {
+                          setGalleryImages((prev) => [...prev, url]);
+                        }
+                        showNotification('Uploaded and assigned variation image to VPS successfully!');
+                        setVariationImageModal(null);
                       }
-                      showNotification('Uploaded and assigned variation image to VPS successfully!');
-                      setVariationImageModal(null);
-                    }
-                    e.target.value = '';
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn-soft d-inline-flex align-items-center gap-2"
+                  style={{ fontSize: '12px', padding: '7px 14px' }}
+                  onClick={() => {
+                    const varId = variationImageModal.variationId;
+                    setVariationImageModal(null);
+                    setMediaPickerState({ open: true, target: 'variation', variationId: varId });
                   }}
-                />
-              </label>
+                >
+                  <FolderOpen size={14} />
+                  Choose from Media Library
+                </button>
+              </div>
             </div>
 
             {/* Footer Buttons */}
@@ -3211,6 +3278,62 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Media Picker Modal */}
+      {mediaPickerState?.open && (
+        <MediaPickerModal
+          isOpen={mediaPickerState.open}
+          onClose={() => setMediaPickerState(null)}
+          title={
+            mediaPickerState.target === 'main'
+              ? 'Select Main Featured Image'
+              : mediaPickerState.target === 'gallery'
+              ? 'Select Product Gallery Images'
+              : 'Select Variation Image'
+          }
+          defaultFolder="products"
+          multiple={mediaPickerState.target === 'gallery'}
+          onSelect={(url) => {
+            if (!url) return;
+            if (mediaPickerState.target === 'main') {
+              setMainImage(url);
+              if (!galleryImages.includes(url)) {
+                setGalleryImages((prev) => [url, ...prev]);
+              }
+              showNotification('Main featured image updated from media library');
+            } else if (mediaPickerState.target === 'gallery') {
+              setGalleryImages((prev) => (!prev.includes(url) ? [...prev, url] : prev));
+              if (!mainImage) setMainImage(url);
+              showNotification('Image added to product gallery');
+            } else if (mediaPickerState.target === 'variation' && mediaPickerState.variationId) {
+              handleUpdateVariation(mediaPickerState.variationId, 'image', url);
+              handleUpdateVariation(mediaPickerState.variationId, 'displayImage', url);
+              if (!galleryImages.includes(url)) {
+                setGalleryImages((prev) => [...prev, url]);
+              }
+              showNotification('Variation image assigned from media library');
+            }
+            setMediaPickerState(null);
+          }}
+          onSelectMultiple={(urls) => {
+            if (!urls || urls.length === 0) return;
+            if (mediaPickerState.target === 'gallery') {
+              setGalleryImages((prev) => {
+                const combined = [...prev];
+                urls.forEach((u) => {
+                  if (!combined.includes(u)) combined.push(u);
+                });
+                return combined;
+              });
+              if (!mainImage && urls.length > 0) {
+                setMainImage(urls[0]);
+              }
+              showNotification(`Added ${urls.length} image(s) to product gallery`);
+            }
+            setMediaPickerState(null);
+          }}
+        />
       )}
     </div>
   );

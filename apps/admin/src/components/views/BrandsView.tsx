@@ -16,6 +16,7 @@ import {
   Upload
 } from 'lucide-react';
 import { BrandItem } from '../../types';
+import { MediaPickerModal } from '../common/MediaPickerModal';
 
 interface BrandsViewProps {
   brands: BrandItem[];
@@ -43,6 +44,7 @@ export const BrandsView: React.FC<BrandsViewProps> = ({
   const [formTag, setFormTag] = useState('');
   const [formFeatured, setFormFeatured] = useState(true);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
 
   // Upload logo to VPS Media (/media/brands/)
   const handleUploadBrandLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -473,13 +475,22 @@ export const BrandsView: React.FC<BrandsViewProps> = ({
                 </label>
 
                 {/* Upload Action Button */}
-                <div className="d-flex align-items-center gap-2 mb-2">
+                <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setMediaPickerOpen(true)}
+                    className="btn btn-outline-secondary d-inline-flex align-items-center gap-1.5"
+                    style={{ fontSize: '12px', padding: '7px 14px', borderRadius: '8px' }}
+                  >
+                    <ImageIcon size={14} />
+                    <span>Choose from Media</span>
+                  </button>
                   <label
                     className="btn btn-primary d-inline-flex align-items-center gap-1.5"
                     style={{ fontSize: '12px', padding: '7px 12px', borderRadius: '8px', cursor: 'pointer' }}
                   >
                     <Upload size={14} />
-                    {isUploadingLogo ? 'Uploading to VPS...' : 'Upload Logo from Computer'}
+                    {isUploadingLogo ? 'Uploading to VPS...' : 'Upload PC'}
                     <input
                       type="file"
                       accept="image/*"
@@ -613,6 +624,18 @@ export const BrandsView: React.FC<BrandsViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Media Picker Modal */}
+      <MediaPickerModal
+        isOpen={mediaPickerOpen}
+        onClose={() => setMediaPickerOpen(false)}
+        defaultFolder="brands"
+        title="Choose Brand Logo from Media"
+        onSelect={(url) => {
+          setFormLogo(url);
+          showNotification('Brand logo selected from Media!');
+        }}
+      />
     </div>
   );
 };

@@ -45,3 +45,5 @@ Thumbs.db
 # Temporary test / scratch files
 coverage/
 .temp/
+homepage-persistent-backup.json
+homepage-live-backup.json

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 import { readDataJson, writeDataJson } from '@/lib/data-paths';
 import { globalMemoryCache } from '@/lib/cache';
 
@@ -63,7 +65,17 @@ function getHomepageConfig() {
   const cached = globalMemoryCache.get(HOMEPAGE_CACHE_KEY, HOMEPAGE_CACHE_TTL);
   if (cached) return sanitizeHomepageConfig(cached);
 
-  const data = readDataJson('homepage.json', null);
+  let data = readDataJson('homepage.json', null);
+  try {
+    const backupPath = path.join(process.cwd(), 'homepage-persistent-backup.json');
+    if (fs.existsSync(backupPath)) {
+      const backupData = JSON.parse(fs.readFileSync(backupPath, 'utf-8'));
+      if (backupData && typeof backupData === 'object') {
+        data = { ...(data || {}), ...backupData };
+      }
+    }
+  } catch {}
+
   if (data) {
     const clean = sanitizeHomepageConfig(data);
     globalMemoryCache.set(HOMEPAGE_CACHE_KEY, clean);
@@ -146,11 +158,31 @@ export async function POST(req: NextRequest) {
           ? config.bentoGrid.enabled
           : (existing?.bentoGrid?.enabled ?? true),
       },
+      certifiedSpotlight: {
+        ...(existing.certifiedSpotlight || {}),
+        ...(config.certifiedSpotlight || {}),
+        enabled: typeof config?.certifiedSpotlight?.enabled === 'boolean'
+          ? config.certifiedSpotlight.enabled
+          : (existing?.certifiedSpotlight?.enabled ?? true),
+      },
+      entryPopup: {
+        ...(existing.entryPopup || {}),
+        ...(config.entryPopup || {}),
+        enabled: typeof config?.entryPopup?.enabled === 'boolean'
+          ? config.entryPopup.enabled
+          : (existing?.entryPopup?.enabled ?? false),
+      },
     };
 
     const cleanMerged = sanitizeHomepageConfig(mergedConfig);
     writeDataJson('homepage.json', cleanMerged);
     globalMemoryCache.set(HOMEPAGE_CACHE_KEY, cleanMerged);
+
+    // Save persistent untracked backup on VPS to guard against git reset --hard
+    try {
+      const backupPath = path.join(process.cwd(), 'homepage-persistent-backup.json');
+      fs.writeFileSync(backupPath, JSON.stringify(cleanMerged, null, 2), 'utf-8');
+    } catch {}
 
     return NextResponse.json(
       { success: true, message: 'Homepage configuration updated successfully', config: cleanMerged },
