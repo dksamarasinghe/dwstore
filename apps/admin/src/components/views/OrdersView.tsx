@@ -81,13 +81,58 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
 
-  // Helper to robustly parse timestamps
+  // Helper to robustly clean order IDs (prevent double ##)
+  const cleanOrderId = (id?: string): string => {
+    if (!id) return '';
+    return String(id).replace(/^#+/, '');
+  };
+
+  // Helper to robustly parse timestamps across all formats
   const parseOrderTime = (val?: string): number => {
     if (!val) return 0;
-    const t = new Date(val).getTime();
-    if (!isNaN(t)) return t;
-    const t2 = new Date(val.replace(/-/g, '/')).getTime();
-    if (!isNaN(t2)) return t2;
+    const str = String(val).trim();
+
+    // Check standard / ISO date parsing
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      // If year is < 2020 (e.g. V8 defaults to 2001 when string is "Nov 15, 06:47 AM" without year),
+      // set to current year 2026!
+      if (d.getFullYear() < 2020) {
+        d.setFullYear(2026);
+      }
+      return d.getTime();
+    }
+
+    const d2 = new Date(str.replace(/-/g, '/'));
+    if (!isNaN(d2.getTime())) {
+      if (d2.getFullYear() < 2020) {
+        d2.setFullYear(2026);
+      }
+      return d2.getTime();
+    }
+
+    // Custom regex for formats like "Nov 15, 06:47 AM", "Nov 15, 2026, 01:17 AM"
+    const monthNames: Record<string, number> = {
+      jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+      jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+    };
+    const match = str.match(
+      /^([a-zA-Z]{3})\w*\s+(\d{1,2}),?\s*(?:(\d{4}))?,?\s*(?:(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?)?/i
+    );
+    if (match) {
+      const monthStr = match[1].toLowerCase().slice(0, 3);
+      const month = monthNames[monthStr] ?? 0;
+      const day = parseInt(match[2], 10);
+      const year = match[3] ? parseInt(match[3], 10) : 2026;
+      let hour = match[4] ? parseInt(match[4], 10) : 0;
+      const minute = match[5] ? parseInt(match[5], 10) : 0;
+      const second = match[6] ? parseInt(match[6], 10) : 0;
+      const ampm = match[7] ? match[7].toLowerCase() : null;
+      if (ampm === 'pm' && hour < 12) hour += 12;
+      if (ampm === 'am' && hour === 12) hour = 0;
+      return new Date(year, month, day, hour, minute, second).getTime();
+    }
+
     return 0;
   };
 
@@ -144,6 +189,8 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       if (timeA !== timeB && timeA > 0 && timeB > 0) {
         return sortOrder === 'latest' ? timeB - timeA : timeA - timeB;
       }
+      if (timeA > 0 && timeB === 0) return sortOrder === 'latest' ? -1 : 1;
+      if (timeB > 0 && timeA === 0) return sortOrder === 'latest' ? 1 : -1;
       const idA = parseOrderNumericId(a?.orderId);
       const idB = parseOrderNumericId(b?.orderId);
       if (idA !== idB && idA > 0 && idB > 0) {
@@ -563,7 +610,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                   const customerPhone = order?.customerPhone || '';
                   const cleanPhone = customerPhone.replace(/[^0-9]/g, '');
                   const totalVal = order?.total || 0;
-                  const waMessage = `Hello ${customerName}, this is DWstore.lk regarding your Order #${order?.orderId} (Rs. ${totalVal.toLocaleString()}). Delivery status: ${status.toUpperCase()}.`;
+                  const waMessage = `Hello ${customerName}, this is DWstore.lk regarding your Order #${cleanOrderId(order?.orderId)} (Rs. ${totalVal.toLocaleString()}). Delivery status: ${status.toUpperCase()}.`;
 
                   return (
                     <tr key={order?.orderId || Math.random()}>
@@ -580,7 +627,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                           className="oid border-0 bg-transparent p-0 text-start"
                           onClick={() => openOrderDetail(order)}
                         >
-                          <b>#{order?.orderId}</b>
+                          <b>#{cleanOrderId(order?.orderId)}</b>
                         </button>
                         <small className="d-block text-muted">{order?.createdAt}</small>
                         {order?.trackingNumber && (
@@ -763,7 +810,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
             {/* Modal Header */}
             <div className="d-flex align-items-center justify-content-between pb-3 border-bottom" style={{ borderColor: 'var(--border)' }}>
               <div>
-                <h4 className="m-0">Order #{selectedOrder.orderId}</h4>
+                <h4 className="m-0">Order #{cleanOrderId(selectedOrder.orderId)}</h4>
                 <small className="text-muted">Placed on {selectedOrder.createdAt}</small>
               </div>
               <div className="d-flex align-items-center gap-2">
@@ -925,7 +972,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               {selectedOrder.customerPhone && (
                 <a
                   href={`https://wa.me/${selectedOrder.customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                    `Hello ${selectedOrder.customerName}, this is DWstore.lk regarding your order #${selectedOrder.orderId}.`
+                    `Hello ${selectedOrder.customerName}, this is DWstore.lk regarding your order #${cleanOrderId(selectedOrder.orderId)}.`
                   )}`}
                   target="_blank"
                   rel="noreferrer"

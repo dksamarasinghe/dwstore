@@ -83,17 +83,22 @@ export function normalizeOrder(raw: any): OrderItem {
     : [];
 
   return {
-    orderId: raw.orderId || `DW-${Date.now()}`,
-    createdAt: raw.createdAt
-      ? raw.createdAt.includes('T')
-        ? new Date(raw.createdAt).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })
-        : raw.createdAt
-      : 'Recently',
+    orderId: raw.orderId || `DWS-${Date.now().toString().slice(-6)}`,
+    createdAt: (() => {
+      if (!raw.createdAt) return new Date().toISOString().slice(0, 16).replace('T', ' ');
+      try {
+        const d = new Date(raw.createdAt);
+        if (!isNaN(d.getTime())) {
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const hours = String(d.getHours()).padStart(2, '0');
+          const minutes = String(d.getMinutes()).padStart(2, '0');
+          return `${year}-${month}-${day} ${hours}:${minutes}`;
+        }
+      } catch (e) {}
+      return String(raw.createdAt);
+    })(),
     customerName,
     customerEmail,
     customerPhone,
