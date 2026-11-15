@@ -91,15 +91,28 @@ export async function POST(req: NextRequest) {
           to: [targetEmail],
           subject: '✅ DWstore.lk Resend Email Integration Test',
           html: `
-            <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
-              <h2 style="color: #2563eb; margin-top: 0;">🎉 Resend Email Working!</h2>
-              <p>Your <strong>dwstore.lk</strong> domain and Resend API Key are configured correctly.</p>
-              <div style="background: #f8fafc; border-radius: 8px; padding: 12px; font-size: 13px; color: #334155;">
-                <p style="margin: 4px 0;"><strong>Sender:</strong> ${fromEmail}</p>
-                <p style="margin: 4px 0;"><strong>Recipient:</strong> ${targetEmail}</p>
-                <p style="margin: 4px 0;"><strong>Status:</strong> Ready to deliver customer order receipts and owner alerts!</p>
+            <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.05);">
+              <div style="background-color: #000000; padding: 24px; text-align: center;">
+                <img
+                  src="https://dwstore.lk/dwstore_logo_white.png"
+                  alt="DWstore.lk"
+                  width="180"
+                  style="display: block; margin: 0 auto 8px auto; max-width: 180px; width: 100%; height: auto; border: 0;"
+                />
+                <p style="color: #94a3b8; font-size: 11px; margin: 0; letter-spacing: 1px; font-weight: 600; text-transform: uppercase;">
+                  Integration Test &bull; Sri Lanka's Trusted Tech Store
+                </p>
               </div>
-              <p style="font-size: 12px; color: #64748b; margin-top: 16px;">Sent from DWstore.lk Notification Engine.</p>
+              <div style="padding: 24px;">
+                <h2 style="color: #0f172a; margin-top: 0; font-size: 18px;">🎉 Resend Email Working!</h2>
+                <p style="color: #64748b; font-size: 13px;">Your <strong>dwstore.lk</strong> domain and Resend API Key are configured correctly.</p>
+                <div style="background: #f8fafc; border-radius: 8px; padding: 14px; font-size: 13px; color: #334155; border: 1px solid #e2e8f0;">
+                  <p style="margin: 4px 0;"><strong>Sender:</strong> ${fromEmail}</p>
+                  <p style="margin: 4px 0;"><strong>Recipient:</strong> ${targetEmail}</p>
+                  <p style="margin: 4px 0; color: #10b981; font-weight: 700;">✓ Ready to deliver live customer order receipts and owner alerts!</p>
+                </div>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 16px; margin-bottom: 0;">Sent from DWstore.lk Notification Engine.</p>
+              </div>
             </div>
           `,
         }),

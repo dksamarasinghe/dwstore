@@ -86,11 +86,16 @@ function generateCustomerEmailHtml(order: OrderData): string {
           
           <!-- Header Banner -->
           <tr>
-            <td style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); padding: 32px 30px; text-align: center;">
-              <h1 style="color: #ffffff; font-size: 24px; font-weight: 900; letter-spacing: -0.5px; margin: 0 0 6px 0; text-transform: uppercase;">
-                DWstore.lk
-              </h1>
-              <p style="color: #bfdbfe; font-size: 12px; margin: 0; letter-spacing: 1px; font-weight: 600; text-transform: uppercase;">
+            <td style="background-color: #000000; padding: 32px 30px; text-align: center;">
+              <a href="https://dwstore.lk" target="_blank" style="text-decoration: none; display: inline-block;">
+                <img
+                  src="https://dwstore.lk/dwstore_logo_white.png"
+                  alt="DWstore.lk"
+                  width="200"
+                  style="display: block; margin: 0 auto 12px auto; max-width: 200px; width: 100%; height: auto; border: 0;"
+                />
+              </a>
+              <p style="color: #94a3b8; font-size: 11px; margin: 0; letter-spacing: 1px; font-weight: 600; text-transform: uppercase;">
                 Order Confirmation &bull; Sri Lanka's Trusted Tech Store
               </p>
             </td>
@@ -243,10 +248,24 @@ function generateAdminEmailHtml(order: OrderData): string {
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family: sans-serif; color: #1e293b; line-height: 1.6; padding: 20px;">
-  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 24px;">
-    <h2 style="color: #1e40af; margin-top: 0;">🔔 New Order Received: #${order.orderId}</h2>
-    <p>A new order has been placed on <strong>DWstore.lk</strong>!</p>
+<body style="font-family: sans-serif; color: #1e293b; line-height: 1.6; padding: 20px; background-color: #f8fafc;">
+  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.05);">
+    <div style="background-color: #000000; padding: 24px 20px; text-align: center;">
+      <a href="https://dwstore.lk" target="_blank" style="text-decoration: none; display: inline-block;">
+        <img
+          src="https://dwstore.lk/dwstore_logo_white.png"
+          alt="DWstore.lk"
+          width="180"
+          style="display: block; margin: 0 auto; max-width: 180px; width: 100%; height: auto; border: 0;"
+        />
+      </a>
+      <p style="color: #94a3b8; font-size: 11px; margin: 8px 0 0 0; letter-spacing: 1px; font-weight: 600; text-transform: uppercase;">
+        Store Admin Alert &bull; Sri Lanka's Trusted Tech Store
+      </p>
+    </div>
+    <div style="padding: 24px;">
+      <h2 style="color: #0f172a; margin-top: 0; font-size: 18px;">🔔 New Order Received: #${order.orderId}</h2>
+      <p style="color: #64748b; font-size: 13px; margin: 4px 0 16px 0;">A new order has been placed on <strong>DWstore.lk</strong>!</p>
     
     <div style="background: #f1f5f9; padding: 16px; border-radius: 8px; margin: 16px 0;">
       <h3 style="margin-top: 0; font-size: 14px;">Customer & Delivery Details:</h3>
