@@ -249,6 +249,8 @@ export async function dispatchSingleWhatsAppMessage(
     'http://localhost:8080/send',
   ].filter(Boolean) as string[];
 
+  let lastError = 'No WhatsApp gateway or credentials reachable';
+
   for (const rawUrl of candidateUrls) {
     try {
       const endpoint = rawUrl.endsWith('/send') ? rawUrl : `${rawUrl.replace(/\/$/, '')}/send`;
@@ -278,13 +280,20 @@ export async function dispatchSingleWhatsAppMessage(
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.success) {
         return { success: true, method: 'baileys_gateway' };
+      } else if (data?.error) {
+        lastError = data.error;
       }
-    } catch (e) {
-      // Continue trying next candidate endpoint
+    } catch (e: any) {
+      lastError = e?.message || 'Gateway connection timeout';
     }
   }
 
-  return { success: false, error: 'No WhatsApp gateway or credentials reachable' };
+  return {
+    success: false,
+    error: lastError.includes('not connected')
+      ? 'WhatsApp Gateway is not linked yet! Please scan the QR code first from the WhatsApp Gateway card.'
+      : `${lastError}. Ensure the WhatsApp Gateway process is running on your VPS.`,
+  };
 }
 
 /**

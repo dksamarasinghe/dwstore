@@ -290,8 +290,14 @@ export async function sendOrderEmails(order: any) {
   const emailConfig = readDataJson<any>('email-config.json', null) || {};
   const apiKey = emailConfig.resendApiKey || process.env.RESEND_API_KEY;
   const adminEmail = emailConfig.adminEmail || process.env.ADMIN_NOTIFICATION_EMAIL || 'support@dwstore.lk';
-  // With dwstore.lk verified on Resend, default to orders@dwstore.lk
-  const fromEmail = emailConfig.fromEmail || process.env.RESEND_FROM_EMAIL || 'DWstore.lk <orders@dwstore.lk>';
+  // With dwstore.lk verified on Resend, ensure from address is from verified domain
+  const rawFrom = emailConfig.fromEmail || process.env.RESEND_FROM_EMAIL || 'DWstore.lk <orders@dwstore.lk>';
+  const fromEmail =
+    rawFrom.toLowerCase().includes('@gmail.com') ||
+    rawFrom.toLowerCase().includes('@yahoo.com') ||
+    !rawFrom.includes('@dwstore.lk')
+      ? 'DWstore.lk <orders@dwstore.lk>'
+      : rawFrom;
   const customerNotifyEnabled = emailConfig.customerEmailNotifications !== false;
   const adminNotifyEnabled = emailConfig.adminEmailNotifications !== false;
 

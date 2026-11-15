@@ -163,8 +163,13 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
       .then((r) => r.json())
       .then((data) => {
         if (data?.config) {
-          setEmailConfig(data.config);
-          setTestEmailAddress(data.config.adminEmail || 'support@dwstore.lk');
+          const cfg = { ...data.config };
+          if (cfg.fromEmail && (cfg.fromEmail.includes('@gmail.com') || !cfg.fromEmail.includes('@dwstore.lk'))) {
+            cfg.fromEmail = 'DWstore.lk <orders@dwstore.lk>';
+          }
+          setEmailConfig(cfg);
+          const target = cfg.adminEmail && !cfg.adminEmail.includes('@dwstore.lk') ? cfg.adminEmail : (cfg.adminEmail || 'singhedk@gmail.com');
+          setTestEmailAddress(target);
         }
       })
       .catch(() => {});
@@ -173,13 +178,18 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
   const handleSaveEmailConfig = async () => {
     setIsSavingEmail(true);
     try {
+      const toSave = { ...emailConfig };
+      if (toSave.fromEmail && (toSave.fromEmail.includes('@gmail.com') || toSave.fromEmail.includes('@yahoo.com') || !toSave.fromEmail.includes('@dwstore.lk'))) {
+        toSave.fromEmail = 'DWstore.lk <orders@dwstore.lk>';
+      }
       const res = await fetch(`${getStorefrontUrl()}/api/integrations/email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(emailConfig),
+        body: JSON.stringify(toSave),
       });
       const data = await res.json();
       if (data?.success) {
+        setEmailConfig(data.config || toSave);
         showNotification('Order notification settings saved successfully!');
         setEmailModalOpen(false);
       } else {
@@ -199,13 +209,17 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
     }
     setIsTestingEmail(true);
     try {
+      let sendFrom = emailConfig.fromEmail || 'DWstore.lk <orders@dwstore.lk>';
+      if (sendFrom.includes('@gmail.com') || sendFrom.includes('@yahoo.com') || !sendFrom.includes('@dwstore.lk')) {
+        sendFrom = 'DWstore.lk <orders@dwstore.lk>';
+      }
       const res = await fetch(`${getStorefrontUrl()}/api/integrations/email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'test',
           resendApiKey: emailConfig.resendApiKey,
-          fromEmail: emailConfig.fromEmail,
+          fromEmail: sendFrom,
           testEmail: testEmailAddress || emailConfig.adminEmail,
         }),
       });
@@ -1774,6 +1788,22 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ showNotifica
                 <small className="text-muted d-block mt-1">
                   Sent via your verified domain (e.g. <code>DWstore.lk &lt;orders@dwstore.lk&gt;</code>). Customers see this as sender.
                 </small>
+                {Boolean(emailConfig.fromEmail && (emailConfig.fromEmail.includes('@gmail.com') || emailConfig.fromEmail.includes('@yahoo.com') || !emailConfig.fromEmail.includes('@dwstore.lk'))) && (
+                  <div
+                    className="p-2 mt-1.5 rounded-2 d-flex align-items-center justify-content-between gap-2"
+                    style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '11.5px' }}
+                  >
+                    <span>⚠️ <b>Sender must be @dwstore.lk:</b> Resend rejects <code>@gmail.com</code> sender addresses.</span>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger py-0 px-2 flex-shrink-0"
+                      style={{ fontSize: '11px', height: '24px' }}
+                      onClick={() => setEmailConfig({ ...emailConfig, fromEmail: 'DWstore.lk <orders@dwstore.lk>' })}
+                    >
+                      Use orders@dwstore.lk
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Admin / Owner Notification Email */}

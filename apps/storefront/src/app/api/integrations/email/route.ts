@@ -58,9 +58,20 @@ export async function POST(req: NextRequest) {
 
     // 1. Send test email action
     if (body.action === 'test') {
-      const apiKey = body.resendApiKey || process.env.RESEND_API_KEY;
-      const targetEmail = body.testEmail || body.adminEmail || process.env.ADMIN_NOTIFICATION_EMAIL || 'support@dwstore.lk';
-      const fromEmail = body.fromEmail || process.env.RESEND_FROM_EMAIL || 'DWstore.lk <orders@dwstore.lk>';
+      const apiKey = (body.resendApiKey || process.env.RESEND_API_KEY || '').trim();
+      let targetEmail = (body.testEmail || body.adminEmail || 'singhedk@gmail.com').trim();
+      let rawFrom = (body.fromEmail || process.env.RESEND_FROM_EMAIL || 'DWstore.lk <orders@dwstore.lk>').trim();
+
+      // Ensure sender email uses verified domain dwstore.lk (Resend rejects third-party domains like @gmail.com)
+      let fromEmail = 'DWstore.lk <orders@dwstore.lk>';
+      if (rawFrom.includes('@dwstore.lk')) {
+        fromEmail = rawFrom.includes('<') ? rawFrom : `DWstore.lk <${rawFrom}>`;
+      }
+
+      // If user provided support@dwstore.lk as destination, but also entered a personal email in adminEmail, prefer personal email
+      if (targetEmail.includes('@dwstore.lk') && body.adminEmail && !body.adminEmail.includes('@dwstore.lk')) {
+        targetEmail = body.adminEmail.trim();
+      }
 
       if (!apiKey) {
         return NextResponse.json(
@@ -124,7 +135,7 @@ export async function POST(req: NextRequest) {
             success: false,
             error:
               result.error ||
-              'Failed to reach WhatsApp Gateway. Make sure the WhatsApp Gateway is running (or QR code is linked).',
+              'Failed to reach WhatsApp Gateway. Make sure the WhatsApp Gateway is running and linked with your phone.',
           },
           { status: 400, headers: CORS_HEADERS }
         );
@@ -133,11 +144,16 @@ export async function POST(req: NextRequest) {
 
     // 3. Save notification configuration
     const current = readDataJson<any>('email-config.json', {});
+    let safeFrom = body.fromEmail ? body.fromEmail.trim() : (current.fromEmail || 'DWstore.lk <orders@dwstore.lk>');
+    if (safeFrom.toLowerCase().includes('@gmail.com') || safeFrom.toLowerCase().includes('@yahoo.com') || !safeFrom.includes('@dwstore.lk')) {
+      safeFrom = 'DWstore.lk <orders@dwstore.lk>';
+    }
+
     const updated = {
       ...current,
       enabled: body.enabled !== false,
       resendApiKey: body.resendApiKey !== undefined ? body.resendApiKey.trim() : (current.resendApiKey || ''),
-      fromEmail: body.fromEmail ? body.fromEmail.trim() : (current.fromEmail || 'DWstore.lk <orders@dwstore.lk>'),
+      fromEmail: safeFrom,
       adminEmail: body.adminEmail ? body.adminEmail.trim() : (current.adminEmail || 'support@dwstore.lk'),
       customerEmailNotifications: body.customerEmailNotifications !== false,
       adminEmailNotifications: body.adminEmailNotifications !== false,
