@@ -127,8 +127,141 @@ export default function App() {
     } catch (e) {}
   }, [products]);
 
-  // Sync products with Storefront API on mount
+  // Sync products with Storefront API on mount and every 15s / window focus
   useEffect(() => {
+    let isSubscribed = true;
+
+    const mapApiItemToProduct = (apiItem: any): ProductItem => {
+      const regPrice =
+        apiItem.regularPrice !== undefined && apiItem.regularPrice !== null
+          ? Number(apiItem.regularPrice)
+          : apiItem.regularPriceMinor
+          ? Math.round(Number(apiItem.regularPriceMinor) / 100)
+          : 0;
+      const sPrice =
+        apiItem.salePrice !== undefined && apiItem.salePrice !== null
+          ? Number(apiItem.salePrice)
+          : apiItem.salePriceMinor
+          ? Math.round(Number(apiItem.salePriceMinor) / 100)
+          : regPrice;
+      const stock =
+        apiItem.stock !== undefined && apiItem.stock !== null
+          ? Number(apiItem.stock)
+          : apiItem.stockQty !== undefined && apiItem.stockQty !== null
+          ? Number(apiItem.stockQty)
+          : 10;
+
+      const hasVars = Array.isArray(apiItem.variations) && apiItem.variations.length > 0;
+      const isVar = apiItem.type === 'variable' || apiItem.productType === 'variable' || hasVars;
+
+      let normalizedAttributes: any[] = [];
+      if (apiItem.attributes) {
+        if (Array.isArray(apiItem.attributes)) {
+          normalizedAttributes = apiItem.attributes;
+        } else if (typeof apiItem.attributes === 'object') {
+          normalizedAttributes = Object.entries(apiItem.attributes)
+            .filter(([k]) => k.toLowerCase() !== 'warranty')
+            .map(([k, v]) => ({
+              name: k.trim(),
+              values: Array.isArray(v) ? (v as string[]).join(', ') : String(v),
+            }));
+        }
+      }
+
+      const normalizedVars = hasVars
+        ? apiItem.variations.map((v: any, idx: number) => ({
+            id: String(v.id || `var-${idx}`),
+            sku: v.sku || '',
+            attributes: v.attributes || {},
+            regularPrice:
+              v.regularPrice !== undefined
+                ? Number(v.regularPrice)
+                : v.regularPriceMinor
+                ? Math.round(Number(v.regularPriceMinor) / 100)
+                : regPrice,
+            salePrice:
+              v.salePrice !== undefined
+                ? Number(v.salePrice)
+                : v.salePriceMinor
+                ? Math.round(Number(v.salePriceMinor) / 100)
+                : sPrice,
+            costPrice: 0,
+            stock:
+              v.stock !== undefined && v.stock !== null
+                ? Number(v.stock)
+                : v.stockQty !== undefined && v.stockQty !== null
+                ? Number(v.stockQty)
+                : 10,
+            image: v.displayImage || v.image || '',
+            displayImage: v.displayImage || v.image || '',
+          }))
+        : [];
+
+      const resolvedStatus: 'Active' | 'Low stock' | 'Out of stock' | 'Draft' =
+        apiItem.status === 'Active' ||
+        apiItem.status === 'Low stock' ||
+        apiItem.status === 'Out of stock' ||
+        apiItem.status === 'Draft'
+          ? apiItem.status
+          : apiItem.inStock === true
+          ? 'Active'
+          : apiItem.inStock === false
+          ? 'Out of stock'
+          : stock > 0
+          ? 'Active'
+          : 'Out of stock';
+
+      const primaryImg =
+        apiItem.displayImage ||
+        apiItem.image ||
+        (Array.isArray(apiItem.imageUrls) && apiItem.imageUrls[0]) ||
+        '';
+      const gallery =
+        Array.isArray(apiItem.galleryImages) && apiItem.galleryImages.length > 0
+          ? apiItem.galleryImages
+          : Array.isArray(apiItem.imageUrls)
+          ? apiItem.imageUrls
+          : primaryImg
+          ? [primaryImg]
+          : [];
+
+      return {
+        id: String(apiItem.id),
+        name: apiItem.name || apiItem.title || 'Untitled Product',
+        sku: apiItem.sku || `DWS-${String(apiItem.id).slice(-6)}`,
+        brand: apiItem.brand || '',
+        category: apiItem.category || 'Uncategorized',
+        productType: isVar ? 'variable' : 'simple',
+        type: isVar ? 'variable' : 'simple',
+        regularPrice: regPrice,
+        salePrice: sPrice,
+        costPrice: apiItem.costPrice ? Number(apiItem.costPrice) : 0,
+        stock,
+        stockAlertLevel: apiItem.stockAlertLevel ? Number(apiItem.stockAlertLevel) : 5,
+        status: resolvedStatus,
+        salesCount: apiItem.salesCount ? Number(apiItem.salesCount) : 0,
+        image: primaryImg,
+        displayImage: primaryImg,
+        galleryImages: gallery,
+        imageUrls: gallery,
+        rating: apiItem.rating ? Number(apiItem.rating) : 5,
+        shortDesc: apiItem.shortDesc || apiItem.shortDescription || '',
+        description: apiItem.description || '',
+        warrantyPeriod: apiItem.warrantyPeriod || '',
+        shipping: apiItem.shipping || undefined,
+        attributes: normalizedAttributes,
+        variations: normalizedVars,
+        createdAt: apiItem.createdAt || new Date().toISOString(),
+        createdAtTimestamp:
+          apiItem.createdAtTimestamp ||
+          (apiItem.createdAt ? new Date(apiItem.createdAt).getTime() : Date.now()),
+        updatedAt: apiItem.updatedAt || new Date().toISOString(),
+        updatedAtTimestamp:
+          apiItem.updatedAtTimestamp ||
+          (apiItem.updatedAt ? new Date(apiItem.updatedAt).getTime() : Date.now()),
+      };
+    };
+
     const syncProducts = async () => {
       const endpoints = [
         `${getStorefrontUrl()}/api/products?t=${Date.now()}`,
@@ -137,21 +270,29 @@ export default function App() {
       for (const endpoint of endpoints) {
         try {
           const res = await fetch(endpoint);
-          if (res.ok) {
+          if (res.ok && isSubscribed) {
             const apiProds = await res.json();
             if (Array.isArray(apiProds) && apiProds.length > 0) {
               const apiMap = new Map(apiProds.map((item: any) => [String(item.id), item]));
               const realMap = new Map(realProducts.map((rp) => [rp.id, rp]));
-              setProducts((prev) =>
-                prev.map((p) => {
+
+              setProducts((prev) => {
+                const existingIdSet = new Set(prev.map((p) => String(p.id)));
+
+                // 1. Update existing products with latest server data
+                const updatedExisting: ProductItem[] = prev.map((p): ProductItem => {
                   const apiItem = apiMap.get(String(p.id));
                   const rp = realMap.get(p.id);
                   if (!apiItem) {
-                    if (rp && rp.productType === 'variable' && (!p.variations || p.variations.length === 0)) {
+                    if (
+                      rp &&
+                      rp.productType === 'variable' &&
+                      (!p.variations || p.variations.length === 0)
+                    ) {
                       return {
                         ...p,
-                        productType: 'variable',
-                        type: 'variable',
+                        productType: 'variable' as const,
+                        type: 'variable' as const,
                         attributes: rp.attributes || [],
                         variations: rp.variations || [],
                       };
@@ -159,8 +300,13 @@ export default function App() {
                     return p;
                   }
 
-                  const hasVars = Array.isArray(apiItem.variations) && apiItem.variations.length > 0;
-                  const isVar = apiItem.type === 'variable' || hasVars || rp?.productType === 'variable' || p.productType === 'variable';
+                  const hasVars =
+                    Array.isArray(apiItem.variations) && apiItem.variations.length > 0;
+                  const isVar =
+                    apiItem.type === 'variable' ||
+                    hasVars ||
+                    rp?.productType === 'variable' ||
+                    p.productType === 'variable';
 
                   let normalizedAttributes = p.attributes || [];
                   if (apiItem.attributes) {
@@ -183,50 +329,90 @@ export default function App() {
                         id: String(v.id || `var-${idx}`),
                         sku: v.sku || '',
                         attributes: v.attributes || {},
-                        regularPrice: v.regularPrice !== undefined ? Number(v.regularPrice) : (v.regularPriceMinor ? Math.round(Number(v.regularPriceMinor) / 100) : p.regularPrice),
-                        salePrice: v.salePrice !== undefined ? Number(v.salePrice) : (v.salePriceMinor ? Math.round(Number(v.salePriceMinor) / 100) : p.salePrice),
+                        regularPrice:
+                          v.regularPrice !== undefined
+                            ? Number(v.regularPrice)
+                            : v.regularPriceMinor
+                            ? Math.round(Number(v.regularPriceMinor) / 100)
+                            : p.regularPrice,
+                        salePrice:
+                          v.salePrice !== undefined
+                            ? Number(v.salePrice)
+                            : v.salePriceMinor
+                            ? Math.round(Number(v.salePriceMinor) / 100)
+                            : p.salePrice,
                         costPrice: 0,
-                        stock: v.stock !== undefined && v.stock !== null ? Number(v.stock) : (v.stockQty !== undefined && v.stockQty !== null ? Number(v.stockQty) : 10),
+                        stock:
+                          v.stock !== undefined && v.stock !== null
+                            ? Number(v.stock)
+                            : v.stockQty !== undefined && v.stockQty !== null
+                            ? Number(v.stockQty)
+                            : 10,
                         image: v.displayImage || v.image || '',
                         displayImage: v.displayImage || v.image || '',
                       }))
-                    : (p.variations && p.variations.length > 0 ? p.variations : rp?.variations || []);
+                    : p.variations && p.variations.length > 0
+                    ? p.variations
+                    : rp?.variations || [];
 
                   // Determine status robustly
                   const resolvedStatus =
-                    apiItem.status === 'Active' || apiItem.status === 'Low stock' || apiItem.status === 'Out of stock'
+                    apiItem.status === 'Active' ||
+                    apiItem.status === 'Low stock' ||
+                    apiItem.status === 'Out of stock' ||
+                    apiItem.status === 'Draft'
                       ? apiItem.status
                       : apiItem.inStock === true
                       ? 'Active'
                       : apiItem.inStock === false
                       ? 'Out of stock'
-                      : (apiItem.stockQty !== undefined && Number(apiItem.stockQty) > 0)
+                      : apiItem.stockQty !== undefined && Number(apiItem.stockQty) > 0
                       ? 'Active'
-                      : (p.stock > 0 ? 'Active' : p.status || 'Active');
+                      : p.stock > 0
+                      ? 'Active'
+                      : p.status || 'Active';
+
+                  const finalType: 'simple' | 'variable' = isVar ? 'variable' : (p.productType === 'variable' ? 'variable' : 'simple');
 
                   return {
                     ...p,
                     status: resolvedStatus,
-                    productType: isVar ? 'variable' : (p.productType || 'simple'),
-                    type: isVar ? 'variable' : (p.productType || 'simple'),
-                    regularPrice: apiItem.regularPriceMinor ? Math.round(apiItem.regularPriceMinor / 100) : p.regularPrice,
-                    salePrice: apiItem.salePriceMinor ? Math.round(apiItem.salePriceMinor / 100) : p.salePrice,
-                    stock: apiItem.stockQty !== undefined && apiItem.stockQty !== null ? Number(apiItem.stockQty) : p.stock,
+                    productType: finalType,
+                    type: finalType,
+                    regularPrice: apiItem.regularPriceMinor
+                      ? Math.round(apiItem.regularPriceMinor / 100)
+                      : p.regularPrice,
+                    salePrice: apiItem.salePriceMinor
+                      ? Math.round(apiItem.salePriceMinor / 100)
+                      : p.salePrice,
+                    stock:
+                      apiItem.stockQty !== undefined && apiItem.stockQty !== null
+                        ? Number(apiItem.stockQty)
+                        : p.stock,
                     attributes: normalizedAttributes,
                     variations: normalizedVars,
                     image: apiItem.displayImage || p.image || rp?.image || '',
-                    displayImage: apiItem.displayImage || p.displayImage || rp?.displayImage || '',
+                    displayImage:
+                      apiItem.displayImage || p.displayImage || rp?.displayImage || '',
                     imageUrls: apiItem.imageUrls || p.imageUrls || rp?.imageUrls || [],
-                    galleryImages: apiItem.imageUrls || p.galleryImages || rp?.galleryImages || [],
+                    galleryImages:
+                      apiItem.imageUrls || p.galleryImages || rp?.galleryImages || [],
                     createdAt: apiItem.createdAt || p.createdAt,
                     createdAtTimestamp: apiItem.createdAtTimestamp || p.createdAtTimestamp,
                     updatedAt: apiItem.updatedAt || p.updatedAt,
                     updatedAtTimestamp: apiItem.updatedAtTimestamp || p.updatedAtTimestamp,
                   };
-                })
-              );
-              setProducts((prev) =>
-                [...prev].sort((a: any, b: any) => {
+                });
+
+                // 2. Identify any brand new products created via storefront / API not yet in prev
+                const brandNewFromApi = apiProds
+                  .filter((item: any) => item && item.id && !existingIdSet.has(String(item.id)))
+                  .map(mapApiItemToProduct);
+
+                const mergedCatalog = [...brandNewFromApi, ...updatedExisting];
+
+                // 3. Keep sorted: newest products always on top
+                return mergedCatalog.sort((a: any, b: any) => {
                   const timeA =
                     a.updatedAtTimestamp ||
                     (a.updatedAt ? new Date(a.updatedAt).getTime() : 0) ||
@@ -241,15 +427,24 @@ export default function App() {
                     0;
                   if (timeA !== timeB) return timeB - timeA;
                   return 0;
-                })
-              );
+                });
+              });
               break;
             }
           }
         } catch {}
       }
     };
+
     syncProducts();
+    const interval = setInterval(syncProducts, 15000);
+    window.addEventListener('focus', syncProducts);
+
+    return () => {
+      isSubscribed = false;
+      clearInterval(interval);
+      window.removeEventListener('focus', syncProducts);
+    };
   }, []);
   const [orders, setOrders] = useState<OrderItem[]>(() => {
     try {
