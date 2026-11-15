@@ -166,9 +166,11 @@ export default function FindFavoriteProducts({ initialConfig }: FindFavoriteProd
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full">
-                      {item.brand || 'ORIGINAL'}
-                    </span>
+                    {item.brand && !['dwstore', 'dwstore original', 'unbranded', 'generic', 'no brand', 'none', 'original', 'genuine', ''].includes(item.brand.trim().toLowerCase()) ? (
+                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full">
+                        {item.brand}
+                      </span>
+                    ) : <span />}
                     <button
                       type="button"
                       onClick={(e) => {

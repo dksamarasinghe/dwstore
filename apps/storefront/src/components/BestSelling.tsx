@@ -172,10 +172,12 @@ export default function BestSelling() {
                       <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                         -{discountPct}%
                       </span>
-                    ) : (
+                    ) : product.brand && !['dwstore', 'dwstore original', 'unbranded', 'generic', 'no brand', 'none', 'original', 'genuine', ''].includes(product.brand.trim().toLowerCase()) ? (
                       <span className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {product.brand || 'GENUINE'}
+                        {product.brand}
                       </span>
+                    ) : (
+                      <span />
                     )}
                     <button
                       type="button"

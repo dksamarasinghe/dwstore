@@ -115,9 +115,11 @@ function ShowcaseRow({
             >
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full truncate max-w-[100px]">
-                    {item.brand || 'GENUINE'}
-                  </span>
+                  {item.brand && !['dwstore', 'dwstore original', 'unbranded', 'generic', 'no brand', 'none', 'original', 'genuine', ''].includes(item.brand.trim().toLowerCase()) ? (
+                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full truncate max-w-[100px]">
+                      {item.brand}
+                    </span>
+                  ) : <span />}
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
@@ -279,18 +281,19 @@ export default function CategoryShowcase() {
     return sortProductsByNewestAndStock(list).slice(0, 12);
   }, [allProducts]);
 
-  // 3. Security Camera & Accessories - newest & in-stock only
+  // 3. Security Camera & Accessories - strictly items belonging to this category
   const securityCameras = useMemo(() => {
-    const list = allProducts.filter(
-      (p) =>
-        isProductInStock(p) &&
-        (p.categorySlugs?.some((s: string) =>
-          s.toLowerCase().includes('camera') ||
-          s.toLowerCase().includes('cctv') ||
-          s.toLowerCase().includes('security')
-        ) ||
-          (p.name && /camera|cctv|security|ezviz|hikvision|tiandy|vstarcam|v380/i.test(p.name)))
-    );
+    const list = allProducts.filter((p) => {
+      if (!isProductInStock(p)) return false;
+      const slugs = (p.categorySlugs || []).map((s: string) => String(s).toLowerCase());
+      const cat = String(p.category || '').toLowerCase();
+      return (
+        slugs.includes('security-camera-and-accessories') ||
+        slugs.includes('security-camera-accessories') ||
+        cat === 'security camera & accessories' ||
+        cat === 'security camera and accessories'
+      );
+    });
     return sortProductsByNewestAndStock(list).slice(0, 12);
   }, [allProducts]);
 
@@ -322,7 +325,7 @@ export default function CategoryShowcase() {
           title="Security Camera &"
           titleHighlight="Accessories"
           subtitle="High-definition CCTV, smart Wi-Fi cameras, 4G surveillance & accessories with official warranty"
-          viewAllLink="/shop?category=Security+Camera+%26+Accessories"
+          viewAllLink="/category/security-camera-and-accessories"
           viewAllText="View all cameras"
           items={securityCameras}
         />

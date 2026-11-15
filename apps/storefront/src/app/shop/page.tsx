@@ -857,9 +857,11 @@ function ShopContent() {
 
                         {/* Brand & Stock Status Badge */}
                         <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">
-                            {product.brand || 'ELECTRONICS'}
-                          </span>
+                          {product.brand && !['dwstore', 'dwstore original', 'unbranded', 'generic', 'no brand', 'none', 'original', 'genuine', 'electronics', ''].includes(product.brand.trim().toLowerCase()) ? (
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">
+                              {product.brand}
+                            </span>
+                          ) : <span />}
                           {isInStock ? (
                             <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200/80 shrink-0">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>

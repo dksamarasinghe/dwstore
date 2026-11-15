@@ -110,9 +110,11 @@ export default function FeaturedProducts() {
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                      {product.brand || 'DWstore'}
-                    </span>
+                    {product.brand && !['dwstore', 'dwstore original', 'unbranded', 'generic', 'no brand', 'none', 'original', 'genuine', ''].includes(product.brand.trim().toLowerCase()) ? (
+                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                        {product.brand}
+                      </span>
+                    ) : <span />}
                     <button
                       type="button"
                       onClick={(e) => {

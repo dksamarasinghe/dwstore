@@ -254,9 +254,11 @@ export default function TodaySuperDeals({ initialConfig }: TodaySuperDealsProps)
                 {/* Details */}
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                      {product.brand || 'DWSTORE'}
-                    </span>
+                    {product.brand && !['dwstore', 'dwstore original', 'unbranded', 'generic', 'no brand', 'none', 'original', 'genuine', ''].includes(product.brand.trim().toLowerCase()) && (
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        {product.brand}
+                      </span>
+                    )}
                     <Link
                       href={`/product/${product.slug}`}
                       className="text-xs sm:text-sm font-bold text-slate-900 hover:text-blue-600 transition line-clamp-2 block leading-snug mb-2"

@@ -162,9 +162,11 @@ export default function WishlistPage() {
                       </Link>
 
                       <div className="min-w-0">
-                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider block">
-                          {item.brand || 'DWSTORE'}
-                        </span>
+                        {item.brand && !['dwstore', 'dwstore original', 'unbranded', 'generic', 'no brand', 'none', 'original', 'genuine', ''].includes(item.brand.trim().toLowerCase()) && (
+                          <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider block">
+                            {item.brand}
+                          </span>
+                        )}
                         <Link
                           href={`/product/${item.slug}`}
                           className="text-xs sm:text-sm font-bold text-slate-900 hover:text-blue-600 block line-clamp-1 transition"

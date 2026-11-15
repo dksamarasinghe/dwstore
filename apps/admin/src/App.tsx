@@ -80,7 +80,10 @@ export default function App() {
         (p.sku ? realMap.get(p.sku.trim().toLowerCase()) : undefined) ||
         realMap.get(p.name?.trim().toLowerCase());
 
-      if (!rp) return p;
+      const correctedStatus =
+        (p.stock > 0 && p.status === 'Out of stock') ? 'Active' : (p.status || 'Active');
+
+      if (!rp) return { ...p, status: correctedStatus };
 
       const hasRealVars = Array.isArray(rp.variations) && rp.variations.length > 0;
       const hasParsedVars = Array.isArray(p.variations) && p.variations.length > 0;
@@ -90,6 +93,7 @@ export default function App() {
 
       return {
         ...p,
+        status: correctedStatus,
         productType: isVar ? 'variable' : (p.productType || 'simple'),
         type: isVar ? 'variable' : (p.productType || 'simple'),
         attributes: (hasRealAttrs && (!hasParsedAttrs || p.attributes!.length === 0)) ? rp.attributes : (p.attributes || rp.attributes || []),
@@ -188,8 +192,21 @@ export default function App() {
                       }))
                     : (p.variations && p.variations.length > 0 ? p.variations : rp?.variations || []);
 
+                  // Determine status robustly
+                  const resolvedStatus =
+                    apiItem.status === 'Active' || apiItem.status === 'Low stock' || apiItem.status === 'Out of stock'
+                      ? apiItem.status
+                      : apiItem.inStock === true
+                      ? 'Active'
+                      : apiItem.inStock === false
+                      ? 'Out of stock'
+                      : (apiItem.stockQty !== undefined && Number(apiItem.stockQty) > 0)
+                      ? 'Active'
+                      : (p.stock > 0 ? 'Active' : p.status || 'Active');
+
                   return {
                     ...p,
+                    status: resolvedStatus,
                     productType: isVar ? 'variable' : (p.productType || 'simple'),
                     type: isVar ? 'variable' : (p.productType || 'simple'),
                     regularPrice: apiItem.regularPriceMinor ? Math.round(apiItem.regularPriceMinor / 100) : p.regularPrice,
@@ -548,9 +565,21 @@ export default function App() {
                 normalizedAttributes.some((a: any) => a && a.name && a.name.trim().toLowerCase() !== 'warranty') ||
                 initialIsVar;
 
+              const resolvedEditStatus =
+                fullProd.status === 'Active' || fullProd.status === 'Low stock' || fullProd.status === 'Out of stock'
+                  ? fullProd.status
+                  : fullProd.inStock === true
+                  ? 'Active'
+                  : fullProd.inStock === false
+                  ? 'Out of stock'
+                  : (fullProd.stockQty !== undefined && Number(fullProd.stockQty) > 0)
+                  ? 'Active'
+                  : prod.status || 'Active';
+
               const merged: ProductItem = {
                 ...realProd,
                 ...prod,
+                status: resolvedEditStatus,
                 productType: isVar ? 'variable' : 'simple',
                 type: isVar ? 'variable' : 'simple',
                 regularPrice: fullProd.regularPriceMinor
@@ -1073,7 +1102,7 @@ export default function App() {
           ? {
               ...p,
               stock: newStock,
-              status: newStock === 0 ? 'Out of stock' : newStock <= 10 ? 'Low stock' : 'Active',
+              status: p.status === 'Out of stock' && newStock > 0 ? 'Active' : p.status,
             }
           : p
       )

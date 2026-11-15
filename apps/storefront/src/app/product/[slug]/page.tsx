@@ -1063,9 +1063,11 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block mb-1">
-                        {rel.brand || 'DWstore'}
-                      </span>
+                      {rel.brand && !['dwstore', 'dwstore original', 'unbranded', 'generic', 'no brand', 'none', 'original', 'genuine', ''].includes(rel.brand.trim().toLowerCase()) && (
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block mb-1">
+                          {rel.brand}
+                        </span>
+                      )}
                       <h4 className="text-xs font-bold text-slate-800 group-hover:text-blue-600 line-clamp-2 leading-tight">
                         {rel.name}
                       </h4>
