@@ -705,8 +705,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   }
                 }
 
-                const finalStatus =
-                  totalStock === 0 ? 'Out of stock' : totalStock <= 10 ? 'Low stock' : (quickEditProduct.status || 'Active');
+                const finalStatus = quickEditProduct.status || 'Active';
 
                 const updated = {
                   ...quickEditProduct,
@@ -957,7 +956,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                       setQuickEditProduct({
                         ...quickEditProduct,
                         stock: qty,
-                        status: qty === 0 ? 'Out of stock' : qty <= 10 ? 'Low stock' : 'Active',
                       });
                     }}
                   />

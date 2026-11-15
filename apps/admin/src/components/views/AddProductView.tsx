@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { AttributeItem, BrandItem, CategoryItem, ProductItem, ProductVariationItem, ShippingDetails, TabType } from '../../types';
 import { MediaPickerModal } from '../common/MediaPickerModal';
+import { RichTextEditor } from '../common/RichTextEditor';
 
 interface AddProductViewProps {
   initialProduct?: ProductItem | null;
@@ -946,8 +947,9 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
         : parseInt(openingStock, 10) || 0;
 
     const stockAlert = parseInt(stockAlertLevel, 10) || 10;
-    const inStock = stockQty > 0 || (productType === 'variable' && variations.some((v) => (v.stock || 0) > 0));
-    const status = inStock ? (stockQty <= stockAlert ? 'Low stock' : 'Active') : 'Out of stock';
+    // User requested: Opening Stock should NOT automatically change Catalog Status to Out of Stock.
+    // Catalog Status must default to "Active" ("In Stock") and stay as chosen by the user.
+    const status = stockStatus || 'Active';
 
     const shippingInfo: ShippingDetails = {
       weight: parseFloat(weightKg) || 0,
@@ -2510,57 +2512,43 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                 )}
               </div>
 
-              {/* 5B. Detailed Description (Below product image in Description tab) */}
+              {/* 5B. Detailed Description (Below product image in Description tab) with Rich Text Editor */}
               <div>
                 <div className="d-flex align-items-center justify-content-between mb-2">
                   <div>
                     <label className="fw-semibold m-0 d-flex align-items-center gap-2" style={{ fontSize: '14px' }}>
-                      <span>Detailed Description (Full Specs & Overview)</span>
+                      <span>Detailed Description (Full Specs &amp; Overview)</span>
                       <span className="badge rounded-pill" style={{ background: 'var(--hover)', color: 'var(--text)', fontSize: '11px', border: '1px solid var(--border)' }}>
                         Description Tab Below Image
                       </span>
                     </label>
                     <small className="text-muted d-block" style={{ fontSize: '12px' }}>
-                      Full technical breakdown shown under the Description tab table below the product image.
+                      Rich Text Editor: format text, titles, insert tables, hyperlinks, and embed images from VPS Media Library or PC.
                     </small>
-                  </div>
-                  <div className="seg">
-                    <button
-                      type="button"
-                      className={fullDescMode === 'visual' ? 'on' : ''}
-                      onClick={() => setFullDescMode('visual')}
-                    >
-                      <Eye size={12} className="me-1 d-inline" /> Preview
-                    </button>
-                    <button
-                      type="button"
-                      className={fullDescMode === 'html' ? 'on' : ''}
-                      onClick={() => setFullDescMode('html')}
-                    >
-                      <Code size={12} className="me-1 d-inline" /> HTML
-                    </button>
                   </div>
                 </div>
 
-                <textarea
-                  rows={6}
-                  className="w-100 p-3 rounded-2"
-                  style={{
-                    background: 'var(--bg)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
-                    fontSize: '13px',
-                    outline: 'none'
-                  }}
-                  placeholder="Enter full specifications, features, package contents, and warranty guidelines..."
+                <RichTextEditor
                   value={fullDesc}
-                  onChange={(e) => setFullDesc(e.target.value)}
+                  onChange={setFullDesc}
+                  placeholder="Enter full specifications, overview, image embeds, and warranty guidelines..."
+                  minHeight="320px"
+                  onUploadImage={(file) => uploadMediaFile(file, 'products')}
                 />
 
-                {fullDescMode === 'visual' && fullDesc.trim() && (
-                  <div className="mt-2 p-3 rounded-2" style={{ background: 'var(--hover)', border: '1px solid var(--border)' }}>
-                    <small className="text-muted d-block mb-1">Storefront Visual Output:</small>
-                    <div style={{ fontSize: '13px', whiteSpace: 'pre-line' }} dangerouslySetInnerHTML={{ __html: fullDesc }} />
+                {fullDesc.trim() && (
+                  <div className="mt-3 p-3 rounded-2" style={{ background: 'var(--hover)', border: '1px solid var(--border)' }}>
+                    <div className="d-flex align-items-center justify-content-between mb-2">
+                      <small className="text-muted fw-bold">Live Storefront Visual Output:</small>
+                      <span className="badge bg-secondary-subtle text-secondary" style={{ fontSize: '11px' }}>
+                        Customer View Preview
+                      </span>
+                    </div>
+                    <div
+                      className="storefront-desc-preview"
+                      style={{ fontSize: '14px', lineHeight: 1.6 }}
+                      dangerouslySetInnerHTML={{ __html: fullDesc }}
+                    />
                   </div>
                 )}
               </div>

@@ -127,7 +127,13 @@ export async function POST(req: NextRequest) {
     const hasVarStock = formattedVariations.length > 0
       ? formattedVariations.some((v: any) => v.inStock && (v.stockQty === null || v.stockQty > 0))
       : false;
-    const inStock = isVariable ? hasVarStock : (body.status !== 'Out of stock' && Number(body.stock ?? 1) > 0);
+    const inStock = body.status === 'Out of stock'
+      ? false
+      : (body.status === 'Active' || body.status === 'Low stock')
+      ? true
+      : isVariable
+      ? (hasVarStock || body.status !== 'Out of stock')
+      : (body.status !== 'Out of stock');
     const stockQty = isVariable
       ? formattedVariations.reduce((sum: number, v: any) => sum + (Number(v.stockQty) || 0), 0)
       : (body.stock !== undefined ? Number(body.stock) : 10);
