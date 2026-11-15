@@ -3,6 +3,7 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://www.dwstore.lk'),
   title: "DWstore - Sri Lanka's Premier Electronics Store | dwstore.lk",
   description:
     "Buy original smartphones, laptops, audio gear, gaming consoles, accessories and smart electronics at best prices in Sri Lanka. Island-wide cash on delivery — DWstore.lk",
@@ -10,6 +11,39 @@ export const metadata: Metadata = {
     icon: "/dwstoreicon_logo.png",
     shortcut: "/dwstoreicon_logo.png",
     apple: "/dwstoreicon_logo.png",
+  },
+  openGraph: {
+    siteName: 'DWstore.lk',
+    locale: 'en_LK',
+    type: 'website',
+    images: [
+      {
+        url: '/dwstoreicon_logo.png',
+        width: 500,
+        height: 500,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@dwstorelk',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: '',
+  },
+  alternates: {
+    canonical: 'https://www.dwstore.lk',
   },
 };
 
@@ -29,6 +63,39 @@ export default function RootLayout({
         <link
           href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
           rel="stylesheet"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "WebSite",
+                  "name": "DWstore.lk",
+                  "url": "https://www.dwstore.lk",
+                  "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": "https://www.dwstore.lk/search?q={search_term_string}",
+                    "query-input": "required name=search_term_string"
+                  }
+                },
+                {
+                  "@type": "Organization",
+                  "name": "DWstore.lk",
+                  "url": "https://www.dwstore.lk",
+                  "logo": "https://www.dwstore.lk/dwstoreicon_logo.png",
+                  "sameAs": [],
+                  "contactPoint": {
+                    "@type": "ContactPoint",
+                    "telephone": "+94-756693358",
+                    "contactType": "customer service",
+                    "availableLanguage": ["English", "Sinhala"]
+                  }
+                }
+              ]
+            })
+          }}
         />
       </head>
       <body className="min-h-screen flex flex-col bg-white text-slate-800 antialiased selection:bg-blue-600 selection:text-white pb-16 md:pb-0">

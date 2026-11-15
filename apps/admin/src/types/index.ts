@@ -73,6 +73,8 @@ export interface ProductItem {
   shortDesc?: string;
   description?: string;
   warrantyPeriod?: string;
+  seoTitle?: string;
+  seoDescription?: string;
   shipping?: ShippingDetails;
   attributes?: AttributeItem[];
   variations?: ProductVariationItem[];

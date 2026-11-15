@@ -274,6 +274,8 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
   const [productName, setProductName] = useState(initialProduct?.name || '');
   const [sku, setSku] = useState(initialProduct?.sku || '');
   const [brand, setBrand] = useState(initialProduct?.brand || '');
+  const [seoTitle, setSeoTitle] = useState(initialProduct?.seoTitle || '');
+  const [seoDescription, setSeoDescription] = useState(initialProduct?.seoDescription || '');
   const [selectedCategory, setSelectedCategory] = useState(
     initialProduct?.category || (categories[0]?.name || '')
   );
@@ -590,6 +592,8 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       setDimHeight(initialProduct.shipping?.height ? String(initialProduct.shipping.height) : '');
       setShippingClass(initialProduct.shipping?.shippingClass || 'Standard Islandwide Delivery (Rs. 450)');
       setWarrantyPeriod(initialProduct.warrantyPeriod || '');
+      setSeoTitle(initialProduct.seoTitle || '');
+      setSeoDescription(initialProduct.seoDescription || '');
 
       const img = initialProduct.image || initialProduct.displayImage || '';
       setMainImage(img);
@@ -1009,6 +1013,8 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       shortDesc: cleanDescriptionInput(shortDesc),
       description: cleanDescriptionInput(fullDesc),
       warrantyPeriod: warrantyPeriod.trim(),
+      seoTitle: seoTitle.trim(),
+      seoDescription: seoDescription.trim(),
       shipping: shippingInfo,
       attributes: finalAttributes,
       variations: formattedVariations,
@@ -2711,6 +2717,158 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                       {preset}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* 8. Search Engine Optimization (SEO) & Google Preview Card */}
+              <div className="card-x mb-4 shadow-sm">
+                <div className="card-head d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom" style={{ borderColor: 'var(--border)' }}>
+                  <div className="d-flex align-items-center gap-2">
+                    <Search size={18} className="text-primary" />
+                    <h6 className="m-0 fw-bold">Search Engine Optimization (SEO)</h6>
+                    <span className="badge bg-primary-subtle text-primary" style={{ fontSize: '11px' }}>
+                      Google Preview
+                    </span>
+                  </div>
+                  <span className="text-muted" style={{ fontSize: '12px' }}>
+                    Optional
+                  </span>
+                </div>
+
+                <p className="text-muted mb-3" style={{ fontSize: '12px', lineHeight: '1.5' }}>
+                  Google search results are automatically optimized for Sri Lanka with product name, price, warranty and island-wide delivery. If you want custom text for this specific product, fill in the fields below.
+                </p>
+
+                {/* Live Google Search Preview Box */}
+                <div
+                  className="p-3 rounded-3 mb-4"
+                  style={{
+                    background: 'var(--bg, #f8fafc)',
+                    border: '1px solid var(--border, #e2e8f0)',
+                    fontFamily: 'arial, sans-serif'
+                  }}
+                >
+                  <div className="d-flex align-items-center gap-2 mb-1">
+                    <div
+                      style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        background: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        color: '#2563eb',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      DW
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '12px', color: '#202124', lineHeight: 1.2, fontWeight: 500 }}>
+                        DWstore.lk
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#5f6368', lineHeight: 1.2 }}>
+                        https://www.dwstore.lk › product › {sku ? sku.toLowerCase() : 'product-slug'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Google Blue Link Title */}
+                  <div
+                    style={{
+                      fontSize: '18px',
+                      color: '#1a0dab',
+                      lineHeight: 1.3,
+                      fontWeight: 400,
+                      cursor: 'pointer',
+                      marginTop: '4px',
+                      marginBottom: '4px'
+                    }}
+                  >
+                    {seoTitle.trim() || `${productName.trim() || 'Product Name'} Price in Sri Lanka | DWstore.lk`}
+                  </div>
+
+                  {/* Rating and Price snippet */}
+                  <div style={{ fontSize: '12px', color: '#5f6368', marginBottom: '4px' }}>
+                    <span style={{ color: '#e37400' }}>★★★★★</span> Rating: 5.0 · LKR {salePrice || regularPrice || '0.00'} · In stock
+                  </div>
+
+                  {/* Google Description snippet */}
+                  <div style={{ fontSize: '13px', color: '#4d5156', lineHeight: 1.4 }}>
+                    {seoDescription.trim() ||
+                      `Buy ${productName.trim() || 'this product'} online at DWstore.lk. 100% Genuine with Official Warranty & Island-wide Cash on Delivery in Sri Lanka. Order now!`}
+                  </div>
+                </div>
+
+                {/* Custom SEO Title */}
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <label className="form-label fw-semibold mb-0" style={{ fontSize: '13px' }}>
+                      Custom SEO Title <span className="text-muted fw-normal">(Optional)</span>
+                    </label>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        color: seoTitle.length > 60 ? '#ef4444' : '#64748b'
+                      }}
+                    >
+                      {seoTitle.length}/60 recommended
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    className="w-100 p-2 rounded-2"
+                    style={{
+                      background: 'var(--bg)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text)',
+                      fontSize: '14px',
+                      outline: 'none'
+                    }}
+                    placeholder={`e.g. ${productName || 'Product Name'} Price in Sri Lanka - Best Deal | DWstore`}
+                    value={seoTitle}
+                    onChange={(e) => setSeoTitle(e.target.value)}
+                  />
+                  <small className="text-muted d-block mt-1" style={{ fontSize: '11px' }}>
+                    Leave blank to auto-use: <code>[Product Name] Price in Sri Lanka | DWstore.lk</code>
+                  </small>
+                </div>
+
+                {/* Custom SEO Description */}
+                <div>
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <label className="form-label fw-semibold mb-0" style={{ fontSize: '13px' }}>
+                      Custom Meta Description <span className="text-muted fw-normal">(Optional)</span>
+                    </label>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        color: seoDescription.length > 160 ? '#ef4444' : '#64748b'
+                      }}
+                    >
+                      {seoDescription.length}/160 recommended
+                    </span>
+                  </div>
+                  <textarea
+                    rows={3}
+                    className="w-100 p-2 rounded-2"
+                    style={{
+                      background: 'var(--bg)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text)',
+                      fontSize: '13px',
+                      outline: 'none'
+                    }}
+                    placeholder="e.g. Buy original product in Sri Lanka with 1 year warranty. Cash on delivery island-wide. Order today from DWstore.lk for best price!"
+                    value={seoDescription}
+                    onChange={(e) => setSeoDescription(e.target.value)}
+                  />
+                  <small className="text-muted d-block mt-1" style={{ fontSize: '11px' }}>
+                    Leave blank to auto-generate from specifications, warranty and island-wide delivery.
+                  </small>
                 </div>
               </div>
             </div>

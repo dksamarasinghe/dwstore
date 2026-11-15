@@ -5,7 +5,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/cart', '/checkout', '/order-success', '/api/'],
+      disallow: ['/cart', '/checkout', '/order-success', '/api/', '/wishlist', '/account'],
+      crawlDelay: 1,
     },
     sitemap: 'https://www.dwstore.lk/sitemap.xml',
   };

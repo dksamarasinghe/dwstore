@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import productsData from '@/data/products.json';
 import categoriesData from '@/data/categories.json';
+import brandsData from '@/data/brands.json';
 
 const BASE_URL = 'https://www.dwstore.lk';
 
@@ -30,5 +31,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }));
 
-  return [...staticRoutes, ...categoryRoutes, ...productRoutes];
+  const brandRoutes: MetadataRoute.Sitemap = (brandsData as any[]).map((b) => ({
+    url: `${BASE_URL}/brand/${b.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly',
+    priority: 0.7,
+  }));
+
+  return [...staticRoutes, ...categoryRoutes, ...brandRoutes, ...productRoutes];
 }

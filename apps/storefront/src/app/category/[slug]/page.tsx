@@ -1,343 +1,122 @@
-'use client';
-
-import React, { useState, useMemo } from 'react';
-import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import productsData from '@/data/products.json';
+import { Metadata } from 'next';
 import categoriesData from '@/data/categories.json';
-import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
-import { Star, ShoppingCart, Heart, SlidersHorizontal, ChevronRight, ArrowLeft } from 'lucide-react';
-import { useCart } from '@/context/CartContext';
-import { useWishlist } from '@/context/WishlistContext';
+import { CategoryClientView } from './CategoryClientView';
 
-export default function CategoryPage() {
-  const router = useRouter();
-  const params = useParams();
-  const slug = (params.slug as string) || '';
-  const { addToCart } = useCart();
-  const { isInWishlist, toggleWishlist } = useWishlist();
+interface PageProps {
+  params: { slug: string };
+}
 
-  const currentCategory = useMemo(() => {
-    return (categoriesData as any[]).find(
-      (c) => c.slug === slug || c.slug === slug.toLowerCase()
-    );
-  }, [slug]);
+const BASE_URL = 'https://www.dwstore.lk';
 
-  const categoryName = currentCategory?.name || slug.replace(/-/g, ' ');
-
-  const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'name'>('featured');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
-
-  // Filter products matching this category slug or parent
-  const matchingProducts = useMemo(() => {
-    return (productsData as any[])
-      .filter((p) => {
-        if (!p.categorySlugs) return false;
-        return (
-          p.categorySlugs.includes(slug) ||
-          p.categorySlugs.some((s: string) => s.toLowerCase() === slug.toLowerCase())
-        );
-      })
-      .sort((a, b) => {
-        const priceA = a.salePriceMinor || a.regularPriceMinor || 0;
-        const priceB = b.salePriceMinor || b.regularPriceMinor || 0;
-        if (sortBy === 'price-asc') return priceA - priceB;
-        if (sortBy === 'price-desc') return priceB - priceA;
-        if (sortBy === 'name') return a.name.localeCompare(b.name);
-        return 0;
-      });
-  }, [slug, sortBy]);
-
-  const totalPages = Math.ceil(matchingProducts.length / itemsPerPage) || 1;
-  const paginatedProducts = matchingProducts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+function findCategory(slug: string) {
+  const decoded = decodeURIComponent(slug).toLowerCase();
+  return (categoriesData as any[]).find(
+    (c) => c.slug === decoded || c.slug === slug || c.id === decoded
   );
+}
+
+export async function generateStaticParams() {
+  return (categoriesData as any[]).map((c) => ({
+    slug: c.slug,
+  }));
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const category = findCategory(params.slug);
+  const categoryName = category?.name || params.slug.replace(/-/g, ' ');
+  const capitalizedName = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+
+  const title = `Buy ${capitalizedName} Online at Best Price in Sri Lanka | DWstore.lk`;
+  const description = `Shop original ${capitalizedName} at DWstore.lk. Island-wide cash on delivery, manufacturer warranty, and lowest prices in Sri Lanka. Fast delivery to your doorstep!`;
+  const categoryUrl = `${BASE_URL}/category/${params.slug}`;
+
+  const imageUrl = category?.imageUrl
+    ? (category.imageUrl.startsWith('http') ? category.imageUrl : `${BASE_URL}${category.imageUrl.startsWith('/') ? '' : '/'}${category.imageUrl}`)
+    : `${BASE_URL}/dwstoreicon_logo.png`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: categoryUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: categoryUrl,
+      siteName: 'DWstore.lk',
+      locale: 'en_LK',
+      type: 'website',
+      images: [
+        {
+          url: imageUrl,
+          width: 800,
+          height: 800,
+          alt: capitalizedName,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [imageUrl],
+    },
+  };
+}
+
+export default function CategoryPage({ params }: PageProps) {
+  const category = findCategory(params.slug);
+  const categoryName = category?.name || params.slug.replace(/-/g, ' ');
+  const capitalizedName = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+  const categoryUrl = `${BASE_URL}/category/${params.slug}`;
+
+  // Schema.org BreadcrumbList
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: BASE_URL,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Shop',
+        item: `${BASE_URL}/shop`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: capitalizedName,
+        item: categoryUrl,
+      },
+    ],
+  };
+
+  // Schema.org CollectionPage
+  const collectionSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `${capitalizedName} Collection - DWstore.lk`,
+    url: categoryUrl,
+    description: `Browse all genuine ${capitalizedName} available at DWstore.lk with Island-wide Cash on Delivery in Sri Lanka.`,
+  };
 
   return (
-    <main className="min-h-screen flex flex-col bg-slate-50/50">
-      <Header />
-
-      {/* Breadcrumb Bar */}
-      <div className="bg-white border-b border-slate-200 py-3">
-        <div className="page-container flex items-center justify-between text-xs text-slate-500">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="hover:text-blue-600">Home</Link>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-            <Link href="/shop" className="hover:text-blue-600">Shop</Link>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-            <span className="font-semibold text-slate-900 capitalize">{categoryName}</span>
-          </div>
-          <span className="font-semibold text-slate-700">
-            {matchingProducts.length} Items Available
-          </span>
-        </div>
-      </div>
-
-      {/* Category Header Hero */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white py-8 border-b border-slate-800">
-        <div className="page-container flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-[11px] font-bold uppercase tracking-wider mb-2 border border-blue-400/20">
-              <span>DWstore Category</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black capitalize tracking-tight text-white">
-              {categoryName}
-            </h1>
-            <p className="text-xs text-slate-300 mt-1 max-w-xl">
-              Original tech &amp; accessories with official warranty and island-wide Cash on Delivery.
-            </p>
-          </div>
-
-          <Link
-            href="/shop"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition border border-white/20 w-fit"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>All Products</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Main Catalog Layout */}
-      <div className="page-container py-8 flex-1">
-        {/* Top Control Bar */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <span className="text-xs font-bold text-slate-700">
-            Showing {matchingProducts.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}–
-            {Math.min(currentPage * itemsPerPage, matchingProducts.length)} of {matchingProducts.length} items
-          </span>
-
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-500 font-medium">Sort by:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 font-bold text-slate-800 focus:outline-none focus:border-blue-500"
-            >
-              <option value="featured">Featured / Newest</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="name">Product Name (A-Z)</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Product Grid */}
-        {paginatedProducts.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {paginatedProducts.map((product: any) => {
-              const displayPrice = product.salePriceMinor || product.minPriceMinor || product.regularPriceMinor || 0;
-              const regularPrice = product.regularPriceMinor && product.regularPriceMinor > displayPrice ? product.regularPriceMinor : null;
-              const isVariable = product.type === 'variable' || (product.variations && product.variations.length > 0);
-
-              return (
-                <div
-                  key={product.id}
-                  className="group bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-4 hover:border-blue-400 hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      {product.brand && !['dwstore', 'dwstore original', 'unbranded', 'generic', 'no brand', 'none', 'original', 'genuine', ''].includes(product.brand.trim().toLowerCase()) ? (
-                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                          {product.brand}
-                        </span>
-                      ) : <span />}
-                      <div className="flex items-center gap-1.5">
-                        {isProductInStock(product) ? (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200/80">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            In Stock
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-200/80">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                            Out of Stock
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleWishlist(product.id);
-                          }}
-                          className={`w-7 h-7 rounded-full flex items-center justify-center transition cursor-pointer ${
-                            isInWishlist(product.id)
-                              ? 'bg-rose-50 text-rose-500 border border-rose-200 shadow-xs'
-                              : 'bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-500'
-                          }`}
-                          aria-label="Wishlist"
-                          title={isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
-                        >
-                          <Heart className={`w-3.5 h-3.5 ${isInWishlist(product.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <Link
-                      href={`/product/${product.slug}`}
-                      className="w-full aspect-square bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center p-3 mb-3 group-hover:bg-blue-50/20 transition relative block"
-                    >
-                      <img
-                        src={product.displayImage}
-                        alt={product.name}
-                        className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition duration-300"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/dwstore_logo.png';
-                        }}
-                      />
-                    </Link>
-
-                    <div className="flex items-center gap-1 mb-1.5">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                      <span className="text-[11px] font-bold text-slate-700">5.0</span>
-                      <span className="text-[10px] text-slate-400">(DWstore)</span>
-                    </div>
-
-                    <Link
-                      href={`/product/${product.slug}`}
-                      className="text-xs font-bold text-slate-800 group-hover:text-blue-600 line-clamp-2 leading-tight transition block"
-                    >
-                      {product.name}
-                    </Link>
-                  </div>
-
-                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <div>
-                      {isVariable && (
-                        <span className="text-[10px] font-semibold text-blue-600 block leading-tight">
-                          From
-                        </span>
-                      )}
-                      <span className="text-xs sm:text-sm font-black text-slate-900 block leading-none">
-                        LKR {formatPriceLKR(displayPrice)}
-                      </span>
-                      {regularPrice && (
-                        <span className="text-[10px] text-slate-400 line-through leading-none block mt-0.5">
-                          LKR {formatPriceLKR(regularPrice)}
-                        </span>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (product.type === 'variable' || (Array.isArray(product.variations) && product.variations.length > 0)) {
-                          router.push(`/product/${product.slug}`);
-                          return;
-                        }
-                        if (product.inStock === false) return;
-                        addToCart({
-                          productId: product.id,
-                          name: product.name,
-                          slug: product.slug,
-                          priceMinor: displayPrice,
-                          image: product.displayImage,
-                          quantity: 1,
-                        });
-                      }}
-                      className="w-8 h-8 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-xs transition"
-                      aria-label="Add to cart"
-                    >
-                      <ShoppingCart className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-md mx-auto my-8">
-            <SlidersHorizontal className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-base font-bold text-slate-800">No items in this category yet</h3>
-            <p className="text-xs text-slate-500 mt-1 mb-5">
-              Check out our full catalog to discover all imported tech accessories.
-            </p>
-            <Link
-              href="/shop"
-              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm inline-block"
-            >
-              Browse All Products
-            </Link>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="mt-10 flex items-center justify-center gap-2">
-            <button
-              type="button"
-              disabled={currentPage === 1}
-              onClick={() => {
-                setCurrentPage((p) => Math.max(1, p - 1));
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition cursor-pointer"
-            >
-              Previous
-            </button>
-            {(() => {
-              const pages: (number | string)[] = [];
-              if (totalPages <= 5) {
-                for (let i = 1; i <= totalPages; i++) pages.push(i);
-              } else {
-                if (currentPage <= 3) {
-                  pages.push(1, 2, 3, '...', totalPages);
-                } else if (currentPage >= totalPages - 2) {
-                  pages.push(1, '...', totalPages - 2, totalPages - 1, totalPages);
-                } else {
-                  pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
-                }
-              }
-
-              return pages.map((page, idx) => {
-                if (page === '...') {
-                  return (
-                    <span key={`dots-${idx}`} className="w-8 h-8 flex items-center justify-center text-xs font-bold text-slate-400 select-none">
-                      ...
-                    </span>
-                  );
-                }
-                const pageNum = Number(page);
-                return (
-                  <button
-                    key={pageNum}
-                    type="button"
-                    onClick={() => {
-                      setCurrentPage(pageNum);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className={`w-9 h-9 rounded-xl text-xs font-bold transition cursor-pointer ${
-                      currentPage === pageNum
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              });
-            })()}
-            <button
-              type="button"
-              disabled={currentPage === totalPages}
-              onClick={() => {
-                setCurrentPage((p) => Math.min(totalPages, p + 1));
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition cursor-pointer"
-            >
-              Next
-            </button>
-          </div>
-        )}
-      </div>
-
-      <Footer />
-    </main>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+      />
+      <CategoryClientView slug={params.slug} />
+    </>
   );
 }
