@@ -27,10 +27,12 @@ import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { formatPriceLKR } from '@/lib/catalog';
 import { resolveImageUrl } from '@/lib/image';
+import { useLiveProducts, getProductTimestamp } from '@/lib/useLiveProducts';
 
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
+  const liveProducts = useLiveProducts();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCat, setSelectedCat] = useState('All');
@@ -93,29 +95,49 @@ export default function Header() {
   const matchingProducts = useMemo(() => {
     const q = mobileSearchQuery.trim().toLowerCase();
     if (!q) return [];
-    return (productsData as any[])
+    const tokens = q.split(/\s+/).filter(Boolean);
+
+    return liveProducts
       .filter((p) => {
         const name = (p.name || '').toLowerCase();
         const sku = (p.sku || '').toLowerCase();
         const cat = (p.category || '').toLowerCase();
         const brand = (p.brand || '').toLowerCase();
-        return name.includes(q) || sku.includes(q) || cat.includes(q) || brand.includes(q);
+        const desc = (p.shortDescription || p.description || '').toLowerCase();
+        const haystack = `${name} ${sku} ${cat} ${brand} ${desc}`;
+        return tokens.every((token) => haystack.includes(token));
       })
-      .slice(0, 6);
-  }, [mobileSearchQuery]);
+      .sort((a, b) => {
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        const aExact = nameA.includes(q) ? 1 : 0;
+        const bExact = nameB.includes(q) ? 1 : 0;
+        if (aExact !== bExact) return bExact - aExact;
+
+        const timeA = getProductTimestamp(a);
+        const timeB = getProductTimestamp(b);
+        return timeB - timeA;
+      })
+      .slice(0, 8);
+  }, [mobileSearchQuery, liveProducts]);
 
   // Live matching products for desktop search input (triggers on 2-3 characters)
   const desktopMatchingProducts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (q.length < 2) return [];
-    return (productsData as any[])
+    const tokens = q.split(/\s+/).filter(Boolean);
+
+    return liveProducts
       .filter((p) => {
         const name = (p.name || '').toLowerCase();
         const sku = (p.sku || '').toLowerCase();
         const cat = (p.category || '').toLowerCase();
         const brand = (p.brand || '').toLowerCase();
-        const matchesQuery = name.includes(q) || sku.includes(q) || cat.includes(q) || brand.includes(q);
+        const desc = (p.shortDescription || p.description || '').toLowerCase();
+        const haystack = `${name} ${sku} ${cat} ${brand} ${desc}`;
+        const matchesQuery = tokens.every((token) => haystack.includes(token));
         if (!matchesQuery) return false;
+
         if (selectedCat !== 'All') {
           return (
             (p.categorySlugs || []).some((s: string) => s.toLowerCase().includes(selectedCat.toLowerCase())) ||
@@ -124,8 +146,19 @@ export default function Header() {
         }
         return true;
       })
-      .slice(0, 6);
-  }, [searchQuery, selectedCat]);
+      .sort((a, b) => {
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        const aExact = nameA.includes(q) ? 1 : 0;
+        const bExact = nameB.includes(q) ? 1 : 0;
+        if (aExact !== bExact) return bExact - aExact;
+
+        const timeA = getProductTimestamp(a);
+        const timeB = getProductTimestamp(b);
+        return timeB - timeA;
+      })
+      .slice(0, 8);
+  }, [searchQuery, selectedCat, liveProducts]);
 
   // Close desktop search dropdown on click outside
   useEffect(() => {

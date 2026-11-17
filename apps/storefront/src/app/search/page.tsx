@@ -10,6 +10,7 @@ import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
 import { Star, ShoppingCart, Heart, Search, ChevronRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { useLiveProducts, getProductTimestamp } from '@/lib/useLiveProducts';
 
 function SearchResultsContent() {
   const router = useRouter();
@@ -17,28 +18,36 @@ function SearchResultsContent() {
   const query = searchParams.get('q') || '';
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const liveProducts = useLiveProducts();
 
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'name'>('featured');
 
   const matchingProducts = useMemo(() => {
     if (!query.trim()) return [];
-    const q = query.toLowerCase().trim();
-    return (productsData as any[])
+    const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+
+    return liveProducts
       .filter((p) => {
-        const matchesName = p.name?.toLowerCase().includes(q);
-        const matchesDesc = (p.description || '').toLowerCase().includes(q);
-        const matchesBrand = (p.brand || '').toLowerCase().includes(q);
-        return matchesName || matchesDesc || matchesBrand;
+        const haystack = `${p.name || ''} ${p.sku || ''} ${p.brand || ''} ${p.category || ''} ${p.description || ''} ${p.shortDescription || ''}`.toLowerCase();
+        return tokens.every((token) => haystack.includes(token));
       })
       .sort((a, b) => {
+        const stockA = isProductInStock(a) ? 1 : 0;
+        const stockB = isProductInStock(b) ? 1 : 0;
+        if (stockA !== stockB) return stockB - stockA;
+
         const priceA = a.salePriceMinor || a.regularPriceMinor || 0;
         const priceB = b.salePriceMinor || b.regularPriceMinor || 0;
         if (sortBy === 'price-asc') return priceA - priceB;
         if (sortBy === 'price-desc') return priceB - priceA;
-        if (sortBy === 'name') return a.name.localeCompare(b.name);
+        if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
+
+        const timeA = getProductTimestamp(a);
+        const timeB = getProductTimestamp(b);
+        if (timeA !== timeB) return timeB - timeA;
         return 0;
       });
-  }, [query, sortBy]);
+  }, [query, sortBy, liveProducts]);
 
   return (
     <main className="min-h-screen flex flex-col bg-slate-50/50">

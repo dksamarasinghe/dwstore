@@ -11,11 +11,13 @@ import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
 import { Star, ShoppingCart, Heart, SlidersHorizontal, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { useLiveProducts, getProductTimestamp } from '@/lib/useLiveProducts';
 
 export function BrandClientView({ slug }: { slug: string }) {
   const router = useRouter();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const liveProducts = useLiveProducts();
 
   const currentBrand = useMemo(() => {
     return (brandsData as any[]).find(
@@ -31,7 +33,7 @@ export function BrandClientView({ slug }: { slug: string }) {
 
   // Filter products matching this brand
   const matchingProducts = useMemo(() => {
-    return (productsData as any[])
+    return liveProducts
       .filter((p) => {
         if (!p.brand) return false;
         return (
@@ -41,14 +43,22 @@ export function BrandClientView({ slug }: { slug: string }) {
         );
       })
       .sort((a, b) => {
+        const stockA = isProductInStock(a) ? 1 : 0;
+        const stockB = isProductInStock(b) ? 1 : 0;
+        if (stockA !== stockB) return stockB - stockA;
+
         const priceA = a.salePriceMinor || a.regularPriceMinor || 0;
         const priceB = b.salePriceMinor || b.regularPriceMinor || 0;
         if (sortBy === 'price-asc') return priceA - priceB;
         if (sortBy === 'price-desc') return priceB - priceA;
-        if (sortBy === 'name') return a.name.localeCompare(b.name);
+        if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
+
+        const timeA = getProductTimestamp(a);
+        const timeB = getProductTimestamp(b);
+        if (timeA !== timeB) return timeB - timeA;
         return 0;
       });
-  }, [slug, sortBy]);
+  }, [slug, sortBy, liveProducts]);
 
   const totalPages = Math.ceil(matchingProducts.length / itemsPerPage) || 1;
   const paginatedProducts = matchingProducts.slice(

@@ -13,6 +13,7 @@ import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { resolveImageUrl } from '@/lib/image';
 import { Star, ShoppingCart, Heart, SlidersHorizontal, ChevronRight, X, Check, Filter } from 'lucide-react';
+import { useLiveProducts, getProductTimestamp } from '@/lib/useLiveProducts';
 
 function ShopContent() {
   const searchParams = useSearchParams();
@@ -55,23 +56,7 @@ function ShopContent() {
   const [cartNotice, setCartNotice] = useState<string | null>(null);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const itemsPerPage = 20;
-
-  const [allProducts, setAllProducts] = useState<any[]>(() => productsData as any[]);
-
-  useEffect(() => {
-    let isMounted = true;
-    fetch('/api/products', { cache: 'no-store' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (isMounted && Array.isArray(data) && data.length > 0) {
-          setAllProducts(data);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const allProducts = useLiveProducts();
 
   // Lock body scroll when mobile filter drawer is open
   useEffect(() => {
@@ -259,13 +244,12 @@ function ShopContent() {
           if (!isNaN(maxVal) && priceLkr > maxVal) return false;
         }
 
-        // Search query
+        // Search query with tokenized matching across all fields
         if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase();
-          const matchesName = (p.name || '').toLowerCase().includes(q);
-          const matchesDesc = (p.description || '').toLowerCase().includes(q);
-          const matchesBrand = (p.brand || '').toLowerCase().includes(q);
-          if (!matchesName && !matchesDesc && !matchesBrand) return false;
+          const tokens = searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+          const searchHaystack = `${p.name || ''} ${p.sku || ''} ${p.brand || ''} ${p.category || ''} ${p.description || ''} ${p.shortDescription || ''}`.toLowerCase();
+          const matchesAllTokens = tokens.every((token) => searchHaystack.includes(token));
+          if (!matchesAllTokens) return false;
         }
 
         return true;
@@ -284,23 +268,13 @@ function ShopContent() {
         if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
 
         // 3. Default ('featured' / 'latest'): Newly added and edited products first
-        const timeA =
-          a.updatedAtTimestamp ||
-          (a.updatedAt ? new Date(a.updatedAt).getTime() : 0) ||
-          a.createdAtTimestamp ||
-          (a.createdAt ? new Date(a.createdAt).getTime() : 0) ||
-          0;
-        const timeB =
-          b.updatedAtTimestamp ||
-          (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) ||
-          b.createdAtTimestamp ||
-          (b.createdAt ? new Date(b.createdAt).getTime() : 0) ||
-          0;
+        const timeA = getProductTimestamp(a);
+        const timeB = getProductTimestamp(b);
         if (timeA !== timeB) return timeB - timeA;
 
         return 0;
       });
-  }, [selectedCategory, selectedBrand, searchQuery, onlyDeals, stockFilter, minPrice, maxPrice, sortBy]);
+  }, [allProducts, selectedCategory, selectedBrand, searchQuery, onlyDeals, stockFilter, minPrice, maxPrice, sortBy]);
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
   const paginatedProducts = filteredProducts.slice(

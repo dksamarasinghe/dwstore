@@ -1,17 +1,21 @@
 import { Metadata } from 'next';
 import productsData from '@/data/products.json';
 import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
+import { readDataJson } from '@/lib/data-paths';
 import { ProductClientView } from './ProductClientView';
 
 interface PageProps {
   params: { slug: string };
 }
 
+export const dynamic = 'force-dynamic';
+
 const BASE_URL = 'https://www.dwstore.lk';
 
 function findProduct(slug: string) {
   const decoded = decodeURIComponent(slug);
-  return (productsData as any[]).find(
+  const products = readDataJson<any[]>('products.json', productsData as any[]);
+  return products.find(
     (p) => p.slug === decoded || String(p.id) === decoded || p.slug === slug || String(p.id) === slug
   );
 }

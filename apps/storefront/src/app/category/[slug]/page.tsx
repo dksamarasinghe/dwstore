@@ -1,16 +1,20 @@
 import { Metadata } from 'next';
 import categoriesData from '@/data/categories.json';
+import { readDataJson } from '@/lib/data-paths';
 import { CategoryClientView } from './CategoryClientView';
 
 interface PageProps {
   params: { slug: string };
 }
 
+export const dynamic = 'force-dynamic';
+
 const BASE_URL = 'https://www.dwstore.lk';
 
 function findCategory(slug: string) {
   const decoded = decodeURIComponent(slug).toLowerCase();
-  return (categoriesData as any[]).find(
+  const categories = readDataJson<any[]>('categories.json', categoriesData as any[]);
+  return categories.find(
     (c) => c.slug === decoded || c.slug === slug || c.id === decoded
   );
 }

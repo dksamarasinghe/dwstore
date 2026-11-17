@@ -1,16 +1,20 @@
 import { Metadata } from 'next';
 import brandsData from '@/data/brands.json';
+import { readDataJson } from '@/lib/data-paths';
 import { BrandClientView } from './BrandClientView';
 
 interface PageProps {
   params: { slug: string };
 }
 
+export const dynamic = 'force-dynamic';
+
 const BASE_URL = 'https://www.dwstore.lk';
 
 function findBrand(slug: string) {
   const decoded = decodeURIComponent(slug).toLowerCase();
-  return (brandsData as any[]).find(
+  const brands = readDataJson<any[]>('brands.json', brandsData as any[]);
+  return brands.find(
     (b) => b.slug === decoded || b.slug === slug || b.id === decoded || b.name.toLowerCase() === decoded
   );
 }
