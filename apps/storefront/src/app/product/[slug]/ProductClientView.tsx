@@ -234,11 +234,27 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
     return isProductInStock(product);
   }, [product]);
 
-  // Stock status of currently selected or general product
+  // Stock status of currently selected or general product (strictly follows admin stock status)
   const isOutOfStock = useMemo(() => {
     if (isVariable) {
       if (matchedVariation) {
-        return matchedVariation.inStock === false || (typeof matchedVariation.stockQty === 'number' && matchedVariation.stockQty <= 0);
+        if (
+          matchedVariation.stockStatus === 'Out of Stock' ||
+          matchedVariation.stockStatus === 'out_of_stock' ||
+          matchedVariation.status === 'Out of stock' ||
+          matchedVariation.status === 'Out of Stock' ||
+          matchedVariation.inStock === false
+        ) {
+          return true;
+        }
+        if (
+          matchedVariation.stockStatus === 'In Stock' ||
+          matchedVariation.status === 'Active' ||
+          matchedVariation.inStock === true
+        ) {
+          return false;
+        }
+        return false;
       }
       return !hasAnyStock;
     }

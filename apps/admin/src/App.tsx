@@ -225,12 +225,21 @@ export default function App() {
           ? [primaryImg]
           : [];
 
+      const rawCat = apiItem.category && apiItem.category !== 'Uncategorized' ? apiItem.category : '';
+      const arrayCat = Array.isArray(apiItem.categories) && apiItem.categories[0] && apiItem.categories[0] !== 'Uncategorized' ? apiItem.categories[0] : '';
+      const slugCat = Array.isArray(apiItem.categorySlugs) && apiItem.categorySlugs[0] ? apiItem.categorySlugs[0] : '';
+      const matchedCatName =
+        rawCat ||
+        arrayCat ||
+        (slugCat ? (categories.find((c) => c.slug === slugCat || c.id === slugCat)?.name || slugCat.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())) : '') ||
+        'General';
+
       return {
         id: String(apiItem.id),
         name: apiItem.name || apiItem.title || 'Untitled Product',
         sku: apiItem.sku || `DWS-${String(apiItem.id).slice(-6)}`,
         brand: apiItem.brand || '',
-        category: apiItem.category || 'Uncategorized',
+        category: matchedCatName,
         productType: isVar ? 'variable' : 'simple',
         type: isVar ? 'variable' : 'simple',
         regularPrice: regPrice,
@@ -325,32 +334,43 @@ export default function App() {
                   }
 
                   const normalizedVars = hasVars
-                    ? apiItem.variations.map((v: any, idx: number) => ({
-                        id: String(v.id || `var-${idx}`),
-                        sku: v.sku || '',
-                        attributes: v.attributes || {},
-                        regularPrice:
-                          v.regularPrice !== undefined
-                            ? Number(v.regularPrice)
-                            : v.regularPriceMinor
-                            ? Math.round(Number(v.regularPriceMinor) / 100)
-                            : p.regularPrice,
-                        salePrice:
-                          v.salePrice !== undefined
-                            ? Number(v.salePrice)
-                            : v.salePriceMinor
-                            ? Math.round(Number(v.salePriceMinor) / 100)
-                            : p.salePrice,
-                        costPrice: 0,
-                        stock:
-                          v.stock !== undefined && v.stock !== null
-                            ? Number(v.stock)
-                            : v.stockQty !== undefined && v.stockQty !== null
-                            ? Number(v.stockQty)
-                            : 10,
-                        image: v.displayImage || v.image || '',
-                        displayImage: v.displayImage || v.image || '',
-                      }))
+                    ? apiItem.variations.map((v: any, idx: number) => {
+                        const isOut =
+                          v.status === 'Out of stock' ||
+                          v.status === 'Out of Stock' ||
+                          v.stockStatus === 'Out of Stock' ||
+                          v.stockStatus === 'out_of_stock' ||
+                          v.inStock === false;
+                        return {
+                          id: String(v.id || `var-${idx}`),
+                          sku: v.sku || '',
+                          attributes: v.attributes || {},
+                          regularPrice:
+                            v.regularPrice !== undefined
+                              ? Number(v.regularPrice)
+                              : v.regularPriceMinor
+                              ? Math.round(Number(v.regularPriceMinor) / 100)
+                              : p.regularPrice,
+                          salePrice:
+                            v.salePrice !== undefined
+                              ? Number(v.salePrice)
+                              : v.salePriceMinor
+                              ? Math.round(Number(v.salePriceMinor) / 100)
+                              : p.salePrice,
+                          costPrice: 0,
+                          stock:
+                            v.stock !== undefined && v.stock !== null
+                              ? Number(v.stock)
+                              : v.stockQty !== undefined && v.stockQty !== null
+                              ? Number(v.stockQty)
+                              : 10,
+                          status: isOut ? 'Out of stock' : 'Active',
+                          stockStatus: isOut ? 'Out of Stock' : 'In Stock',
+                          inStock: !isOut,
+                          image: v.displayImage || v.image || '',
+                          displayImage: v.displayImage || v.image || '',
+                        };
+                      })
                     : p.variations && p.variations.length > 0
                     ? p.variations
                     : rp?.variations || [];
@@ -374,8 +394,21 @@ export default function App() {
 
                   const finalType: 'simple' | 'variable' = isVar ? 'variable' : (p.productType === 'variable' ? 'variable' : 'simple');
 
+                  const resolvedCategory =
+                    apiItem.category && apiItem.category !== 'Uncategorized'
+                      ? apiItem.category
+                      : p.category && p.category !== 'Uncategorized'
+                      ? p.category
+                      : (rp?.category && rp.category !== 'Uncategorized'
+                          ? rp.category
+                          : (Array.isArray(apiItem.categorySlugs) && apiItem.categorySlugs[0]
+                              ? (categories.find((c) => c.slug === apiItem.categorySlugs[0] || c.id === apiItem.categorySlugs[0])?.name ||
+                                 apiItem.categorySlugs[0].replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()))
+                              : 'General'));
+
                   return {
                     ...p,
+                    category: resolvedCategory,
                     status: resolvedStatus,
                     productType: finalType,
                     type: finalType,
@@ -673,6 +706,7 @@ export default function App() {
     const initialMerged: ProductItem = {
       ...realProd,
       ...prod,
+      category: prod.category && prod.category !== 'Uncategorized' ? prod.category : (realProd?.category || 'General'),
       productType: initialIsVar ? 'variable' : 'simple',
       type: initialIsVar ? 'variable' : 'simple',
       attributes: initialAttrs,
@@ -726,32 +760,43 @@ export default function App() {
 
               const normalizedVars =
                 Array.isArray(fullProd.variations) && fullProd.variations.length > 0
-                  ? fullProd.variations.map((v: any, idx: number) => ({
-                      id: String(v.id || `var-${idx}`),
-                      sku: v.sku || '',
-                      attributes: v.attributes || {},
-                      regularPrice:
-                        v.regularPrice !== undefined
-                          ? Number(v.regularPrice)
-                          : v.regularPriceMinor
-                          ? Math.round(Number(v.regularPriceMinor) / 100)
-                          : prod.regularPrice,
-                      salePrice:
-                        v.salePrice !== undefined
-                          ? Number(v.salePrice)
-                          : v.salePriceMinor
-                          ? Math.round(Number(v.salePriceMinor) / 100)
-                          : prod.salePrice,
-                      costPrice: 0,
-                      stock:
-                        v.stock !== undefined && v.stock !== null
-                          ? Number(v.stock)
-                          : v.stockQty !== undefined && v.stockQty !== null
-                          ? Number(v.stockQty)
-                          : 10,
-                      image: v.displayImage || v.image || '',
-                      displayImage: v.displayImage || v.image || '',
-                    }))
+                  ? fullProd.variations.map((v: any, idx: number) => {
+                      const isOut =
+                        v.status === 'Out of stock' ||
+                        v.status === 'Out of Stock' ||
+                        v.stockStatus === 'Out of Stock' ||
+                        v.stockStatus === 'out_of_stock' ||
+                        v.inStock === false;
+                      return {
+                        id: String(v.id || `var-${idx}`),
+                        sku: v.sku || '',
+                        attributes: v.attributes || {},
+                        regularPrice:
+                          v.regularPrice !== undefined
+                            ? Number(v.regularPrice)
+                            : v.regularPriceMinor
+                            ? Math.round(Number(v.regularPriceMinor) / 100)
+                            : prod.regularPrice,
+                        salePrice:
+                          v.salePrice !== undefined
+                            ? Number(v.salePrice)
+                            : v.salePriceMinor
+                            ? Math.round(Number(v.salePriceMinor) / 100)
+                            : prod.salePrice,
+                        costPrice: 0,
+                        stock:
+                          v.stock !== undefined && v.stock !== null
+                            ? Number(v.stock)
+                            : v.stockQty !== undefined && v.stockQty !== null
+                            ? Number(v.stockQty)
+                            : 10,
+                        status: isOut ? 'Out of stock' : 'Active',
+                        stockStatus: isOut ? 'Out of Stock' : 'In Stock',
+                        inStock: !isOut,
+                        image: v.displayImage || v.image || '',
+                        displayImage: v.displayImage || v.image || '',
+                      };
+                    })
                   : initialVars;
 
               const isVar =
@@ -771,9 +816,24 @@ export default function App() {
                   ? 'Active'
                   : prod.status || 'Active';
 
+              const resolvedEditCategory =
+                fullProd.category && fullProd.category !== 'Uncategorized'
+                  ? fullProd.category
+                  : (Array.isArray(fullProd.categories) && fullProd.categories[0] && fullProd.categories[0] !== 'Uncategorized'
+                      ? fullProd.categories[0]
+                      : prod.category && prod.category !== 'Uncategorized'
+                      ? prod.category
+                      : realProd?.category && realProd.category !== 'Uncategorized'
+                      ? realProd.category
+                      : (Array.isArray(fullProd.categorySlugs) && fullProd.categorySlugs[0]
+                          ? (categories.find((c) => c.slug === fullProd.categorySlugs[0] || c.id === fullProd.categorySlugs[0])?.name ||
+                             fullProd.categorySlugs[0].replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()))
+                          : 'General'));
+
               const merged: ProductItem = {
                 ...realProd,
                 ...prod,
+                category: resolvedEditCategory,
                 status: resolvedEditStatus,
                 productType: isVar ? 'variable' : 'simple',
                 type: isVar ? 'variable' : 'simple',

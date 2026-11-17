@@ -831,8 +831,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                             {v.sku && <small className="text-muted font-monospace" style={{ fontSize: '10px' }}>{v.sku}</small>}
                           </div>
 
-                          <div className="row g-2">
-                            <div className="col-4">
+                          <div className="row g-2 align-items-center">
+                            <div className="col-3">
                               <label className="text-muted d-block mb-0.5" style={{ fontSize: '10px', fontWeight: 600 }}>
                                 Regular Price (LKR) *
                               </label>
@@ -851,7 +851,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                               />
                             </div>
 
-                            <div className="col-4">
+                            <div className="col-3">
                               <label className="text-muted d-block mb-0.5" style={{ fontSize: '10px', fontWeight: 600 }}>
                                 Sale Price (Opt)
                               </label>
@@ -870,7 +870,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                               />
                             </div>
 
-                            <div className="col-4">
+                            <div className="col-3">
                               <label className="text-muted d-block mb-0.5" style={{ fontSize: '10px', fontWeight: 600 }}>
                                 Stock (Optional)
                               </label>
@@ -887,6 +887,37 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                                   setQuickEditProduct({ ...quickEditProduct, variations: nextVars });
                                 }}
                               />
+                            </div>
+
+                            <div className="col-3">
+                              <label className="text-muted d-block mb-0.5" style={{ fontSize: '10px', fontWeight: 600 }}>
+                                Stock Status
+                              </label>
+                              <select
+                                className="w-100 p-1.5 rounded-2 fw-semibold"
+                                style={{
+                                  background: 'var(--hover)',
+                                  border: '1px solid var(--border)',
+                                  color: (v.stockStatus === 'Out of Stock' || v.status === 'Out of stock' || v.inStock === false) ? '#ef4444' : '#10b981',
+                                  fontSize: '12px'
+                                }}
+                                value={(v.stockStatus === 'Out of Stock' || v.status === 'Out of stock' || v.inStock === false) ? 'Out of Stock' : 'In Stock'}
+                                onChange={(e) => {
+                                  const val = e.target.value as 'In Stock' | 'Out of Stock';
+                                  const isOut = val === 'Out of Stock';
+                                  const nextVars = [...(quickEditProduct.variations || [])];
+                                  nextVars[idx] = {
+                                    ...v,
+                                    stockStatus: val,
+                                    status: isOut ? 'Out of stock' : 'Active',
+                                    inStock: !isOut,
+                                  };
+                                  setQuickEditProduct({ ...quickEditProduct, variations: nextVars });
+                                }}
+                              >
+                                <option value="In Stock">In Stock</option>
+                                <option value="Out of Stock">Out of Stock</option>
+                              </select>
                             </div>
                           </div>
                         </div>

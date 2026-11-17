@@ -38,6 +38,20 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
 
+function normalizeProductCategory(p: any) {
+  if (!p) return p;
+  if (!p.category || p.category === 'Uncategorized') {
+    if (Array.isArray(p.categories) && p.categories[0] && p.categories[0] !== 'Uncategorized') {
+      p.category = p.categories[0];
+    } else if (Array.isArray(p.categorySlugs) && p.categorySlugs[0]) {
+      p.category = p.categorySlugs[0].replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+    } else {
+      p.category = 'General';
+    }
+  }
+  return p;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const idOrSlug = searchParams.get('id') || searchParams.get('slug');
@@ -48,10 +62,11 @@ export async function GET(req: NextRequest) {
     if (!found) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404, headers: CORS_HEADERS });
     }
-    return NextResponse.json(found, { headers: CORS_HEADERS });
+    return NextResponse.json(normalizeProductCategory(found), { headers: CORS_HEADERS });
   }
 
-  return NextResponse.json(products, { headers: CORS_HEADERS });
+  const normalizedList = products.map(normalizeProductCategory);
+  return NextResponse.json(normalizedList, { headers: CORS_HEADERS });
 }
 
 export async function POST(req: NextRequest) {
@@ -104,8 +119,19 @@ export async function POST(req: NextRequest) {
             : (v.salePriceMinor !== undefined ? v.salePriceMinor : (saleMinor || varReg));
           const varStock = v.stock !== undefined && v.stock !== null && v.stock !== ''
             ? Number(v.stock)
-            : (v.stockQty !== undefined && v.stockQty !== null ? Number(v.stockQty) : 10);
-          const varInStock = varStock > 0 || v.inStock === true;
+            : (v.stockQty !== undefined && v.stockQty !== null ? Number(v.stockQty) : 0);
+
+          // Stock status does not depend on stock quantity count
+          const isExplicitOutOfStock =
+            v.stockStatus === 'Out of Stock' ||
+            v.stockStatus === 'out_of_stock' ||
+            v.status === 'Out of stock' ||
+            v.status === 'Out of Stock' ||
+            v.inStock === false;
+
+          const varInStock = !isExplicitOutOfStock;
+          const varStockStatus = varInStock ? 'In Stock' : 'Out of Stock';
+          const varStatus = varInStock ? 'Active' : 'Out of stock';
           const varImg = v.displayImage || v.image || primaryImage;
 
           return {
@@ -118,6 +144,8 @@ export async function POST(req: NextRequest) {
             displayImage: varImg,
             imageUrls: v.image ? [v.image] : (v.displayImage ? [v.displayImage] : [primaryImage]),
             inStock: varInStock,
+            status: varStatus,
+            stockStatus: varStockStatus,
             stockQty: varStock,
           };
         })
@@ -125,7 +153,7 @@ export async function POST(req: NextRequest) {
 
     const isVariable = body.productType === 'variable' || body.type === 'variable' || formattedVariations.length > 0;
     const hasVarStock = formattedVariations.length > 0
-      ? formattedVariations.some((v: any) => v.inStock && (v.stockQty === null || v.stockQty > 0))
+      ? formattedVariations.some((v: any) => v.inStock === true)
       : false;
     const inStock = body.status === 'Out of stock'
       ? false
@@ -142,6 +170,24 @@ export async function POST(req: NextRequest) {
       ? Math.min(...formattedVariations.map((v: any) => v.salePriceMinor || v.regularPriceMinor || saleMinor))
       : (saleMinor > 0 ? saleMinor : regMinor);
 
+    // Resolve Category accurately
+    const rawCategory = body.category && String(body.category).trim() !== 'Uncategorized'
+      ? String(body.category).trim()
+      : (Array.isArray(body.categories) && body.categories[0] && String(body.categories[0]).trim() !== 'Uncategorized'
+        ? String(body.categories[0]).trim()
+        : (existingIndex >= 0 && products[existingIndex].category && products[existingIndex].category !== 'Uncategorized'
+          ? products[existingIndex].category
+          : ''));
+
+    const categorySlug = rawCategory
+      ? rawCategory.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')
+      : (existingIndex >= 0 && products[existingIndex].categorySlugs?.[0]
+        ? products[existingIndex].categorySlugs[0]
+        : 'general');
+
+    const finalCategoryName = rawCategory || categorySlug.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+    const finalCategorySlugs = [categorySlug];
+
     const nowIso = new Date().toISOString();
     const nowTs = Date.now();
 
@@ -151,6 +197,9 @@ export async function POST(req: NextRequest) {
         ...products[existingIndex],
         type: isVariable ? 'variable' : 'simple',
         name: body.name || products[existingIndex].name,
+        category: finalCategoryName,
+        categories: [finalCategoryName],
+        categorySlugs: finalCategorySlugs,
         warrantyPeriod,
         regularPriceMinor: regMinor,
         salePriceMinor: saleMinor,
@@ -197,7 +246,9 @@ export async function POST(req: NextRequest) {
         description: body.description || '',
         seoTitle: body.seoTitle !== undefined ? String(body.seoTitle).trim() : '',
         seoDescription: body.seoDescription !== undefined ? String(body.seoDescription).trim() : '',
-        categorySlugs: [body.category ? body.category.toLowerCase().replace(/\s+/g, '-') : 'general'],
+        category: finalCategoryName,
+        categories: [finalCategoryName],
+        categorySlugs: finalCategorySlugs,
         attributes: normalizedAttributes,
         imageUrls: galleryList,
         displayImage: primaryImage,

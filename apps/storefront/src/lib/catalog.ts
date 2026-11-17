@@ -111,12 +111,17 @@ export function formatPriceLKR(minorCents: number): string {
 export function isProductInStock(product: any): boolean {
   if (!product) return false;
   if (product.status === 'Out of stock' || product.status === 'Draft') return false;
-  if (product.status === 'Active' || product.status === 'Low stock') return true;
+  if (product.catalogStatus === 'Out of stock') return false;
   if (product.inStock === false) return false;
+  if (product.status === 'Active' || product.status === 'Low stock') return true;
 
   if (product.variations && product.variations.length > 0) {
     return product.variations.some(
-      (v: any) => v.inStock !== false && (v.stockQty === undefined || v.stockQty === null || v.stockQty > 0)
+      (v: any) =>
+        v.inStock === true ||
+        v.stockStatus === 'In Stock' ||
+        (v.status && v.status !== 'Out of stock') ||
+        (v.inStock !== false && v.stockStatus !== 'Out of Stock')
     );
   }
   return product.inStock !== false;

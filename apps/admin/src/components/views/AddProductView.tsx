@@ -162,6 +162,13 @@ export const parseInitialVariations = (prod?: any | null, parsedAttrs?: WorkingA
             ? Number(v.stockQty)
             : (v.inStock !== false ? defaultStock : 0));
 
+      const isOut =
+        v.status === 'Out of stock' ||
+        v.status === 'Out of Stock' ||
+        v.stockStatus === 'Out of Stock' ||
+        v.stockStatus === 'out_of_stock' ||
+        v.inStock === false;
+
       const img = v.displayImage || v.image || (Array.isArray(v.imageUrls) ? v.imageUrls[0] : '') || prod.displayImage || prod.image || '';
 
       return {
@@ -172,6 +179,9 @@ export const parseInitialVariations = (prod?: any | null, parsedAttrs?: WorkingA
         salePrice: sale > 0 ? sale : reg,
         costPrice: v.costPrice ? Number(v.costPrice) : defaultCost,
         stock: stock,
+        status: isOut ? 'Out of stock' : 'Active',
+        stockStatus: isOut ? 'Out of Stock' : 'In Stock',
+        inStock: !isOut,
         image: img,
         displayImage: img,
       };
@@ -190,6 +200,12 @@ export const parseInitialVariations = (prod?: any | null, parsedAttrs?: WorkingA
       const reg = v.regularPrice !== undefined ? Number(v.regularPrice) : defaultReg;
       const sale = v.salePrice !== undefined ? Number(v.salePrice) : defaultSale;
       const stock = v.stock !== undefined ? Number(v.stock) : defaultStock;
+      const isOut =
+        v.status === 'Out of stock' ||
+        v.status === 'Out of Stock' ||
+        v.stockStatus === 'Out of Stock' ||
+        v.stockStatus === 'out_of_stock' ||
+        v.inStock === false;
       const img = v.displayImage || v.image || prod.displayImage || prod.image || '';
       return {
         id: String(v.id || `var-${Date.now()}-${idx}`),
@@ -199,6 +215,9 @@ export const parseInitialVariations = (prod?: any | null, parsedAttrs?: WorkingA
         salePrice: sale > 0 ? sale : reg,
         costPrice: defaultCost,
         stock: stock,
+        status: isOut ? 'Out of stock' : 'Active',
+        stockStatus: isOut ? 'Out of Stock' : 'In Stock',
+        inStock: !isOut,
         image: img,
         displayImage: img,
       };
@@ -271,13 +290,28 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
   });
 
   // 2. Basic Information (Completely blank if adding new!)
+  const resolveInitialCategory = (prod?: any): string => {
+    if (!prod) return categories[0]?.name || 'SmartWatches';
+    if (prod.category && prod.category !== 'Uncategorized') return prod.category;
+    if (Array.isArray(prod.categories) && prod.categories[0] && prod.categories[0] !== 'Uncategorized') {
+      return prod.categories[0];
+    }
+    if (Array.isArray(prod.categorySlugs) && prod.categorySlugs[0]) {
+      const slug = prod.categorySlugs[0];
+      const found = categories.find((c) => c.slug === slug || c.id === slug);
+      if (found) return found.name;
+      return slug.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+    }
+    return prod.category && prod.category !== 'Uncategorized' ? prod.category : (categories[0]?.name || 'General');
+  };
+
   const [productName, setProductName] = useState(initialProduct?.name || '');
   const [sku, setSku] = useState(initialProduct?.sku || '');
   const [brand, setBrand] = useState(initialProduct?.brand || '');
   const [seoTitle, setSeoTitle] = useState(initialProduct?.seoTitle || '');
   const [seoDescription, setSeoDescription] = useState(initialProduct?.seoDescription || '');
-  const [selectedCategory, setSelectedCategory] = useState(
-    initialProduct?.category || (categories[0]?.name || '')
+  const [selectedCategory, setSelectedCategory] = useState(() =>
+    resolveInitialCategory(initialProduct)
   );
 
   // Category dropdown & search state
@@ -577,7 +611,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       setProductName(initialProduct.name || '');
       setSku(initialProduct.sku || '');
       setBrand(initialProduct.brand || '');
-      setSelectedCategory(initialProduct.category || categories[0]?.name || '');
+      setSelectedCategory(resolveInitialCategory(initialProduct));
       setRegularPrice(initialProduct.regularPrice ? String(initialProduct.regularPrice) : '');
       setSalePrice(initialProduct.salePrice ? String(initialProduct.salePrice) : '');
       setCostPrice(initialProduct.costPrice ? String(initialProduct.costPrice) : '');
@@ -824,6 +858,19 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
     showNotification(`Set stock to ${s} units for all variations.`);
   };
 
+  const handleBulkSetVariationsStockStatus = (newStatus: 'In Stock' | 'Out of Stock') => {
+    const isOut = newStatus === 'Out of Stock';
+    setVariations(
+      variations.map((v) => ({
+        ...v,
+        stockStatus: newStatus,
+        status: isOut ? 'Out of stock' : 'Active',
+        inStock: !isOut,
+      }))
+    );
+    showNotification(`Set all variations to "${newStatus}".`);
+  };
+
   // Custom Shipping Class creation
   const handleCreateShippingClass = (e: React.FormEvent) => {
     e.preventDefault();
@@ -983,12 +1030,31 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
     const allImages = Array.from(new Set([primaryImg, ...galleryImages].filter(Boolean)));
 
     const formattedVariations = productType === 'variable'
-      ? variations.map((v) => ({
-          ...v,
-          image: v.image || primaryImg,
-          displayImage: v.displayImage || v.image || primaryImg,
-        }))
+      ? variations.map((v) => {
+          const isOut =
+            v.stockStatus === 'Out of Stock' ||
+            v.stockStatus === 'out_of_stock' ||
+            v.status === 'Out of stock' ||
+            v.status === 'Out of Stock' ||
+            v.inStock === false;
+          return {
+            ...v,
+            stockStatus: isOut ? ('Out of Stock' as const) : ('In Stock' as const),
+            status: isOut ? 'Out of stock' : 'Active',
+            inStock: !isOut,
+            image: v.image || primaryImg,
+            displayImage: v.displayImage || v.image || primaryImg,
+          };
+        })
       : undefined;
+
+    const hasAnyVarInStock = formattedVariations && formattedVariations.length > 0
+      ? formattedVariations.some((v) => v.inStock === true)
+      : false;
+
+    const resolvedPayloadStatus: 'Active' | 'Low stock' | 'Out of stock' | 'Draft' = productType === 'variable'
+      ? (hasAnyVarInStock ? 'Active' : 'Out of stock')
+      : status;
 
     const productPayload: ProductItem = {
       id: initialProduct?.id || `prod-${Date.now()}`,
@@ -1003,7 +1069,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       costPrice: costP,
       stock: stockQty,
       stockAlertLevel: stockAlert,
-      status,
+      status: resolvedPayloadStatus,
       salesCount: initialProduct?.salesCount || 0,
       rating: initialProduct?.rating || 5.0,
       image: primaryImg,
@@ -2183,6 +2249,22 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                         >
                           Sync Stock to All
                         </button>
+                        <button
+                          type="button"
+                          className="btn-soft text-success fw-semibold"
+                          style={{ fontSize: '12px', padding: '4px 8px', borderColor: 'rgba(16, 185, 129, 0.3)' }}
+                          onClick={() => handleBulkSetVariationsStockStatus('In Stock')}
+                        >
+                          Mark All In Stock
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-soft text-danger fw-semibold"
+                          style={{ fontSize: '12px', padding: '4px 8px', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                          onClick={() => handleBulkSetVariationsStockStatus('Out of Stock')}
+                        >
+                          Mark All Out of Stock
+                        </button>
                       </div>
                     )}
                   </div>
@@ -2327,9 +2409,9 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                               </div>
                             </div>
 
-                            {/* Row of Inputs */}
-                            <div className="row g-2">
-                              <div className="col-12 col-md-3">
+                            {/* Row of Inputs - 6 Columns including Stock Status */}
+                            <div className="row g-2 align-items-center">
+                              <div className="col-12 col-md-2">
                                 <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
                                   SKU (Optional)
                                 </label>
@@ -2350,7 +2432,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                                 />
                               </div>
 
-                              <div className="col-6 col-md-3">
+                              <div className="col-6 col-md-2">
                                 <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
                                   Regular Price *
                                 </label>
@@ -2446,6 +2528,41 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                                     handleUpdateVariation(v.id, 'stock', val);
                                   }}
                                 />
+                              </div>
+
+                              <div className="col-6 col-md-2">
+                                <label className="text-muted d-block mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>
+                                  Stock Status
+                                </label>
+                                <select
+                                  className="w-100 p-2 rounded-2 fw-semibold"
+                                  style={{
+                                    background: 'var(--hover)',
+                                    border: '1px solid var(--border)',
+                                    color: (v.stockStatus === 'Out of Stock' || v.status === 'Out of stock' || v.inStock === false) ? '#ef4444' : '#10b981',
+                                    fontSize: '13px'
+                                  }}
+                                  value={(v.stockStatus === 'Out of Stock' || v.status === 'Out of stock' || v.inStock === false) ? 'Out of Stock' : 'In Stock'}
+                                  onChange={(e) => {
+                                    const val = e.target.value as 'In Stock' | 'Out of Stock';
+                                    const isOut = val === 'Out of Stock';
+                                    setVariations(
+                                      variations.map((item) =>
+                                        item.id === v.id
+                                          ? {
+                                              ...item,
+                                              stockStatus: val,
+                                              status: isOut ? 'Out of stock' : 'Active',
+                                              inStock: !isOut,
+                                            }
+                                          : item
+                                      )
+                                    );
+                                  }}
+                                >
+                                  <option value="In Stock">In Stock</option>
+                                  <option value="Out of Stock">Out of Stock</option>
+                                </select>
                               </div>
                             </div>
                           </div>

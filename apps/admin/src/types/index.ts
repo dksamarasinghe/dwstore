@@ -37,6 +37,9 @@ export interface ProductVariationItem {
   salePrice: number;
   costPrice?: number;
   stock: number;
+  status?: string;
+  stockStatus?: 'In Stock' | 'Out of Stock' | string;
+  inStock?: boolean;
   image?: string;
   displayImage?: string;
 }
