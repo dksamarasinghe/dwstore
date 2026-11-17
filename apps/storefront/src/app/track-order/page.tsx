@@ -119,9 +119,11 @@ export default function TrackOrderPage() {
     activeStep = 0;
   }
 
-  const waybillNumber = result?.trackingId || result?.trackingNumber || trackingInput || '61661049';
+  const waybillNumber = result?.trackingId || result?.trackingNumber || trackingInput || '';
   const phoneParam = phone || result?.phone || '';
-  const koombiyoPortalUrl = `https://koombiyodelivery.lk/track?id=${encodeURIComponent(waybillNumber)}&phone=${encodeURIComponent(phoneParam)}`;
+  const koombiyoPortalUrl = waybillNumber
+    ? `https://koombiyodelivery.lk/track?id=${encodeURIComponent(waybillNumber)}&phone=${encodeURIComponent(phoneParam)}`
+    : '#';
 
   return (
     <main className="min-h-screen flex flex-col bg-slate-50/50">
@@ -203,148 +205,277 @@ export default function TrackOrderPage() {
           </form>
         </div>
 
-        {/* Live Status Result Card - Matching Koombiyo Layout */}
+        {/* Live Status Result Card */}
         {hasSearched && (
           result ? (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              {/* Primary Card: Exact Match to Koombiyo Delivery UI */}
-              <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-xs space-y-6">
-                {/* Header Row */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-900 flex items-center justify-center flex-shrink-0 border border-sky-100">
-                      <Box className="w-6 h-6 stroke-[1.8]" />
+            result.hasCourierTracking && result.trackingNumber ? (
+              /* CASE 1: REAL COURIER TRACKING NUMBER ASSIGNED BY ADMIN */
+              <div className="space-y-6 animate-in fade-in duration-300">
+                {/* Primary Card: Exact Match to Koombiyo Delivery UI */}
+                <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-xs space-y-6">
+                  {/* Header Row */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-900 flex items-center justify-center flex-shrink-0 border border-sky-100">
+                        <Box className="w-6 h-6 stroke-[1.8]" />
+                      </div>
+                      <div>
+                        <span className="text-xs text-slate-400 font-medium block">Tracking ID</span>
+                        <strong className="text-2xl font-black text-slate-900 font-mono tracking-tight">
+                          {result.trackingId || result.trackingNumber}
+                        </strong>
+                      </div>
                     </div>
+
+                    <div className="sm:self-center">
+                      <span className="inline-block px-4 py-2 rounded-xl text-xs font-black tracking-wide border border-sky-200 bg-sky-50 text-sky-900 shadow-2xs">
+                        {result.status || 'In Transit'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 3x2 Grid Details (Collected Date, Name, Destination Branch, Status, Weight, Age) */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
                     <div>
-                      <span className="text-xs text-slate-400 font-medium block">Tracking ID</span>
-                      <strong className="text-2xl font-black text-slate-900 font-mono tracking-tight">
-                        {result.trackingId || result.trackingNumber || result.orderId}
+                      <span className="text-xs text-slate-400 font-medium block mb-1">Collected Date</span>
+                      <strong className="text-sm font-bold text-slate-800 block">
+                        {result.collectedDate || 'Recent'}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span className="text-xs text-slate-400 font-medium block mb-1">Name</span>
+                      <strong className="text-sm font-bold text-slate-800 block">
+                        {result.recipientName || 'Valued Customer'}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span className="text-xs text-slate-400 font-medium block mb-1">Destination Branch</span>
+                      <strong className="text-sm font-bold text-slate-800 block">
+                        {result.destinationBranch || 'Colombo Hub'}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span className="text-xs text-slate-400 font-medium block mb-1">Status</span>
+                      <strong className="text-sm font-bold text-slate-800 block">
+                        {result.status || 'In Transit'}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span className="text-xs text-slate-400 font-medium block mb-1">Weight (kg)</span>
+                      <strong className="text-sm font-bold text-slate-800 block font-mono">
+                        {result.weight || '1.00'}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span className="text-xs text-slate-400 font-medium block mb-1">Age</span>
+                      <strong className="text-sm font-bold text-slate-800 block">
+                        {result.age || 'Recent'}
                       </strong>
                     </div>
                   </div>
 
-                  <div className="sm:self-center">
-                    <span className="inline-block px-4 py-2 rounded-xl text-xs font-black tracking-wide border border-sky-200 bg-sky-50 text-sky-900 shadow-2xs">
-                      {result.status || 'In Transit'}
-                    </span>
+                  {/* Milestones Stepper */}
+                  <div className="pt-6 border-t border-slate-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        Delivery Progress
+                      </span>
+                      <span className="text-[11px] font-bold text-blue-600">
+                        Koombiyo Delivery Network
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                      {steps.map((st, idx) => {
+                        const isDone = idx <= activeStep;
+                        const isCurrent = idx === activeStep;
+
+                        return (
+                          <div 
+                            key={st.key} 
+                            className={`p-3 rounded-2xl border text-center transition ${
+                              isCurrent 
+                                ? 'bg-blue-50/90 border-blue-300' 
+                                : isDone 
+                                ? 'bg-emerald-50/60 border-emerald-200' 
+                                : 'bg-slate-50 border-slate-200 opacity-60'
+                            }`}
+                          >
+                            <div 
+                              className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold mx-auto mb-1.5 ${
+                                isDone ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
+                              }`}
+                            >
+                              {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : idx + 1}
+                            </div>
+                            <strong className={`text-[11px] block font-bold leading-tight ${isCurrent ? 'text-blue-700' : isDone ? 'text-slate-900' : 'text-slate-500'}`}>
+                              {st.label}
+                            </strong>
+                            <span className="text-[10px] text-slate-400 block mt-0.5">
+                              {st.desc}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center gap-3">
+                    <a
+                      href={koombiyoPortalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:flex-1 py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+                      <span>View on Official Koombiyo Portal</span>
+                    </a>
+
+                    <a
+                      href="https://wa.me/94756693358?text=Hello%20DWstore,%20I%20need%20assistance%20tracking%20my%20order"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto py-3 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>WhatsApp Help</span>
+                    </a>
                   </div>
                 </div>
+              </div>
+            ) : (
+              /* CASE 2: ORDER FOUND BUT AWAITING MANUAL COURIER TRACKING NUMBER */
+              <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-xs space-y-6">
+                  {/* Header Row */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0 border border-amber-200">
+                        <Package className="w-6 h-6 stroke-[1.8]" />
+                      </div>
+                      <div>
+                        <span className="text-xs text-slate-400 font-medium block">Order Reference</span>
+                        <strong className="text-2xl font-black text-slate-900 font-mono tracking-tight">
+                          #{result.orderId}
+                        </strong>
+                      </div>
+                    </div>
 
-                {/* 3x2 Grid Details (Collected Date, Name, Destination Branch, Status, Weight, Age) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-                  <div>
-                    <span className="text-xs text-slate-400 font-medium block mb-1">Collected Date</span>
-                    <strong className="text-sm font-bold text-slate-800 block">
-                      {result.collectedDate || 'Recent'}
-                    </strong>
+                    <div className="sm:self-center">
+                      <span className="inline-block px-4 py-2 rounded-xl text-xs font-black tracking-wide border border-amber-200 bg-amber-50 text-amber-900 shadow-2xs">
+                        {result.status || 'Order Confirmed (Processing)'}
+                      </span>
+                    </div>
                   </div>
 
-                  <div>
-                    <span className="text-xs text-slate-400 font-medium block mb-1">Name</span>
-                    <strong className="text-sm font-bold text-slate-800 block">
-                      {result.recipientName || 'Valued Customer'}
-                    </strong>
+                  {/* Status Banner */}
+                  <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-start gap-3">
+                    <Clock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-xs font-bold text-blue-900 block mb-0.5">
+                        Order Confirmed &bull; Preparing for Courier Dispatch
+                      </strong>
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        {result.message || 'Your order has been received and confirmed. Our team is currently preparing and inspecting your items. A live courier tracking ID will be assigned and updated here once the parcel is handed over to the courier service.'}
+                      </p>
+                    </div>
                   </div>
 
-                  <div>
-                    <span className="text-xs text-slate-400 font-medium block mb-1">Destination Branch</span>
-                    <strong className="text-sm font-bold text-slate-800 block">
-                      {result.destinationBranch || 'Colombo Hub'}
-                    </strong>
+                  {/* 3-Column Order Summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                    <div>
+                      <span className="text-xs text-slate-400 font-medium block mb-1">Order Date</span>
+                      <strong className="text-sm font-bold text-slate-800 block">
+                        {result.collectedDate || 'Recent'}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span className="text-xs text-slate-400 font-medium block mb-1">Customer Name</span>
+                      <strong className="text-sm font-bold text-slate-800 block">
+                        {result.recipientName || 'Customer'}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span className="text-xs text-slate-400 font-medium block mb-1">Delivery Destination</span>
+                      <strong className="text-sm font-bold text-slate-800 block">
+                        {result.destinationBranch || 'Sri Lanka'}
+                      </strong>
+                    </div>
                   </div>
 
-                  <div>
-                    <span className="text-xs text-slate-400 font-medium block mb-1">Status</span>
-                    <strong className="text-sm font-bold text-slate-800 block">
-                      {result.status || 'In Transit'}
-                    </strong>
-                  </div>
+                  {/* Store Fulfillment Progress */}
+                  <div className="pt-6 border-t border-slate-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        Fulfillment Progress
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-500">
+                        DWstore Fulfillment Center
+                      </span>
+                    </div>
 
-                  <div>
-                    <span className="text-xs text-slate-400 font-medium block mb-1">Weight (kg)</span>
-                    <strong className="text-sm font-bold text-slate-800 block font-mono">
-                      {result.weight || '1.00'}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span className="text-xs text-slate-400 font-medium block mb-1">Age</span>
-                    <strong className="text-sm font-bold text-slate-800 block">
-                      {result.age || 'Recent'}
-                    </strong>
-                  </div>
-                </div>
-
-                {/* Milestones Stepper */}
-                <div className="pt-6 border-t border-slate-100 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                      Delivery Progress
-                    </span>
-                    <span className="text-[11px] font-bold text-blue-600">
-                      Koombiyo Delivery Network
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                    {steps.map((st, idx) => {
-                      const isDone = idx <= activeStep;
-                      const isCurrent = idx === activeStep;
-
-                      return (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                      {[
+                        { step: 1, label: 'Order Confirmed', desc: 'Order verified & accepted', state: 'done' },
+                        { step: 2, label: 'Quality Check & Packing', desc: 'Preparing in warehouse', state: 'active' },
+                        { step: 3, label: 'Courier Handover', desc: 'Tracking number will be assigned', state: 'pending' },
+                        { step: 4, label: 'Islandwide Delivery', desc: 'Delivered to your doorstep', state: 'pending' },
+                      ].map((st) => (
                         <div 
-                          key={st.key} 
+                          key={st.step} 
                           className={`p-3 rounded-2xl border text-center transition ${
-                            isCurrent 
-                              ? 'bg-blue-50/90 border-blue-300' 
-                              : isDone 
-                              ? 'bg-emerald-50/60 border-emerald-200' 
+                            st.state === 'active' 
+                              ? 'bg-amber-50/90 border-amber-300' 
+                              : st.state === 'done' 
+                              ? 'bg-emerald-50/70 border-emerald-200' 
                               : 'bg-slate-50 border-slate-200 opacity-60'
                           }`}
                         >
                           <div 
                             className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold mx-auto mb-1.5 ${
-                              isDone ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
+                              st.state === 'done' 
+                                ? 'bg-emerald-600 text-white' 
+                                : st.state === 'active' 
+                                ? 'bg-amber-600 text-white animate-pulse' 
+                                : 'bg-slate-200 text-slate-500'
                             }`}
                           >
-                            {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : idx + 1}
+                            {st.state === 'done' ? <CheckCircle2 className="w-3.5 h-3.5" /> : st.step}
                           </div>
-                          <strong className={`text-[11px] block font-bold leading-tight ${isCurrent ? 'text-blue-700' : isDone ? 'text-slate-900' : 'text-slate-500'}`}>
+                          <strong className={`text-[11px] block font-bold leading-tight ${st.state === 'active' ? 'text-amber-800' : st.state === 'done' ? 'text-slate-900' : 'text-slate-500'}`}>
                             {st.label}
                           </strong>
                           <span className="text-[10px] text-slate-400 block mt-0.5">
                             {st.desc}
                           </span>
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center gap-3">
+                    <a
+                      href={`https://wa.me/94756693358?text=Hello%20DWstore,%20I%20would%20like%20an%20update%20on%20my%20order%20${encodeURIComponent(result.orderId)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-white" />
+                      <span>Chat with Support on WhatsApp</span>
+                    </a>
                   </div>
                 </div>
-
-                {/* Action Buttons */}
-                <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center gap-3">
-                  <a
-                    href={koombiyoPortalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full sm:flex-1 py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
-                    <span>View on Official Koombiyo Portal</span>
-                  </a>
-
-                  <a
-                    href="https://wa.me/94756693358?text=Hello%20DWstore,%20I%20need%20assistance%20tracking%20my%20order"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full sm:w-auto py-3 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2"
-                  >
-                    <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>WhatsApp Help</span>
-                  </a>
-                </div>
               </div>
-            </div>
+            )
           ) : (
             <div className="bg-white rounded-3xl border border-slate-200/90 p-8 text-center space-y-3 shadow-xs animate-in fade-in duration-300">
               <Package className="w-12 h-12 text-slate-300 mx-auto" />

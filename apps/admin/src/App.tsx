@@ -911,7 +911,7 @@ export default function App() {
       const ord = orders.find((o) => o.orderId === orderId);
       if (ord) {
         const carrier = (ord.carrier || 'Koombiyo Delivery') as any;
-        const trackingNumber = ord.trackingNumber || `DWS-TRK-${orderId}`;
+        const trackingNumber = ord.trackingNumber || '';
         const dispatchedDate = ord.dispatchedDate || new Date().toISOString().split('T')[0];
         setShipments((prev) => {
           const idx = prev.findIndex((s) => s.orderId === orderId);
@@ -1042,7 +1042,7 @@ export default function App() {
       updatedOrder.trackingNumber
     ) {
       const carrier = (updatedOrder.carrier || 'Koombiyo Delivery') as any;
-      const trackingNumber = updatedOrder.trackingNumber || `DWS-TRK-${updatedOrder.orderId}`;
+      const trackingNumber = updatedOrder.trackingNumber || '';
       const dispatchedDate =
         updatedOrder.dispatchedDate || new Date().toISOString().split('T')[0];
       const shipmentStatus =

@@ -167,65 +167,126 @@ export async function POST(req: NextRequest) {
     });
 
     if (matchedOrder) {
-      const statusMap: Record<string, string> = {
-        pending: 'Collected',
-        processing: 'Collected',
-        shipped: 'Out for Delivery',
-        dispatched: 'Received at Destination',
-        delivered: 'Delivered',
-        cancelled: 'Returned',
-      };
-
-      const resolvedStatus = statusMap[matchedOrder.status?.toLowerCase()] || 'Received at Destination';
-      const trackingNumber = matchedOrder.courierTrackingNumber || matchedOrder.trackingNumber || `175${matchedOrder.orderId.replace(/[^0-9]/g, '').slice(-5)}`;
-      const resolvedPhone = matchedOrder.customerPhone || matchedOrder.customer?.phone || phone;
       const recipient = matchedOrder.customerName || `${matchedOrder.customer?.firstName || ''} ${matchedOrder.customer?.lastName || ''}`.trim() || 'Customer';
+      const resolvedPhone = matchedOrder.customerPhone || matchedOrder.customer?.phone || phone;
       const destCity = matchedOrder.city || matchedOrder.customer?.city || 'Colombo';
       const destDist = matchedOrder.district || matchedOrder.customer?.district || 'Western Province';
+      const manualTracking = (matchedOrder.courierTrackingNumber || matchedOrder.trackingNumber || '').trim();
 
+      // If the admin HAS manually added a courier tracking number
+      if (manualTracking) {
+        // If Koombiyo live API wasn't checked with this manualTracking yet, try it now
+        if (manualTracking !== cleanWaybill) {
+          try {
+            const koombiyoRes = await fetch('https://koombiyodelivery.lk/api/track_order', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({
+                waybill_id: manualTracking.replace(/^KOOMBIYO-LK-/i, '').replace(/^DWS-/i, '').trim(),
+                phone: resolvedPhone || '0712345678',
+              }).toString(),
+            });
+            if (koombiyoRes.ok) {
+              const data = await koombiyoRes.json();
+              if (data && Number(data.status) === 200 && data.tracking) {
+                return NextResponse.json(
+                  {
+                    success: true,
+                    source: 'koombiyo_live',
+                    carrier: 'Koombiyo Delivery',
+                    tracking: {
+                      trackingId: manualTracking,
+                      trackingNumber: manualTracking,
+                      orderId: matchedOrder.orderId,
+                      phone: resolvedPhone,
+                      status: data.tracking.order_status || 'In Transit',
+                      collectedDate: formatCollectedDate(data.tracking.collected_date),
+                      recipientName: data.tracking.name || recipient,
+                      destinationBranch: data.tracking.destination_branch || destCity,
+                      weight: data.tracking.weight || '1.00',
+                      age: formatAge(data.tracking.collected_date),
+                      hasCourierTracking: true,
+                      raw: data.tracking,
+                    },
+                  },
+                  { headers: CORS_HEADERS }
+                );
+              }
+            }
+          } catch {}
+        }
+
+        const statusMap: Record<string, string> = {
+          pending: 'Order Confirmed',
+          processing: 'Processing',
+          shipped: 'Out for Delivery',
+          dispatched: 'Received at Destination',
+          delivered: 'Delivered',
+          cancelled: 'Returned',
+        };
+
+        const resolvedStatus = statusMap[matchedOrder.status?.toLowerCase()] || 'In Transit';
+
+        return NextResponse.json(
+          {
+            success: true,
+            source: 'dwstore_system',
+            carrier: matchedOrder.carrier || 'Koombiyo Delivery',
+            tracking: {
+              orderId: matchedOrder.orderId,
+              trackingNumber: manualTracking,
+              hasCourierTracking: true,
+              status: resolvedStatus,
+              collectedDate: matchedOrder.dispatchedDate || (matchedOrder.createdAt ? new Date(matchedOrder.createdAt).toLocaleDateString('en-GB') : 'Recent'),
+              recipientName: recipient,
+              phone: resolvedPhone,
+              destinationBranch: `${destCity} (${destDist})`,
+              destinationAddress: matchedOrder.shippingAddress || matchedOrder.customer?.address || '',
+              weight: '1.0 kg',
+              items: matchedOrder.items || [],
+              total: matchedOrder.total || Math.round((matchedOrder.totalMinor || 0) / 100),
+              paymentMethod: matchedOrder.paymentMethod || 'COD',
+            },
+          },
+          { headers: CORS_HEADERS }
+        );
+      }
+
+      // NO MANUAL TRACKING NUMBER ENTERED YET
+      // Order is still being processed/packed by store team - DO NOT fake a tracking number!
       return NextResponse.json(
         {
           success: true,
           source: 'dwstore_system',
-          carrier: 'Koombiyo Delivery',
+          carrier: 'Pending Courier Dispatch',
           tracking: {
             orderId: matchedOrder.orderId,
-            trackingNumber,
-            status: resolvedStatus,
-            collectedDate: matchedOrder.dispatchedDate || (matchedOrder.createdAt ? new Date(matchedOrder.createdAt).toLocaleDateString('en-GB') : 'Recent'),
+            trackingNumber: '',
+            hasCourierTracking: false,
+            status: 'Processing (Pending Courier Dispatch)',
+            orderStatus: matchedOrder.status || 'processing',
+            collectedDate: matchedOrder.createdAt ? new Date(matchedOrder.createdAt).toLocaleDateString('en-GB') : 'Recent',
             recipientName: recipient,
             phone: resolvedPhone,
             destinationBranch: `${destCity} (${destDist})`,
             destinationAddress: matchedOrder.shippingAddress || matchedOrder.customer?.address || '',
-            weight: '1.2 kg',
             items: matchedOrder.items || [],
             total: matchedOrder.total || Math.round((matchedOrder.totalMinor || 0) / 100),
             paymentMethod: matchedOrder.paymentMethod || 'COD',
+            message: 'Your order has been confirmed and is currently being processed by our store. A tracking number will be assigned as soon as the package is handed over to the courier service.',
           },
         },
         { headers: CORS_HEADERS }
       );
     }
 
-    // Fallback: If not found in DB either, return realistic Koombiyo status for the ID
+    // 3. Not found in Koombiyo Live API and not found in DWstore Orders database:
     return NextResponse.json(
       {
-        success: true,
-        source: 'simulated_tracking',
-        carrier: 'Koombiyo Delivery',
-        tracking: {
-          orderId: waybillId.startsWith('DWS-') ? waybillId : `DWS-${waybillId}`,
-          trackingNumber: waybillId.startsWith('175') ? waybillId : `175${waybillId.replace(/[^0-9]/g, '').slice(-5).padStart(5, '0')}`,
-          status: 'Received at Destination',
-          collectedDate: new Date().toLocaleDateString('en-GB'),
-          recipientName: 'Valued Customer',
-          phone: phone || '07XXXXXXXX',
-          destinationBranch: 'Colombo Central Hub',
-          destinationAddress: 'Island-wide Express Delivery',
-          weight: '1.0 kg',
-        },
+        success: false,
+        error: 'No shipment or order found for the provided Tracking ID and Phone Number. Please verify your details or contact customer care.',
       },
-      { headers: CORS_HEADERS }
+      { status: 404, headers: CORS_HEADERS }
     );
   } catch (err: any) {
     return NextResponse.json(
