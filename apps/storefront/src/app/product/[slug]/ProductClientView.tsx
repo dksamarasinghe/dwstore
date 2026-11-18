@@ -57,25 +57,72 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
 
   // Attributes & variations logic (supports both array and object formats)
   const attributeEntries: Array<{ name: string; values: string[] }> = useMemo(() => {
-    if (!product || !product.attributes) return [];
-    if (Array.isArray(product.attributes)) {
-      return product.attributes
-        .filter((a: any) => a && a.name && a.name.toLowerCase() !== 'warranty')
-        .map((a: any) => ({
-          name: a.name,
-          values: typeof a.values === 'string'
-            ? a.values.split(',').map((v: string) => v.trim()).filter(Boolean)
-            : Array.isArray(a.values)
-            ? a.values
-            : [String(a.values)]
-        }));
+    if (!product) return [];
+
+    let entries: Array<{ name: string; values: string[] }> = [];
+
+    if (product.attributes) {
+      if (Array.isArray(product.attributes)) {
+        entries = product.attributes
+          .filter((a: any) => a && a.name && a.name.toLowerCase() !== 'warranty')
+          .map((a: any) => ({
+            name: a.name,
+            values: typeof a.values === 'string'
+              ? a.values.split(',').map((v: string) => v.trim()).filter(Boolean)
+              : Array.isArray(a.values)
+              ? a.values.map((v: any) => String(v).trim())
+              : [String(a.values).trim()]
+          }));
+      } else if (typeof product.attributes === 'object') {
+        entries = Object.entries(product.attributes)
+          .filter(([name]) => name.toLowerCase() !== 'warranty')
+          .map(([name, values]) => ({
+            name,
+            values: Array.isArray(values)
+              ? values.map((v: any) => String(v).trim())
+              : [String(values).trim()],
+          }));
+      }
     }
-    return Object.entries(product.attributes)
-      .filter(([name]) => name.toLowerCase() !== 'warranty')
-      .map(([name, values]) => ({
-        name,
-        values: Array.isArray(values) ? values : [values],
-      }));
+
+    // Also inspect variations to extract/merge any attributes not listed in product.attributes
+    if (product.variations && Array.isArray(product.variations)) {
+      const varAttrMap: Record<string, Set<string>> = {};
+      product.variations.forEach((v: any) => {
+        if (v.attributes && typeof v.attributes === 'object') {
+          Object.entries(v.attributes).forEach(([k, val]) => {
+            if (!k || val === undefined || val === null || val === '') return;
+            const normKey = k.trim();
+            const existingKey = Object.keys(varAttrMap).find(
+              (ek) => ek.toLowerCase() === normKey.toLowerCase()
+            ) || (normKey.charAt(0).toUpperCase() + normKey.slice(1));
+
+            if (!varAttrMap[existingKey]) varAttrMap[existingKey] = new Set();
+            varAttrMap[existingKey].add(String(val).trim());
+          });
+        }
+      });
+
+      if (entries.length === 0) {
+        entries = Object.entries(varAttrMap).map(([name, valSet]) => ({
+          name,
+          values: Array.from(valSet),
+        }));
+      } else {
+        entries = entries.map((entry) => {
+          const varKey = Object.keys(varAttrMap).find(
+            (k) => k.toLowerCase() === entry.name.toLowerCase()
+          );
+          if (varKey) {
+            const merged = Array.from(new Set([...entry.values, ...Array.from(varAttrMap[varKey])]));
+            return { ...entry, values: merged };
+          }
+          return entry;
+        });
+      }
+    }
+
+    return entries;
   }, [product]);
 
   // Selected attribute state (e.g. { Color: "Black" })
@@ -165,19 +212,25 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
     setTimeout(() => setReviewSubmitted(false), 5000);
   };
 
-  // Find matching variation based on selected attributes
+  // Find matching variation based on selected attributes (case-insensitive & trimmed)
   const matchedVariation = useMemo(() => {
     if (!product?.variations || product.variations.length === 0) return null;
-    const selectedKeys = Object.keys(selectedAttributes).filter((k) => selectedAttributes[k]);
-    if (selectedKeys.length === 0) return null;
+    const selectedEntries = Object.entries(selectedAttributes).filter(([, val]) => Boolean(val));
+    if (selectedEntries.length === 0) return null;
 
-    return product.variations.find((v: any) => {
-      if (!v.attributes) return false;
-      return selectedKeys.every((key) => {
-        const vVal = v.attributes[key];
-        return vVal && vVal.toLowerCase() === selectedAttributes[key].toLowerCase();
-      });
-    }) || null;
+    return (
+      product.variations.find((v: any) => {
+        if (!v.attributes || typeof v.attributes !== 'object') return false;
+        return selectedEntries.every(([selKey, selVal]) => {
+          const attrKey = Object.keys(v.attributes).find(
+            (k) => k.trim().toLowerCase() === selKey.trim().toLowerCase()
+          );
+          if (!attrKey) return false;
+          const vVal = String(v.attributes[attrKey] || '').trim().toLowerCase();
+          return vVal === String(selVal).trim().toLowerCase();
+        });
+      }) || null
+    );
   }, [product, selectedAttributes]);
 
   // Active selected image
@@ -202,7 +255,18 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
   const activePriceMinor = useMemo(() => {
     if (!product) return 0;
     if (matchedVariation) {
-      return matchedVariation.salePriceMinor || matchedVariation.regularPriceMinor || 0;
+      if (typeof matchedVariation.salePriceMinor === 'number' && matchedVariation.salePriceMinor > 0) {
+        return matchedVariation.salePriceMinor;
+      }
+      if (typeof matchedVariation.salePrice === 'number' && matchedVariation.salePrice > 0) {
+        return Math.round(matchedVariation.salePrice * 100);
+      }
+      if (typeof matchedVariation.regularPriceMinor === 'number' && matchedVariation.regularPriceMinor > 0) {
+        return matchedVariation.regularPriceMinor;
+      }
+      if (typeof matchedVariation.regularPrice === 'number' && matchedVariation.regularPrice > 0) {
+        return Math.round(matchedVariation.regularPrice * 100);
+      }
     }
     return product.salePriceMinor || product.minPriceMinor || product.regularPriceMinor || 0;
   }, [matchedVariation, product]);
@@ -210,8 +274,15 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
   const activeRegularPriceMinor = useMemo(() => {
     if (!product) return null;
     if (matchedVariation) {
-      if (matchedVariation.salePriceMinor && matchedVariation.regularPriceMinor && matchedVariation.salePriceMinor < matchedVariation.regularPriceMinor) {
-        return matchedVariation.regularPriceMinor;
+      const reg = typeof matchedVariation.regularPriceMinor === 'number' && matchedVariation.regularPriceMinor > 0
+        ? matchedVariation.regularPriceMinor
+        : (typeof matchedVariation.regularPrice === 'number' && matchedVariation.regularPrice > 0 ? Math.round(matchedVariation.regularPrice * 100) : null);
+      const sale = typeof matchedVariation.salePriceMinor === 'number' && matchedVariation.salePriceMinor > 0
+        ? matchedVariation.salePriceMinor
+        : (typeof matchedVariation.salePrice === 'number' && matchedVariation.salePrice > 0 ? Math.round(matchedVariation.salePrice * 100) : reg);
+
+      if (reg && sale && sale < reg) {
+        return reg;
       }
       return null;
     }
@@ -238,18 +309,17 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
   const isOutOfStock = useMemo(() => {
     if (isVariable) {
       if (matchedVariation) {
+        const sStatus = String(matchedVariation.stockStatus || matchedVariation.status || '').toLowerCase().trim();
         if (
-          matchedVariation.stockStatus === 'Out of Stock' ||
-          matchedVariation.stockStatus === 'out_of_stock' ||
-          matchedVariation.status === 'Out of stock' ||
-          matchedVariation.status === 'Out of Stock' ||
+          sStatus === 'out of stock' ||
+          sStatus === 'out_of_stock' ||
           matchedVariation.inStock === false
         ) {
           return true;
         }
         if (
-          matchedVariation.stockStatus === 'In Stock' ||
-          matchedVariation.status === 'Active' ||
+          sStatus === 'in stock' ||
+          sStatus === 'active' ||
           matchedVariation.inStock === true
         ) {
           return false;
@@ -585,11 +655,30 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
                           }`}
                         >
                           <option value="">Choose an option</option>
-                          {attr.values.map((val: string) => (
-                            <option key={val} value={val}>
-                              {val}
-                            </option>
-                          ))}
+                          {attr.values.map((val: string) => {
+                            const optVar = product.variations?.find((v: any) => {
+                              if (!v.attributes || typeof v.attributes !== 'object') return false;
+                              const attrKey = Object.keys(v.attributes).find(
+                                (k) => k.toLowerCase() === attr.name.toLowerCase()
+                              );
+                              if (!attrKey) return false;
+                              return String(v.attributes[attrKey] || '').trim().toLowerCase() === val.trim().toLowerCase();
+                            });
+                            const isOptOutOfStock = optVar
+                              ? (
+                                  optVar.stockStatus === 'Out of Stock' ||
+                                  optVar.stockStatus === 'out_of_stock' ||
+                                  optVar.status === 'Out of stock' ||
+                                  optVar.inStock === false
+                                )
+                              : false;
+
+                            return (
+                              <option key={val} value={val}>
+                                {val} {isOptOutOfStock ? ' (Out of stock)' : ''}
+                              </option>
+                            );
+                          })}
                         </select>
 
                         {currentValue && (
@@ -608,15 +697,15 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
 
                 {/* Stock status for selected variation */}
                 {matchedVariation && isOutOfStock && (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs font-bold mt-1">
-                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                    Out of stock
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold mt-1 shadow-2xs">
+                    <span className="w-2 h-2 rounded-full bg-rose-600"></span>
+                    <span>Out of stock &bull; Currently Unavailable</span>
                   </div>
                 )}
                 {matchedVariation && !isOutOfStock && (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-xs font-bold mt-1">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-bold mt-1 shadow-2xs">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    In stock
+                    <span>In stock &bull; Ready for Island-wide Delivery</span>
                   </div>
                 )}
               </div>

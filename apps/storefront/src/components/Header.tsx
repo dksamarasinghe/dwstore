@@ -121,10 +121,10 @@ export default function Header() {
       .slice(0, 8);
   }, [mobileSearchQuery, liveProducts]);
 
-  // Live matching products for desktop search input (triggers on 2-3 characters)
+  // Live matching products for desktop & mobile drawer search input
   const desktopMatchingProducts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (q.length < 2) return [];
+    if (!q) return [];
     const tokens = q.split(/\s+/).filter(Boolean);
 
     return liveProducts
@@ -614,8 +614,18 @@ export default function Header() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search for products"
-                  className="w-full pl-3 pr-9 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-blue-600 text-slate-800 placeholder:text-slate-400 bg-slate-50/70"
+                  className="w-full pl-3 pr-14 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-blue-600 text-slate-800 placeholder:text-slate-400 bg-slate-50/70"
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-8 text-slate-400 hover:text-slate-700 p-0.5"
+                    aria-label="Clear input"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
                 <button
                   type="submit"
                   className="absolute right-2.5 text-slate-400 hover:text-blue-600"
@@ -634,7 +644,95 @@ export default function Header() {
               </button>
             </div>
 
-            {/* 2. Tabs Row: MENU & CATEGORIES */}
+            {/* Instant Search Suggestions in Mobile Drawer */}
+            {searchQuery.trim().length >= 1 ? (
+              <div className="flex-1 overflow-y-auto p-3 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    <span className="flex items-center gap-1.5 text-slate-700">
+                      <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                      Suggested Products ({desktopMatchingProducts.length})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="text-blue-600 hover:underline lowercase text-[11px] font-semibold cursor-pointer"
+                    >
+                      clear
+                    </button>
+                  </div>
+
+                  {desktopMatchingProducts.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-slate-500">
+                      No products found matching &quot;{searchQuery}&quot;
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto pr-1">
+                      {desktopMatchingProducts.map((p) => {
+                        const price = p.salePriceMinor || p.minPriceMinor || p.regularPriceMinor || 0;
+                        const regPrice = p.regularPriceMinor && p.regularPriceMinor > price ? p.regularPriceMinor : null;
+                        return (
+                          <Link
+                            key={p.id}
+                            href={`/product/${p.slug}`}
+                            onClick={() => {
+                              setMobileMenuOpen(false);
+                              setSearchQuery('');
+                            }}
+                            className="flex items-center gap-3 py-2.5 px-1 hover:bg-slate-50 rounded-xl transition group"
+                          >
+                            <div className="w-11 h-11 rounded-lg bg-slate-50 border border-slate-200/80 p-1 flex items-center justify-center flex-shrink-0 group-hover:border-blue-400">
+                              <img
+                                src={resolveImageUrl(p.displayImage || p.image || p.imageUrls?.[0], '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg')}
+                                alt={p.name}
+                                className="w-full h-full object-contain mix-blend-multiply"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.onerror = null;
+                                  target.src = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+                                }}
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-slate-800 group-hover:text-blue-600 truncate transition leading-tight">
+                                {p.name}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs font-black text-blue-600 font-mono">
+                                  LKR {formatPriceLKR(price)}
+                                </span>
+                                {regPrice && (
+                                  <span className="text-[10px] text-slate-400 line-through font-mono">
+                                    LKR {formatPriceLKR(regPrice)}
+                                  </span>
+                                )}
+                                {p.brand && (
+                                  <span className="text-[9px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full uppercase">
+                                    {p.brand}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 mt-2">
+                  <button
+                    type="button"
+                    onClick={(e) => handleMobileSearch(e)}
+                    className="w-full py-2.5 text-center text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition cursor-pointer"
+                  >
+                    View all results for &quot;{searchQuery}&quot; &rarr;
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* 2. Tabs Row: MENU & CATEGORIES */}
             <div className="flex border-b border-slate-200 bg-slate-100/70">
               <button
                 type="button"
@@ -758,6 +856,8 @@ export default function Header() {
                 </div>
               )}
             </div>
+            </>
+          )}
 
             {/* 4. Drawer Bottom Contact Info */}
             <div className="p-4 border-t border-slate-200 bg-slate-50/80 text-[11px] text-slate-500 flex flex-col gap-2">
