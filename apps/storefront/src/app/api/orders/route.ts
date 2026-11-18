@@ -1,42 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { readDataJson, writeDataJson } from '@/lib/data-paths';
 import { sendOrderEmails } from '@/lib/email';
 import { sendOrderWhatsAppNotification } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
-function getOrdersFilePath(): string {
-  const p1 = path.join(process.cwd(), 'apps', 'storefront', 'src', 'data', 'orders.json');
-  if (fs.existsSync(p1)) return p1;
-  const p2 = path.join(process.cwd(), 'src', 'data', 'orders.json');
-  if (fs.existsSync(p2)) return p2;
-  return p1;
+function getOrders(): any[] {
+  return readDataJson<any[]>('orders.json', []);
 }
 
-function getOrders() {
-  try {
-    const filePath = getOrdersFilePath();
-    if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, 'utf-8');
-      return JSON.parse(content);
-    }
-  } catch (err) {
-    console.error('Error reading orders:', err);
-  }
-  return [];
-}
-
-function saveOrders(orders: any[]) {
-  try {
-    const filePath = getOrdersFilePath();
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify(orders, null, 2), 'utf-8');
-    return true;
-  } catch (err) {
-    console.error('Error saving orders:', err);
-    return false;
-  }
+function saveOrders(orders: any[]): boolean {
+  return writeDataJson('orders.json', orders);
 }
 
 const CORS_HEADERS = {
@@ -57,13 +31,15 @@ export async function GET(req: NextRequest) {
   const orders = getOrders();
 
   if (orderId) {
-    const cleanId = orderId.trim().toUpperCase();
-    const order = orders.find(
-      (o: any) =>
-        o.orderId?.toUpperCase() === cleanId ||
-        (cleanId.startsWith('DWS-') && o.orderId?.toUpperCase() === cleanId) ||
-        o.orderId?.toUpperCase().replace('DWS-', '') === cleanId.replace('DWS-', '')
-    );
+    const targetClean = String(orderId).replace(/^#+/, '').trim().toUpperCase();
+    const targetDigits = String(orderId).replace(/\D/g, '');
+    const order = orders.find((o: any) => {
+      const oId = String(o.orderId || '').replace(/^#+/, '').trim().toUpperCase();
+      if (oId === targetClean) return true;
+      const oDigits = String(o.orderId || '').replace(/\D/g, '');
+      if (targetDigits && oDigits && targetDigits === oDigits) return true;
+      return false;
+    });
 
     if (order) {
       return NextResponse.json({ success: true, order }, { headers: CORS_HEADERS });
@@ -202,11 +178,16 @@ export async function PATCH(req: NextRequest) {
     }
 
     const orders = getOrders();
-    const cleanId = orderId.toString().trim();
-    const index = orders.findIndex((o: any) => 
-      o.orderId === cleanId || 
-      o.orderId?.replace('DWS-', '') === cleanId.replace('DWS-', '')
-    );
+    const targetClean = String(orderId).replace(/^#+/, '').trim().toLowerCase();
+    const targetDigits = String(orderId).replace(/\D/g, '');
+
+    const index = orders.findIndex((o: any) => {
+      const oId = String(o.orderId || '').replace(/^#+/, '').trim().toLowerCase();
+      if (oId === targetClean) return true;
+      const oDigits = String(o.orderId || '').replace(/\D/g, '');
+      if (targetDigits && oDigits && targetDigits === oDigits) return true;
+      return false;
+    });
 
     if (index === -1) {
       return NextResponse.json(
@@ -234,7 +215,7 @@ export async function PATCH(req: NextRequest) {
       orders[index].total = Math.round(totalMinor / 100);
     }
 
-    // Update customer details if provided
+    // Update customer details if provided (both nested customer and top-level fields)
     if (!orders[index].customer) {
       orders[index].customer = {};
     }
@@ -242,17 +223,39 @@ export async function PATCH(req: NextRequest) {
       orders[index].customer = { ...orders[index].customer, ...customer };
     }
     if (customerName) {
+      orders[index].customerName = customerName;
       const parts = customerName.split(' ');
       orders[index].customer.firstName = parts[0] || '';
       orders[index].customer.lastName = parts.slice(1).join(' ') || '';
     }
-    if (customerPhone) orders[index].customer.phone = customerPhone;
-    if (customerEmail) orders[index].customer.email = customerEmail;
-    if (shippingAddress) orders[index].customer.address = shippingAddress;
-    if (city) orders[index].customer.city = city;
-    if (district) orders[index].customer.district = district;
-    if (postalCode) orders[index].customer.postalCode = postalCode;
-    if (notes) orders[index].customer.orderNotes = notes;
+    if (customerPhone) {
+      orders[index].customerPhone = customerPhone;
+      orders[index].customer.phone = customerPhone;
+    }
+    if (customerEmail) {
+      orders[index].customerEmail = customerEmail;
+      orders[index].customer.email = customerEmail;
+    }
+    if (shippingAddress) {
+      orders[index].shippingAddress = shippingAddress;
+      orders[index].customer.address = shippingAddress;
+    }
+    if (city) {
+      orders[index].city = city;
+      orders[index].customer.city = city;
+    }
+    if (district) {
+      orders[index].district = district;
+      orders[index].customer.district = district;
+    }
+    if (postalCode) {
+      orders[index].postalCode = postalCode;
+      orders[index].customer.postalCode = postalCode;
+    }
+    if (notes) {
+      orders[index].notes = notes;
+      orders[index].customer.orderNotes = notes;
+    }
 
     saveOrders(orders);
 

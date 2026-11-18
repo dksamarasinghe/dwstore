@@ -32,7 +32,7 @@ export const DispatchOrderModal: React.FC<DispatchOrderModalProps> = ({
 
   useEffect(() => {
     if (order) {
-      setTrackingNumber(order.trackingNumber || generateTracking(order.orderId));
+      setTrackingNumber(order.trackingNumber || '');
       setDispatchedDate(order.dispatchedDate || new Date().toISOString().split('T')[0]);
     }
   }, [order]);

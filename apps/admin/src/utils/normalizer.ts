@@ -49,21 +49,40 @@ export function normalizeOrder(raw: any): OrderItem {
   // Payment method
   let paymentMethod = 'Cash on Delivery (COD)';
   if (raw.paymentMethod) {
-    if (raw.paymentMethod.toLowerCase() === 'cod') {
-      paymentMethod = 'Cash on Delivery (COD)';
-    } else if (raw.paymentMethod.toLowerCase() === 'koko') {
+    const pmLower = String(raw.paymentMethod).toLowerCase();
+    if (pmLower.includes('koko')) {
       paymentMethod = 'Koko (Buy Now Pay Later)';
-    } else if (raw.paymentMethod.toLowerCase() === 'mintpay') {
+    } else if (pmLower.includes('payzy')) {
+      paymentMethod = 'Payzy (Buy Now Pay Later)';
+    } else if (pmLower.includes('mintpay')) {
       paymentMethod = 'Mintpay (3-Installments)';
+    } else if (pmLower.includes('bank')) {
+      paymentMethod = 'Bank Transfer';
+    } else if (pmLower.includes('visa') || pmLower.includes('master') || pmLower.includes('card') || pmLower.includes('payhere')) {
+      paymentMethod = 'Visa / Mastercard / PayHere';
+    } else if (pmLower.includes('cod') || pmLower.includes('cash')) {
+      paymentMethod = 'Cash on Delivery (COD)';
     } else {
       paymentMethod = raw.paymentMethod;
     }
   }
 
-  // Payment status
-  const paymentStatus =
-    raw.paymentStatus ||
-    (status === 'delivered' ? 'Paid' : raw.paymentMethod?.toLowerCase() === 'cod' ? 'Unpaid' : 'Paid');
+  // Payment status (strictly Title Case 'Paid' | 'Unpaid' | 'Refunded')
+  let paymentStatus: 'Paid' | 'Unpaid' | 'Refunded' = 'Unpaid';
+  const rawPs = String(raw.paymentStatus || '').trim().toLowerCase();
+  if (rawPs === 'paid') {
+    paymentStatus = 'Paid';
+  } else if (rawPs === 'refunded') {
+    paymentStatus = 'Refunded';
+  } else if (rawPs === 'unpaid') {
+    paymentStatus = 'Unpaid';
+  } else if (status === 'delivered') {
+    paymentStatus = 'Paid';
+  } else if (raw.paymentMethod && String(raw.paymentMethod).toLowerCase().includes('cod')) {
+    paymentStatus = 'Unpaid';
+  } else {
+    paymentStatus = 'Paid';
+  }
 
   // Ordered items
   const items = Array.isArray(raw.items)

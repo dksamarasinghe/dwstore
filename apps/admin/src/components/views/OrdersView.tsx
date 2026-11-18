@@ -157,6 +157,8 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       let matchesTab = true;
       if (activeTab === 'pending') {
         matchesTab = oStatus === 'pending' || oStatus === 'processing' || oStatus === 'on-hold';
+      } else if (activeTab === 'shipped') {
+        matchesTab = oStatus === 'shipped' || oStatus === 'dispatched';
       } else if (activeTab === 'delivered') {
         matchesTab = oStatus === 'delivered' || oStatus === 'completed';
       } else if (activeTab === 'returned') {
@@ -437,6 +439,16 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
             Pending / Processing <em>{pendingCount}</em>
           </button>
           <button
+            className={activeTab === 'shipped' ? 'on' : ''}
+            onClick={() => {
+              setActiveTab('shipped');
+              setCurrentPage(1);
+            }}
+            type="button"
+          >
+            Shipped <em>{shippedCount}</em>
+          </button>
+          <button
             className={activeTab === 'delivered' ? 'on' : ''}
             onClick={() => {
               setActiveTab('delivered');
@@ -692,8 +704,6 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                             const newSt = e.target.value;
                             if (newSt === 'returned') {
                               setClaimingReturnOrder(order);
-                            } else if (newSt === 'shipped' && !order?.trackingNumber) {
-                              setDispatchingOrder(order);
                             } else {
                               onUpdateStatus(order?.orderId, newSt);
                             }

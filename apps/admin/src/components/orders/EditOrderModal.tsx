@@ -35,8 +35,9 @@ const PAYMENT_METHODS = [
   'Cash on Delivery (COD)',
   'Bank Transfer',
   'Visa / Mastercard / PayHere',
-  'Koko: Buy Now Pay Later',
-  'Payzy: Buy Now Pay Later',
+  'Koko (Buy Now Pay Later)',
+  'Payzy (Buy Now Pay Later)',
+  'Mintpay (3-Installments)',
 ];
 
 export const EditOrderModal: React.FC<EditOrderModalProps> = ({
@@ -50,8 +51,34 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
 
   useEffect(() => {
     if (order) {
+      // Normalize payment status to exact Title Case ('Paid' | 'Unpaid' | 'Refunded')
+      const rawPs = String(order.paymentStatus || '').trim().toLowerCase();
+      const normPs = rawPs === 'paid' ? 'Paid' : rawPs === 'refunded' ? 'Refunded' : 'Unpaid';
+
+      // Normalize payment method to match PAYMENT_METHODS options
+      let normPm = order.paymentMethod || 'Cash on Delivery (COD)';
+      const lowerPm = normPm.toLowerCase();
+      if (lowerPm.includes('koko')) {
+        normPm = 'Koko (Buy Now Pay Later)';
+      } else if (lowerPm.includes('payzy')) {
+        normPm = 'Payzy (Buy Now Pay Later)';
+      } else if (lowerPm.includes('mintpay')) {
+        normPm = 'Mintpay (3-Installments)';
+      } else if (lowerPm.includes('bank')) {
+        normPm = 'Bank Transfer';
+      } else if (lowerPm.includes('visa') || lowerPm.includes('master') || lowerPm.includes('card') || lowerPm.includes('payhere')) {
+        normPm = 'Visa / Mastercard / PayHere';
+      } else if (lowerPm.includes('cod') || lowerPm.includes('cash')) {
+        normPm = 'Cash on Delivery (COD)';
+      }
+
+      const normStatus = (order.status || 'processing').toLowerCase();
+
       setFormData({
         ...order,
+        status: normStatus as any,
+        paymentStatus: normPs,
+        paymentMethod: normPm,
         district: order.district || 'Colombo',
         carrier: order.carrier || 'Koombiyo Delivery',
         trackingNumber: order.trackingNumber || '',
@@ -165,6 +192,7 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
                     <option value="processing">Processing</option>
                     <option value="shipped">Shipped</option>
                     <option value="delivered">Delivered</option>
+                    <option value="returned">Returned</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
@@ -330,13 +358,18 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
                   <label className="form-label fw-semibold" style={{ fontSize: '12px' }}>
                     Courier Service Partner
                   </label>
-                  <div
-                    className="p-2 rounded-2 d-flex align-items-center justify-content-between"
-                    style={{ background: 'var(--hover)', border: '1px solid var(--border)', height: '38px' }}
+                  <select
+                    className="form-select"
+                    value={formData.carrier || 'Koombiyo Delivery'}
+                    onChange={(e) => handleChange('carrier', e.target.value)}
                   >
-                    <b style={{ fontSize: '12px' }}>Koombiyo Delivery</b>
-                    <span className="badge-x s-Paid" style={{ fontSize: '10px' }}>Exclusive</span>
-                  </div>
+                    <option value="Koombiyo Delivery">Koombiyo Delivery</option>
+                    <option value="PromptX Express">PromptX Express</option>
+                    <option value="Domex Courier">Domex Courier</option>
+                    <option value="Fardar Express">Fardar Express</option>
+                    <option value="Certis Lanka">Certis Lanka</option>
+                    <option value="Store Pickup / Showroom">Store Pickup / Showroom</option>
+                  </select>
                 </div>
                 <div className="col-12 col-md-4">
                   <label className="form-label fw-semibold" style={{ fontSize: '12px' }}>

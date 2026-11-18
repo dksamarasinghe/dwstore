@@ -954,27 +954,49 @@ export default function App() {
 
   // Update order status PATCH API
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
-    // 1. Update order status locally
-    setOrders((prev) =>
-      prev.map((o) => (o.orderId === orderId ? { ...o, status: newStatus as any } : o))
-    );
-    if (selectedOrder && selectedOrder.orderId === orderId) {
-      setSelectedOrder((prev) => (prev ? { ...prev, status: newStatus as any } : null));
+    const cleanId = String(orderId).replace(/^#+/, '');
+    // 1. Update order status locally and in localStorage
+    setOrders((prev) => {
+      const next = prev.map((o) => {
+        const oClean = String(o.orderId).replace(/^#+/, '');
+        return (oClean === cleanId || o.orderId === orderId)
+          ? { ...o, status: newStatus as any }
+          : o;
+      });
+      try {
+        localStorage.setItem('dwstore_admin_orders_v3', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    if (selectedOrder) {
+      const selClean = String(selectedOrder.orderId).replace(/^#+/, '');
+      if (selClean === cleanId || selectedOrder.orderId === orderId) {
+        setSelectedOrder((prev) => (prev ? { ...prev, status: newStatus as any } : null));
+      }
     }
 
     // 2. If status is delivered, update matching shipment in ShipmentsView
     if (newStatus === 'delivered') {
       setShipments((prev) =>
-        prev.map((s) => (s.orderId === orderId ? { ...s, status: 'Delivered' } : s))
+        prev.map((s) => {
+          const sClean = String(s.orderId).replace(/^#+/, '');
+          return (sClean === cleanId || s.orderId === orderId) ? { ...s, status: 'Delivered' } : s;
+        })
       );
     } else if (newStatus === 'shipped') {
-      const ord = orders.find((o) => o.orderId === orderId);
+      const ord = orders.find((o) => {
+        const oClean = String(o.orderId).replace(/^#+/, '');
+        return oClean === cleanId || o.orderId === orderId;
+      });
       if (ord) {
         const carrier = (ord.carrier || 'Koombiyo Delivery') as any;
         const trackingNumber = ord.trackingNumber || '';
         const dispatchedDate = ord.dispatchedDate || new Date().toISOString().split('T')[0];
         setShipments((prev) => {
-          const idx = prev.findIndex((s) => s.orderId === orderId);
+          const idx = prev.findIndex((s) => {
+            const sClean = String(s.orderId).replace(/^#+/, '');
+            return sClean === cleanId || s.orderId === orderId;
+          });
           if (idx >= 0) {
             const copy = [...prev];
             copy[idx] = { ...copy[idx], status: 'In Transit', carrier, trackingNumber, dispatchedDate };
@@ -982,8 +1004,8 @@ export default function App() {
           }
           return [
             {
-              id: `shp-${orderId}`,
-              orderId,
+              id: `shp-${cleanId}`,
+              orderId: cleanId,
               customerName: ord.customerName,
               carrier,
               trackingNumber,
@@ -997,16 +1019,21 @@ export default function App() {
       }
     }
 
-    showNotification(`Order #${orderId} status set to ${newStatus.toUpperCase()}`);
+    showNotification(`Order #${cleanId} status set to ${newStatus.toUpperCase()}`);
 
-    try {
-      await fetch(`${getStorefrontUrl()}/api/orders`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, status: newStatus }),
-      });
-    } catch {
-      // ignore
+    const endpoints = [
+      `${getStorefrontUrl()}/api/orders`,
+      `/api/orders`,
+    ];
+    for (const endpoint of endpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: cleanId, status: newStatus }),
+        });
+        if (res.ok) break;
+      } catch {}
     }
   };
 
@@ -1017,28 +1044,40 @@ export default function App() {
     trackingNumber: string,
     dispatchedDate: string
   ) => {
-    // 1. Update orders state
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.orderId === orderId
+    const cleanId = String(orderId).replace(/^#+/, '');
+    // 1. Update orders state locally and in localStorage
+    setOrders((prev) => {
+      const next = prev.map((o) => {
+        const oClean = String(o.orderId).replace(/^#+/, '');
+        return (oClean === cleanId || o.orderId === orderId)
           ? {
               ...o,
-              status: 'shipped',
+              status: 'shipped' as any,
               carrier: carrier as any,
               trackingNumber,
               dispatchedDate,
             }
-          : o
-      )
-    );
+          : o;
+      });
+      try {
+        localStorage.setItem('dwstore_admin_orders_v3', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
 
     // 2. Add or update Shipment in ShipmentsView
-    const ord = orders.find((o) => o.orderId === orderId);
+    const ord = orders.find((o) => {
+      const oClean = String(o.orderId).replace(/^#+/, '');
+      return oClean === cleanId || o.orderId === orderId;
+    });
     const customerName = ord?.customerName || 'Customer';
     const destinationCity = ord?.city || 'Colombo';
 
     setShipments((prev) => {
-      const idx = prev.findIndex((s) => s.orderId === orderId);
+      const idx = prev.findIndex((s) => {
+        const sClean = String(s.orderId).replace(/^#+/, '');
+        return sClean === cleanId || s.orderId === orderId;
+      });
       if (idx >= 0) {
         const copy = [...prev];
         copy[idx] = {
@@ -1053,8 +1092,8 @@ export default function App() {
         return copy;
       }
       const newShipment: ShipmentItem = {
-        id: `shp-${orderId}`,
-        orderId,
+        id: `shp-${cleanId}`,
+        orderId: cleanId,
         customerName,
         carrier: carrier as any,
         trackingNumber,
@@ -1065,51 +1104,79 @@ export default function App() {
       return [newShipment, ...prev];
     });
 
-    // 3. Sync to Storefront API
-    try {
-      await fetch(`${getStorefrontUrl()}/api/orders`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId,
-          status: 'shipped',
-          carrier,
-          trackingNumber,
-          courierTrackingNumber: trackingNumber,
-          dispatchedDate,
-        }),
-      });
-    } catch (e) {
-      console.warn('Sync dispatch error:', e);
+    // 3. Sync to Storefront API (try multiple endpoints)
+    const endpoints = [
+      `${getStorefrontUrl()}/api/orders`,
+      `/api/orders`,
+    ];
+    for (const endpoint of endpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: cleanId,
+            status: 'shipped',
+            carrier,
+            trackingNumber,
+            courierTrackingNumber: trackingNumber,
+            dispatchedDate,
+          }),
+        });
+        if (res.ok) break;
+      } catch (e) {
+        console.warn('Sync dispatch error:', e);
+      }
     }
   };
 
   // Full Order Update
   const handleUpdateFullOrder = async (updatedOrder: OrderItem) => {
-    // 1. Update orders state
-    setOrders((prev) =>
-      prev.map((o) => (o.orderId === updatedOrder.orderId ? updatedOrder : o))
-    );
+    const cleanId = String(updatedOrder.orderId).replace(/^#+/, '');
+    const standardizedOrder: OrderItem = {
+      ...updatedOrder,
+      orderId: cleanId,
+    };
 
-    if (selectedOrder && selectedOrder.orderId === updatedOrder.orderId) {
-      setSelectedOrder(updatedOrder);
+    // 1. Update orders state locally and in localStorage
+    setOrders((prev) => {
+      const next = prev.map((o) => {
+        const oClean = String(o.orderId).replace(/^#+/, '');
+        return (oClean === cleanId || o.orderId === updatedOrder.orderId)
+          ? standardizedOrder
+          : o;
+      });
+      try {
+        localStorage.setItem('dwstore_admin_orders_v3', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+
+    if (selectedOrder) {
+      const selClean = String(selectedOrder.orderId).replace(/^#+/, '');
+      if (selClean === cleanId || selectedOrder.orderId === updatedOrder.orderId) {
+        setSelectedOrder(standardizedOrder);
+      }
     }
 
     // 2. Sync shipments if shipped or tracking number is present
     if (
-      updatedOrder.status === 'shipped' ||
-      updatedOrder.status === 'delivered' ||
-      updatedOrder.trackingNumber
+      standardizedOrder.status === 'shipped' ||
+      standardizedOrder.status === 'delivered' ||
+      standardizedOrder.trackingNumber
     ) {
-      const carrier = (updatedOrder.carrier || 'Koombiyo Delivery') as any;
-      const trackingNumber = updatedOrder.trackingNumber || '';
+      const carrier = (standardizedOrder.carrier || 'Koombiyo Delivery') as any;
+      const trackingNumber = standardizedOrder.trackingNumber || '';
       const dispatchedDate =
-        updatedOrder.dispatchedDate || new Date().toISOString().split('T')[0];
+        standardizedOrder.dispatchedDate || new Date().toISOString().split('T')[0];
       const shipmentStatus =
-        updatedOrder.status === 'delivered' ? 'Delivered' : 'In Transit';
+        standardizedOrder.status === 'delivered' ? 'Delivered' : 'In Transit';
 
       setShipments((prev) => {
-        const idx = prev.findIndex((s) => s.orderId === updatedOrder.orderId);
+        const idx = prev.findIndex((s) => {
+          const sClean = String(s.orderId).replace(/^#+/, '');
+          return sClean === cleanId || s.orderId === updatedOrder.orderId;
+        });
         if (idx >= 0) {
           const copy = [...prev];
           copy[idx] = {
@@ -1117,53 +1184,60 @@ export default function App() {
             carrier,
             trackingNumber,
             dispatchedDate,
-            customerName: updatedOrder.customerName,
-            destinationCity: updatedOrder.city,
+            customerName: standardizedOrder.customerName,
+            destinationCity: standardizedOrder.city,
             status: shipmentStatus,
           };
           return copy;
         }
         const newShipment: ShipmentItem = {
-          id: `shp-${updatedOrder.orderId}`,
-          orderId: updatedOrder.orderId,
-          customerName: updatedOrder.customerName,
+          id: `shp-${cleanId}`,
+          orderId: cleanId,
+          customerName: standardizedOrder.customerName,
           carrier,
           trackingNumber,
           dispatchedDate,
           status: shipmentStatus,
-          destinationCity: updatedOrder.city,
+          destinationCity: standardizedOrder.city,
         };
         return [newShipment, ...prev];
       });
     }
 
-    // 3. Sync to Storefront API
-    try {
-      await fetch(`${getStorefrontUrl()}/api/orders`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId: updatedOrder.orderId,
-          status: updatedOrder.status,
-          carrier: updatedOrder.carrier,
-          trackingNumber: updatedOrder.trackingNumber,
-          courierTrackingNumber: updatedOrder.trackingNumber,
-          dispatchedDate: updatedOrder.dispatchedDate,
-          customerName: updatedOrder.customerName,
-          customerPhone: updatedOrder.customerPhone,
-          customerEmail: updatedOrder.customerEmail,
-          shippingAddress: updatedOrder.shippingAddress,
-          city: updatedOrder.city,
-          district: updatedOrder.district,
-          postalCode: updatedOrder.postalCode,
-          paymentStatus: updatedOrder.paymentStatus,
-          paymentMethod: updatedOrder.paymentMethod,
-          total: updatedOrder.total,
-          notes: updatedOrder.notes,
-        }),
-      });
-    } catch (e) {
-      console.warn('Sync order update error:', e);
+    // 3. Sync to Storefront API (try multiple endpoints)
+    const endpoints = [
+      `${getStorefrontUrl()}/api/orders`,
+      `/api/orders`,
+    ];
+    for (const endpoint of endpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: cleanId,
+            status: standardizedOrder.status,
+            carrier: standardizedOrder.carrier,
+            trackingNumber: standardizedOrder.trackingNumber,
+            courierTrackingNumber: standardizedOrder.trackingNumber,
+            dispatchedDate: standardizedOrder.dispatchedDate,
+            customerName: standardizedOrder.customerName,
+            customerPhone: standardizedOrder.customerPhone,
+            customerEmail: standardizedOrder.customerEmail,
+            shippingAddress: standardizedOrder.shippingAddress,
+            city: standardizedOrder.city,
+            district: standardizedOrder.district,
+            postalCode: standardizedOrder.postalCode,
+            paymentStatus: standardizedOrder.paymentStatus,
+            paymentMethod: standardizedOrder.paymentMethod,
+            total: standardizedOrder.total,
+            notes: standardizedOrder.notes,
+          }),
+        });
+        if (res.ok) break;
+      } catch (e) {
+        console.warn('Sync order update error:', e);
+      }
     }
   };
 
