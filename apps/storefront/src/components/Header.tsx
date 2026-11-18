@@ -105,7 +105,11 @@ export default function Header() {
         const brand = (p.brand || '').toLowerCase();
         const desc = (p.shortDescription || p.description || '').toLowerCase();
         const haystack = `${name} ${sku} ${cat} ${brand} ${desc}`;
-        return tokens.every((token) => haystack.includes(token));
+        const flatHaystack = haystack.replace(/[-_]/g, '');
+        return tokens.every((token) => {
+          const cleanToken = token.replace(/[-_]/g, '');
+          return haystack.includes(token) || (cleanToken && flatHaystack.includes(cleanToken));
+        });
       })
       .sort((a, b) => {
         const nameA = (a.name || '').toLowerCase();
@@ -118,7 +122,7 @@ export default function Header() {
         const timeB = getProductTimestamp(b);
         return timeB - timeA;
       })
-      .slice(0, 8);
+      .slice(0, 10);
   }, [mobileSearchQuery, liveProducts]);
 
   // Live matching products for desktop & mobile drawer search input
@@ -135,7 +139,11 @@ export default function Header() {
         const brand = (p.brand || '').toLowerCase();
         const desc = (p.shortDescription || p.description || '').toLowerCase();
         const haystack = `${name} ${sku} ${cat} ${brand} ${desc}`;
-        const matchesQuery = tokens.every((token) => haystack.includes(token));
+        const flatHaystack = haystack.replace(/[-_]/g, '');
+        const matchesQuery = tokens.every((token) => {
+          const cleanToken = token.replace(/[-_]/g, '');
+          return haystack.includes(token) || (cleanToken && flatHaystack.includes(cleanToken));
+        });
         if (!matchesQuery) return false;
 
         if (selectedCat !== 'All') {
@@ -157,7 +165,7 @@ export default function Header() {
         const timeB = getProductTimestamp(b);
         return timeB - timeA;
       })
-      .slice(0, 8);
+      .slice(0, 10);
   }, [searchQuery, selectedCat, liveProducts]);
 
   // Close desktop search dropdown on click outside
@@ -351,12 +359,12 @@ export default function Header() {
               type="text"
               value={searchQuery}
               onFocus={() => {
-                if (searchQuery.trim().length >= 2) setDesktopSearchOpen(true);
+                if (searchQuery.trim().length >= 1) setDesktopSearchOpen(true);
               }}
               onChange={(e) => {
                 const val = e.target.value;
                 setSearchQuery(val);
-                setDesktopSearchOpen(val.trim().length >= 2);
+                setDesktopSearchOpen(val.trim().length >= 1);
               }}
               placeholder="Search in 407+ original products (e.g. Smart Watch, Aspor, Anker, JBL)..."
               className="w-full px-4 py-2.5 text-sm text-slate-800 focus:outline-none placeholder:text-slate-400 min-w-0"
@@ -371,7 +379,7 @@ export default function Header() {
           </form>
 
           {/* Desktop Search Instant Suggestions Dropdown */}
-          {desktopSearchOpen && searchQuery.trim().length >= 2 && (
+          {desktopSearchOpen && searchQuery.trim().length >= 1 && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
               <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 <span className="flex items-center gap-1.5">
@@ -390,6 +398,8 @@ export default function Header() {
                   {desktopMatchingProducts.map((p) => {
                     const price = p.salePriceMinor || p.minPriceMinor || p.regularPriceMinor || 0;
                     const regPrice = p.regularPriceMinor && p.regularPriceMinor > price ? p.regularPriceMinor : null;
+                    const imgUrl = resolveImageUrl(p.displayImage || p.imageUrls?.[0] || p.image, '/dwstore_logo.png');
+                    const hasBrand = p.brand && p.brand.trim() && p.brand.trim().toUpperCase() !== 'DWSTORE';
                     return (
                       <Link
                         key={p.id}
@@ -399,13 +409,13 @@ export default function Header() {
                       >
                         <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200/80 p-1 flex items-center justify-center flex-shrink-0 group-hover:border-blue-400 group-hover:bg-white transition">
                           <img
-                            src={resolveImageUrl(p.displayImage || p.image || p.imageUrls?.[0], '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg')}
+                            src={imgUrl}
                             alt={p.name}
                             className="w-full h-full object-contain mix-blend-multiply"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               target.onerror = null;
-                              target.src = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+                              target.src = '/dwstore_logo.png';
                             }}
                           />
                         </div>
@@ -422,7 +432,7 @@ export default function Header() {
                                 LKR {formatPriceLKR(regPrice)}
                               </span>
                             )}
-                            {p.brand && (
+                            {hasBrand && (
                               <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase">
                                 {p.brand}
                               </span>
@@ -671,6 +681,8 @@ export default function Header() {
                       {desktopMatchingProducts.map((p) => {
                         const price = p.salePriceMinor || p.minPriceMinor || p.regularPriceMinor || 0;
                         const regPrice = p.regularPriceMinor && p.regularPriceMinor > price ? p.regularPriceMinor : null;
+                        const imgUrl = resolveImageUrl(p.displayImage || p.imageUrls?.[0] || p.image, '/dwstore_logo.png');
+                        const hasBrand = p.brand && p.brand.trim() && p.brand.trim().toUpperCase() !== 'DWSTORE';
                         return (
                           <Link
                             key={p.id}
@@ -683,13 +695,13 @@ export default function Header() {
                           >
                             <div className="w-11 h-11 rounded-lg bg-slate-50 border border-slate-200/80 p-1 flex items-center justify-center flex-shrink-0 group-hover:border-blue-400">
                               <img
-                                src={resolveImageUrl(p.displayImage || p.image || p.imageUrls?.[0], '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg')}
+                                src={imgUrl}
                                 alt={p.name}
                                 className="w-full h-full object-contain mix-blend-multiply"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
                                   target.onerror = null;
-                                  target.src = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+                                  target.src = '/dwstore_logo.png';
                                 }}
                               />
                             </div>
@@ -706,7 +718,7 @@ export default function Header() {
                                     LKR {formatPriceLKR(regPrice)}
                                   </span>
                                 )}
-                                {p.brand && (
+                                {hasBrand && (
                                   <span className="text-[9px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full uppercase">
                                     {p.brand}
                                   </span>
@@ -972,35 +984,46 @@ export default function Header() {
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                       Found {matchingProducts.length} Products
                     </div>
-                    {matchingProducts.map((item) => (
-                      <Link
-                        key={item.id}
-                        href={`/product/${item.slug}`}
-                        onClick={() => setMobileSearchOpen(false)}
-                        className="flex items-center gap-3 py-2.5 px-1 hover:bg-slate-50 rounded-xl transition group"
-                      >
-                        <img
-                          src={item.image || item.images?.[0] || '/dwstore_logo.png'}
-                          alt={item.name}
-                          className="w-11 h-11 object-contain rounded-lg border border-slate-100 bg-slate-50 p-1 flex-shrink-0 group-hover:border-blue-300"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-slate-900 group-hover:text-blue-600 truncate transition">
-                            {item.name}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs font-black text-blue-600">
-                              {formatPriceLKR(item.salePriceMinor || item.minPriceMinor || item.regularPriceMinor || 0)}
-                            </span>
-                            {item.brand && (
-                              <span className="text-[10px] text-slate-400 uppercase font-semibold">
-                                • {item.brand}
-                              </span>
-                            )}
+                    {matchingProducts.map((item) => {
+                      const imgUrl = resolveImageUrl(item.displayImage || item.imageUrls?.[0] || item.image, '/dwstore_logo.png');
+                      const hasBrand = item.brand && item.brand.trim() && item.brand.trim().toUpperCase() !== 'DWSTORE';
+                      return (
+                        <Link
+                          key={item.id}
+                          href={`/product/${item.slug}`}
+                          onClick={() => setMobileSearchOpen(false)}
+                          className="flex items-center gap-3 py-2.5 px-1 hover:bg-slate-50 rounded-xl transition group"
+                        >
+                          <div className="w-12 h-12 rounded-lg border border-slate-100 bg-slate-50 p-1 flex items-center justify-center flex-shrink-0 group-hover:border-blue-300">
+                            <img
+                              src={imgUrl}
+                              alt={item.name}
+                              className="w-full h-full object-contain mix-blend-multiply"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.onerror = null;
+                                target.src = '/dwstore_logo.png';
+                              }}
+                            />
                           </div>
-                        </div>
-                      </Link>
-                    ))}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-slate-900 group-hover:text-blue-600 truncate transition">
+                              {item.name}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-xs font-black text-blue-600 font-mono">
+                                LKR {formatPriceLKR(item.salePriceMinor || item.minPriceMinor || item.regularPriceMinor || 0)}
+                              </span>
+                              {hasBrand && (
+                                <span className="text-[10px] text-slate-400 uppercase font-semibold">
+                                  • {item.brand}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
                     <div className="pt-2">
                       <button
                         type="button"

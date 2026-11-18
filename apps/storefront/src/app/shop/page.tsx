@@ -817,7 +817,7 @@ function ShopContent() {
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               target.onerror = null;
-                              target.src = '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg';
+                              target.src = '/dwstore_logo.png';
                             }}
                           />
                           {!isInStock && (

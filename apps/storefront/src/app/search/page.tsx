@@ -7,6 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import productsData from '@/data/products.json';
 import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
+import { resolveImageUrl } from '@/lib/image';
 import { Star, ShoppingCart, Heart, Search, ChevronRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
@@ -155,11 +156,13 @@ function SearchResultsContent() {
                       className="w-full aspect-square bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center p-3 mb-3 group-hover:bg-blue-50/20 transition relative block"
                     >
                       <img
-                        src={product.displayImage}
+                        src={resolveImageUrl(product.displayImage || product.imageUrls?.[0] || (product as any).image, '/dwstore_logo.png')}
                         alt={product.name}
                         className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition duration-300"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/dwstore_logo.png';
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = '/dwstore_logo.png';
                         }}
                       />
                     </Link>
