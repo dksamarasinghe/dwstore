@@ -660,6 +660,11 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                         <div style={{ maxWidth: '240px' }}>
                           <small className="d-block text-truncate" title={order?.items?.[0]?.productTitle}>
                             {order?.items?.[0]?.productTitle || 'DW Product'}
+                            {order?.items?.[0]?.variationText && (
+                              <span className="ms-1 text-primary fw-semibold" style={{ fontSize: '11px' }}>
+                                ({order.items[0].variationText})
+                              </span>
+                            )}
                           </small>
                           <small className="text-muted">
                             {order?.items?.length || 1} item(s) • Qty: {order?.items?.[0]?.quantity || 1}
@@ -923,7 +928,23 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     style={{ background: 'var(--hover)' }}
                   >
                     <div>
-                      <b>{item.productTitle}</b>
+                      <div className="d-flex align-items-center gap-2 flex-wrap">
+                        <b>{item.productTitle}</b>
+                        {item.variationText && (
+                          <span
+                            className="badge text-body border"
+                            style={{
+                              background: 'var(--bg)',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                            }}
+                          >
+                            {item.variationText}
+                          </span>
+                        )}
+                      </div>
                       <small className="d-block text-muted">
                         Qty: {item.quantity} × Rs. {item.price.toLocaleString()}
                       </small>

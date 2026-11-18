@@ -113,7 +113,23 @@ export async function POST(req: NextRequest) {
       district: body.district || body.customer?.district || 'Colombo',
       postalCode: body.postalCode || body.customer?.postalCode || '',
       notes: body.notes || body.orderNotes || body.customer?.orderNotes || '',
-      items: body.items || [],
+      items: (body.items || []).map((it: any) => {
+        let varText = it.variationText || '';
+        if (!varText && it.variation?.attributes && typeof it.variation.attributes === 'object') {
+          varText = Object.entries(it.variation.attributes)
+            .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
+            .join(', ');
+        } else if (!varText && it.attributes && typeof it.attributes === 'object') {
+          varText = Object.entries(it.attributes)
+            .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
+            .join(', ');
+        }
+        return {
+          ...it,
+          productTitle: it.productTitle || it.name || it.title || 'Product',
+          variationText: varText,
+        };
+      }),
       subtotalMinor: body.subtotalMinor || (body.subtotal ? Math.round(body.subtotal * 100) : 0),
       shippingFeeMinor: body.shippingFeeMinor || (body.shippingCost ? Math.round(body.shippingCost * 100) : 0),
       totalMinor: body.totalMinor || (body.total ? Math.round(body.total * 100) : 0),

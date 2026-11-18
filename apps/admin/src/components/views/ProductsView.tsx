@@ -708,7 +708,17 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   }
                 }
 
-                const finalStatus = quickEditProduct.status || 'Active';
+                // For variable products, derive overall status from variations
+                const finalStatus =
+                  isVar && updatedVars && updatedVars.length > 0
+                    ? updatedVars.some(
+                        (v) =>
+                          v.stockStatus === 'In Stock' ||
+                          (v.stockStatus !== 'Out of Stock' && v.status !== 'Out of stock' && v.inStock !== false)
+                      )
+                      ? 'Active'
+                      : 'Out of stock'
+                    : quickEditProduct.status || 'Active';
 
                 const updated = {
                   ...quickEditProduct,
@@ -973,52 +983,56 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                 </div>
               )}
 
-              {/* Stock and Status Row */}
-              <div className="row g-3 mb-3">
-                <div className="col-6">
-                  <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
-                    Stock Units Available (Optional)
-                  </label>
-                  <input
-                    type="number"
-                    className="w-100 p-2 rounded-2"
-                    style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '14px' }}
-                    value={quickEditProduct.stock !== undefined && quickEditProduct.stock !== null && quickEditProduct.stock !== 0 ? quickEditProduct.stock : (quickEditProduct.stock === 0 ? '0' : '')}
-                    placeholder="0 (Optional)"
-                    onChange={(e) => {
-                      const qty = e.target.value === '' ? 0 : (parseInt(e.target.value, 10) || 0);
-                      setQuickEditProduct({
-                        ...quickEditProduct,
-                        stock: qty,
-                      });
-                    }}
-                  />
-                  <small className="text-muted d-block mt-1">
-                    {quickEditProduct.variations && quickEditProduct.variations.length > 0
-                      ? `Sum of ${quickEditProduct.variations.length} variations`
-                      : 'Optional, leave 0 or blank if out of stock'}
-                  </small>
+              {/* Stock and Status Row for Simple Products */}
+              {!(
+                quickEditProduct.productType === 'variable' ||
+                quickEditProduct.type === 'variable' ||
+                (Array.isArray(quickEditProduct.variations) && quickEditProduct.variations.length > 0)
+              ) && (
+                <div className="row g-3 mb-3">
+                  <div className="col-6">
+                    <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
+                      Stock Units Available (Optional)
+                    </label>
+                    <input
+                      type="number"
+                      className="w-100 p-2 rounded-2"
+                      style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '14px' }}
+                      value={quickEditProduct.stock !== undefined && quickEditProduct.stock !== null && quickEditProduct.stock !== 0 ? quickEditProduct.stock : (quickEditProduct.stock === 0 ? '0' : '')}
+                      placeholder="0 (Optional)"
+                      onChange={(e) => {
+                        const qty = e.target.value === '' ? 0 : (parseInt(e.target.value, 10) || 0);
+                        setQuickEditProduct({
+                          ...quickEditProduct,
+                          stock: qty,
+                        });
+                      }}
+                    />
+                    <small className="text-muted d-block mt-1">
+                      Optional, leave 0 or blank if out of stock
+                    </small>
+                  </div>
+                  <div className="col-6">
+                    <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
+                      Catalog Stock Status
+                    </label>
+                    <select
+                      className="sel-x w-100"
+                      value={quickEditProduct.status}
+                      onChange={(e) =>
+                        setQuickEditProduct({
+                          ...quickEditProduct,
+                          status: e.target.value as any,
+                        })
+                      }
+                    >
+                      <option value="Active">In Stock (Active)</option>
+                      <option value="Low stock">Low Stock Alert</option>
+                      <option value="Out of stock">Out of Stock</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="col-6">
-                  <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
-                    Catalog Stock Status
-                  </label>
-                  <select
-                    className="sel-x w-100"
-                    value={quickEditProduct.status}
-                    onChange={(e) =>
-                      setQuickEditProduct({
-                        ...quickEditProduct,
-                        status: e.target.value as any,
-                      })
-                    }
-                  >
-                    <option value="Active">In Stock (Active)</option>
-                    <option value="Low stock">Low Stock Alert</option>
-                    <option value="Out of stock">Out of Stock</option>
-                  </select>
-                </div>
-              </div>
+              )}
 
               {/* Category & Brand Row */}
               <div className="row g-3 mb-3">

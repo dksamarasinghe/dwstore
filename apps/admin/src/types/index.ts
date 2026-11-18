@@ -141,6 +141,9 @@ export interface OrderItem {
     productTitle: string;
     productSku?: string;
     variationId?: string;
+    variationText?: string;
+    variation?: any;
+    attributes?: Record<string, string>;
     quantity: number;
     price: number;
     image?: string;

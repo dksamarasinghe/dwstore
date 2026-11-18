@@ -218,6 +218,11 @@ export const WaybillSlipModal: React.FC<WaybillSlipModalProps> = ({ orders, onCl
                                   <div style={{ fontWeight: 600, color: '#111' }}>
                                     {item.productTitle}
                                   </div>
+                                  {item.variationText && (
+                                    <div style={{ fontSize: '10px', color: '#444', fontWeight: 500 }}>
+                                      Variation: {item.variationText}
+                                    </div>
+                                  )}
                                   {item.productSku && (
                                     <div style={{ fontSize: '9.5px', color: '#777' }}>
                                       SKU: {item.productSku}

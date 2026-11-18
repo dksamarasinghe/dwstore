@@ -91,17 +91,23 @@ export function buildCustomerWhatsAppMessage(order: any): string {
 
   text += `*ඇණවුම් කළ භාණ්ඩ (Items):*\n`;
   (order.items || []).forEach((item: any, index: number) => {
-    const varText = item.variation?.attributes
-      ? ` (${Object.entries(item.variation.attributes)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(', ')})`
-      : '';
+    let varStr = item.variationText || '';
+    if (!varStr && item.variation?.attributes && typeof item.variation.attributes === 'object') {
+      varStr = Object.entries(item.variation.attributes)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(', ');
+    } else if (!varStr && item.attributes && typeof item.attributes === 'object') {
+      varStr = Object.entries(item.attributes)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(', ');
+    }
+    const varText = varStr ? ` (${varStr})` : '';
     const itemPrice = item.priceMinor
       ? formatPriceLKR(item.priceMinor)
       : item.price
       ? Number(item.price).toLocaleString('en-US', { minimumFractionDigits: 2 })
       : '0.00';
-    text += `${index + 1}. *${item.name}*${varText}\n   Qty: ${item.quantity} x LKR ${itemPrice}\n`;
+    text += `${index + 1}. *${item.name || item.productTitle || 'Product'}*${varText}\n   Qty: ${item.quantity} x LKR ${itemPrice}\n`;
   });
 
   text += `\n*Subtotal:* LKR ${subtotalStr}\n`;
@@ -151,12 +157,18 @@ export function buildOwnerWhatsAppAlertMessage(order: any): string {
 
   text += `*Purchased Items:*\n`;
   (order.items || []).forEach((item: any, i: number) => {
-    const varText = item.variation?.attributes
-      ? ` (${Object.entries(item.variation.attributes)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(', ')})`
-      : '';
-    text += `${i + 1}. *${item.name}*${varText} x ${item.quantity}\n`;
+    let varStr = item.variationText || '';
+    if (!varStr && item.variation?.attributes && typeof item.variation.attributes === 'object') {
+      varStr = Object.entries(item.variation.attributes)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(', ');
+    } else if (!varStr && item.attributes && typeof item.attributes === 'object') {
+      varStr = Object.entries(item.attributes)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(', ');
+    }
+    const varText = varStr ? ` (${varStr})` : '';
+    text += `${i + 1}. *${item.name || item.productTitle || 'Product'}*${varText} x ${item.quantity}\n`;
   });
 
   const notes = order.customer?.orderNotes || order.notes;

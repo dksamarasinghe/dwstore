@@ -67,19 +67,35 @@ export function normalizeOrder(raw: any): OrderItem {
 
   // Ordered items
   const items = Array.isArray(raw.items)
-    ? raw.items.map((it: any) => ({
-        productId: it.productId || it.id || 'p-1',
-        productTitle: it.productTitle || it.name || it.title || 'DW Product',
-        productSku: it.productSku || it.sku || '',
-        quantity: it.quantity || 1,
-        price:
-          typeof it.price === 'number'
-            ? it.price
-            : typeof it.priceMinor === 'number'
-            ? Math.round(it.priceMinor / 100)
-            : 0,
-        image: it.image || '',
-      }))
+    ? raw.items.map((it: any) => {
+        let varText = it.variationText || '';
+        if (!varText && it.variation?.attributes && typeof it.variation.attributes === 'object') {
+          varText = Object.entries(it.variation.attributes)
+            .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
+            .join(', ');
+        } else if (!varText && it.attributes && typeof it.attributes === 'object') {
+          varText = Object.entries(it.attributes)
+            .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
+            .join(', ');
+        }
+
+        return {
+          productId: it.productId || it.id || 'p-1',
+          productTitle: it.productTitle || it.name || it.title || 'DW Product',
+          productSku: it.productSku || it.sku || '',
+          quantity: it.quantity || 1,
+          price:
+            typeof it.price === 'number'
+              ? it.price
+              : typeof it.priceMinor === 'number'
+              ? Math.round(it.priceMinor / 100)
+              : 0,
+          image: it.image || '',
+          variation: it.variation || null,
+          attributes: it.attributes || it.variation?.attributes || null,
+          variationText: varText,
+        };
+      })
     : [];
 
   return {

@@ -3,12 +3,16 @@ import { readDataJson } from '@/lib/data-paths';
 
 interface OrderItem {
   id: string | number;
-  name: string;
+  name?: string;
+  productTitle?: string;
   quantity: number;
   priceMinor: number;
+  price?: number;
   variation?: {
-    attributes: Record<string, string>;
+    attributes?: Record<string, string>;
   };
+  attributes?: Record<string, string>;
+  variationText?: string;
 }
 
 interface OrderData {
@@ -48,19 +52,29 @@ function generateCustomerEmailHtml(order: OrderData): string {
 
   const itemsHtml = order.items
     .map((item) => {
-      const varText = item.variation
-        ? `<div style="font-size: 11px; color: #64748b; margin-top: 2px;">${Object.entries(item.variation.attributes)
-            .map(([k, v]) => `${k}: <strong>${v}</strong>`)
-            .join(' | ')}</div>`
-        : '';
-      const itemSubtotal = formatPriceLKR(item.priceMinor * item.quantity);
+      let varStr = '';
+      if (item.variation?.attributes && typeof item.variation.attributes === 'object') {
+        varStr = Object.entries(item.variation.attributes)
+          .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: <strong>${v}</strong>`)
+          .join(' | ');
+      } else if (item.attributes && typeof item.attributes === 'object') {
+        varStr = Object.entries(item.attributes)
+          .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: <strong>${v}</strong>`)
+          .join(' | ');
+      } else if (item.variationText) {
+        varStr = `<strong>${item.variationText}</strong>`;
+      }
+      const varText = varStr ? `<div style="font-size: 11px; color: #64748b; margin-top: 2px;">${varStr}</div>` : '';
+      const priceVal = typeof item.priceMinor === 'number' ? item.priceMinor : (typeof item.price === 'number' ? Math.round(item.price * 100) : 0);
+      const itemSubtotal = formatPriceLKR(priceVal * item.quantity);
+      const displayName = item.name || item.productTitle || 'Product';
 
       return `
       <tr style="border-bottom: 1px solid #f1f5f9;">
         <td style="padding: 12px 8px; vertical-align: top;">
-          <strong style="color: #0f172a; font-size: 13px;">${item.name}</strong>
+          <strong style="color: #0f172a; font-size: 13px;">${displayName}</strong>
           ${varText}
-          <div style="font-size: 11px; color: #94a3b8; margin-top: 3px;">Qty: ${item.quantity} &times; LKR ${formatPriceLKR(item.priceMinor)}</div>
+          <div style="font-size: 11px; color: #94a3b8; margin-top: 3px;">Qty: ${item.quantity} &times; LKR ${formatPriceLKR(priceVal)}</div>
         </td>
         <td style="padding: 12px 8px; text-align: right; vertical-align: top; font-weight: 700; color: #0f172a; font-size: 13px; font-family: monospace;">
           LKR ${itemSubtotal}
@@ -238,10 +252,24 @@ function generateAdminEmailHtml(order: OrderData): string {
   const cleanPhone = (order.customer.phone || '').replace(/[^0-9]/g, '');
 
   const itemsList = order.items
-    .map(
-      (i) =>
-        `<li><strong>${i.name}</strong> &times; ${i.quantity} (LKR ${formatPriceLKR(i.priceMinor * i.quantity)})</li>`
-    )
+    .map((i) => {
+      let varStr = '';
+      if (i.variation?.attributes && typeof i.variation.attributes === 'object') {
+        varStr = Object.entries(i.variation.attributes)
+          .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
+          .join(', ');
+      } else if (i.attributes && typeof i.attributes === 'object') {
+        varStr = Object.entries(i.attributes)
+          .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
+          .join(', ');
+      } else if (i.variationText) {
+        varStr = i.variationText;
+      }
+      const varBadge = varStr ? ` <span style="background: #e2e8f0; color: #334155; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;">(${varStr})</span>` : '';
+      const priceVal = typeof i.priceMinor === 'number' ? i.priceMinor : (typeof i.price === 'number' ? Math.round(i.price * 100) : 0);
+      const displayName = i.name || i.productTitle || 'Product';
+      return `<li style="margin-bottom: 6px;"><strong>${displayName}</strong>${varBadge} &times; ${i.quantity} (LKR ${formatPriceLKR(priceVal * i.quantity)})</li>`;
+    })
     .join('');
 
   return `
