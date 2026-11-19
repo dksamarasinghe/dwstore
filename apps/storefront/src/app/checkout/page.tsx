@@ -354,11 +354,13 @@ function CheckoutContent() {
       totalMinor: finalTotalMinor,
       shippingAddress: formData,
       paymentMethod,
+      paymentStatus: (paymentMethod === 'koko' || paymentMethod === 'payzy' || paymentMethod === 'card') ? 'Paid' : 'Unpaid',
       createdAt: new Date().toISOString(),
     };
 
     // Save order to API
     try {
+      const isOnlinePayment = paymentMethod === 'koko' || paymentMethod === 'payzy' || paymentMethod === 'card';
       await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -374,6 +376,7 @@ function CheckoutContent() {
           installmentFeeMinor,
           totalMinor: finalTotalMinor,
           paymentMethod,
+          paymentStatus: isOnlinePayment ? 'Paid' : 'Unpaid',
         }),
       });
     } catch (err) {

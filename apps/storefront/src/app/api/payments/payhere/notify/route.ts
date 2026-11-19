@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
+import { readDataJson, writeDataJson } from '@/lib/data-paths';
 import { getPaymentGatewaysConfig } from '@/lib/payment-gateways';
 
 export const dynamic = 'force-dynamic';
-
-const ORDERS_FILE = path.join(process.cwd(), 'src', 'data', 'orders.json');
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,19 +33,27 @@ export async function POST(req: NextRequest) {
     // Status code 2 = Success
     if (status_code === '2') {
       try {
-        if (fs.existsSync(ORDERS_FILE)) {
-          const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, 'utf-8'));
-          const orderIndex = orders.findIndex((o: any) => String(o.id) === order_id || String(o.orderId) === order_id);
+        const orders = readDataJson<any[]>('orders.json', []);
+        const targetClean = String(order_id).replace(/^#+/, '').trim().toLowerCase();
+        const targetDigits = String(order_id).replace(/\D/g, '');
 
-          if (orderIndex !== -1) {
-            orders[orderIndex].paymentStatus = 'paid';
-            orders[orderIndex].status = 'confirmed';
-            orders[orderIndex].paymentGateway = 'payhere';
-            orders[orderIndex].transactionId = payment_id;
-            orders[orderIndex].paidAt = new Date().toISOString();
-            fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2), 'utf-8');
-            console.log(`[PayHere IPN] Order ${order_id} marked as PAID via PayHere (Transaction: ${payment_id})`);
-          }
+        const orderIndex = orders.findIndex((o: any) => {
+          const oId = String(o.orderId || o.id || '').replace(/^#+/, '').trim().toLowerCase();
+          if (oId === targetClean) return true;
+          const oDigits = String(o.orderId || o.id || '').replace(/\D/g, '');
+          if (targetDigits && oDigits && targetDigits === oDigits) return true;
+          return false;
+        });
+
+        if (orderIndex !== -1) {
+          orders[orderIndex].paymentStatus = 'Paid';
+          orders[orderIndex].paymentMethod = 'Visa / Mastercard / PayHere';
+          orders[orderIndex].status = 'processing';
+          orders[orderIndex].paymentGateway = 'payhere';
+          orders[orderIndex].transactionId = payment_id;
+          orders[orderIndex].paidAt = new Date().toISOString();
+          writeDataJson('orders.json', orders);
+          console.log(`[PayHere IPN] Order ${order_id} marked as PAID via PayHere (Transaction: ${payment_id})`);
         }
       } catch (err) {
         console.error('Error updating order on PayHere IPN:', err);

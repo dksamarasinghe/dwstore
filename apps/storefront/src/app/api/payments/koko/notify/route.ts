@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { readDataJson, writeDataJson } from '@/lib/data-paths';
 
 export const dynamic = 'force-dynamic';
-
-const ORDERS_FILE = path.join(process.cwd(), 'src', 'data', 'orders.json');
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,19 +24,27 @@ export async function POST(req: NextRequest) {
     console.log(`[Koko Callback] Received webhook for order: ${orderId}, status: ${status}, trnId: ${trnId}`);
 
     if (orderId && ['SUCCESS', 'APPROVED', 'COMPLETED'].includes(status)) {
-      if (fs.existsSync(ORDERS_FILE)) {
-        const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, 'utf-8'));
-        const idx = orders.findIndex((o: any) => String(o.id) === String(orderId) || String(o.orderId) === String(orderId));
+      const orders = readDataJson<any[]>('orders.json', []);
+      const targetClean = String(orderId).replace(/^#+/, '').trim().toLowerCase();
+      const targetDigits = String(orderId).replace(/\D/g, '');
 
-        if (idx !== -1) {
-          orders[idx].paymentStatus = 'paid';
-          orders[idx].status = 'confirmed';
-          orders[idx].paymentGateway = 'koko';
-          orders[idx].transactionId = trnId;
-          orders[idx].paidAt = new Date().toISOString();
-          fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2), 'utf-8');
-          console.log(`[Koko Callback] Order ${orderId} successfully marked as PAID via Koko!`);
-        }
+      const idx = orders.findIndex((o: any) => {
+        const oId = String(o.orderId || o.id || '').replace(/^#+/, '').trim().toLowerCase();
+        if (oId === targetClean) return true;
+        const oDigits = String(o.orderId || o.id || '').replace(/\D/g, '');
+        if (targetDigits && oDigits && targetDigits === oDigits) return true;
+        return false;
+      });
+
+      if (idx !== -1) {
+        orders[idx].paymentStatus = 'Paid';
+        orders[idx].paymentMethod = 'Koko (Buy Now Pay Later)';
+        orders[idx].status = 'processing';
+        orders[idx].paymentGateway = 'koko';
+        orders[idx].transactionId = trnId;
+        orders[idx].paidAt = new Date().toISOString();
+        writeDataJson('orders.json', orders);
+        console.log(`[Koko Callback] Order ${orderId} successfully marked as PAID via Koko!`);
       }
     }
 

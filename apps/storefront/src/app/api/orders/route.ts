@@ -67,6 +67,40 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const orders = getOrders();
 
+    const rawPm = String(body.paymentMethod || 'cod').toLowerCase();
+    const isOnlineGateway = rawPm.includes('koko') ||
+                            rawPm.includes('payzy') ||
+                            rawPm.includes('card') ||
+                            rawPm.includes('payhere') ||
+                            rawPm.includes('mintpay') ||
+                            rawPm.includes('visa') ||
+                            rawPm.includes('master');
+
+    let initialPaymentStatus = isOnlineGateway ? 'Paid' : 'Unpaid';
+    if (body.paymentStatus) {
+      const psLower = String(body.paymentStatus).toLowerCase();
+      if (psLower === 'paid' || isOnlineGateway) {
+        initialPaymentStatus = 'Paid';
+      } else if (psLower === 'refunded') {
+        initialPaymentStatus = 'Refunded';
+      }
+    }
+
+    let cleanPaymentMethod = body.paymentMethod || 'Cash on Delivery (COD)';
+    if (rawPm.includes('koko')) {
+      cleanPaymentMethod = 'Koko (Buy Now Pay Later)';
+    } else if (rawPm.includes('payzy')) {
+      cleanPaymentMethod = 'Payzy (Buy Now Pay Later)';
+    } else if (rawPm.includes('mintpay')) {
+      cleanPaymentMethod = 'Mintpay (3-Installments)';
+    } else if (rawPm.includes('card') || rawPm.includes('payhere') || rawPm.includes('visa') || rawPm.includes('master')) {
+      cleanPaymentMethod = 'Visa / Mastercard / PayHere';
+    } else if (rawPm.includes('bank')) {
+      cleanPaymentMethod = 'Bank Transfer';
+    } else if (rawPm.includes('cod') || rawPm.includes('cash')) {
+      cleanPaymentMethod = 'Cash on Delivery (COD)';
+    }
+
     const newOrder = {
       orderId: body.orderId || `DWS-${Date.now().toString().slice(-6)}`,
       createdAt: body.createdAt || new Date().toISOString(),
@@ -112,8 +146,8 @@ export async function POST(req: NextRequest) {
       subtotal: body.subtotal || (body.subtotalMinor ? body.subtotalMinor / 100 : 0),
       shippingCost: body.shippingCost !== undefined ? body.shippingCost : (body.shippingFeeMinor ? body.shippingFeeMinor / 100 : 0),
       total: body.total || (body.totalMinor ? body.totalMinor / 100 : 0),
-      paymentMethod: body.paymentMethod || 'cod',
-      paymentStatus: body.paymentStatus || 'unpaid',
+      paymentMethod: cleanPaymentMethod,
+      paymentStatus: initialPaymentStatus,
       status: body.status || 'processing',
       carrier: body.carrier || 'Koombiyo Delivery',
       trackingNumber: body.trackingNumber || body.courierTrackingNumber || '',

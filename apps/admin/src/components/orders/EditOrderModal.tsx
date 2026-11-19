@@ -51,10 +51,6 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
 
   useEffect(() => {
     if (order) {
-      // Normalize payment status to exact Title Case ('Paid' | 'Unpaid' | 'Refunded')
-      const rawPs = String(order.paymentStatus || '').trim().toLowerCase();
-      const normPs = rawPs === 'paid' ? 'Paid' : rawPs === 'refunded' ? 'Refunded' : 'Unpaid';
-
       // Normalize payment method to match PAYMENT_METHODS options
       let normPm = order.paymentMethod || 'Cash on Delivery (COD)';
       const lowerPm = normPm.toLowerCase();
@@ -71,6 +67,11 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
       } else if (lowerPm.includes('cod') || lowerPm.includes('cash')) {
         normPm = 'Cash on Delivery (COD)';
       }
+
+      // Normalize payment status to exact Title Case ('Paid' | 'Unpaid' | 'Refunded')
+      const rawPs = String(order.paymentStatus || '').trim().toLowerCase();
+      const isOnline = lowerPm.includes('koko') || lowerPm.includes('payzy') || lowerPm.includes('mintpay') || lowerPm.includes('visa') || lowerPm.includes('master') || lowerPm.includes('card') || lowerPm.includes('payhere');
+      const normPs = rawPs === 'refunded' ? 'Refunded' : (rawPs === 'paid' || isOnline ? 'Paid' : 'Unpaid');
 
       const normStatus = (order.status || 'processing').toLowerCase();
 
