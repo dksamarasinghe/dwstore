@@ -70,8 +70,7 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
 
       // Normalize payment status to exact Title Case ('Paid' | 'Unpaid' | 'Refunded')
       const rawPs = String(order.paymentStatus || '').trim().toLowerCase();
-      const isOnline = lowerPm.includes('koko') || lowerPm.includes('payzy') || lowerPm.includes('mintpay') || lowerPm.includes('visa') || lowerPm.includes('master') || lowerPm.includes('card') || lowerPm.includes('payhere');
-      const normPs = rawPs === 'refunded' ? 'Refunded' : (rawPs === 'paid' || isOnline ? 'Paid' : 'Unpaid');
+      const normPs = rawPs === 'refunded' ? 'Refunded' : rawPs === 'paid' ? 'Paid' : 'Unpaid';
 
       const normStatus = (order.status || 'processing').toLowerCase();
 

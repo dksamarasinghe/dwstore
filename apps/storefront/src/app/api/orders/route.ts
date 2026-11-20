@@ -76,10 +76,10 @@ export async function POST(req: NextRequest) {
                             rawPm.includes('visa') ||
                             rawPm.includes('master');
 
-    let initialPaymentStatus = isOnlineGateway ? 'Paid' : 'Unpaid';
+    let initialPaymentStatus = 'Unpaid';
     if (body.paymentStatus) {
       const psLower = String(body.paymentStatus).toLowerCase();
-      if (psLower === 'paid' || isOnlineGateway) {
+      if (psLower === 'paid') {
         initialPaymentStatus = 'Paid';
       } else if (psLower === 'refunded') {
         initialPaymentStatus = 'Refunded';

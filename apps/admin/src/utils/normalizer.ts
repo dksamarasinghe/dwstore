@@ -70,23 +70,13 @@ export function normalizeOrder(raw: any): OrderItem {
   // Payment status (strictly Title Case 'Paid' | 'Unpaid' | 'Refunded')
   let paymentStatus: 'Paid' | 'Unpaid' | 'Refunded' = 'Unpaid';
   const rawPs = String(raw.paymentStatus || '').trim().toLowerCase();
-  const rawPm = String(raw.paymentMethod || '').toLowerCase();
-  const isOnlinePayment = rawPm.includes('koko') ||
-                          rawPm.includes('payzy') ||
-                          rawPm.includes('mintpay') ||
-                          rawPm.includes('visa') ||
-                          rawPm.includes('master') ||
-                          rawPm.includes('card') ||
-                          rawPm.includes('payhere');
 
   if (rawPs === 'refunded') {
     paymentStatus = 'Refunded';
-  } else if (rawPs === 'paid' || isOnlinePayment) {
+  } else if (rawPs === 'paid') {
     paymentStatus = 'Paid';
   } else if (status === 'delivered') {
     paymentStatus = 'Paid';
-  } else if (rawPm.includes('cod') || rawPm.includes('cash') || rawPm.includes('bank')) {
-    paymentStatus = 'Unpaid';
   } else {
     paymentStatus = 'Unpaid';
   }

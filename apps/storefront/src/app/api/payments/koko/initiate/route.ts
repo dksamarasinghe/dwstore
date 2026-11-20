@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     const origin = req.nextUrl.origin || 'https://dwstore.lk';
     const amountFormatted = Number(amount).toFixed(2);
-    const returnUrl = `${origin}/order-success?orderId=${encodeURIComponent(orderId)}&gateway=koko`;
+    const returnUrl = `${origin}/api/payments/koko/notify`;
     const cancelUrl = `${origin}/checkout?cancelled=true&orderId=${encodeURIComponent(orderId)}`;
     const responseUrl = `${origin}/api/payments/koko/notify`;
 

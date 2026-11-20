@@ -32,15 +32,17 @@ function OrderSuccessContent() {
       console.error(e);
     }
 
-    const gateway = searchParams.get('gateway');
-    if (orderId && (gateway === 'koko' || gateway === 'payzy' || gateway === 'payhere')) {
-      fetch('/api/orders', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, paymentStatus: 'Paid' }),
-      }).catch(() => {});
+    if (orderId) {
+      fetch(`/api/orders?orderId=${encodeURIComponent(orderId)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.success && data.order) {
+            setOrder((prev: any) => ({ ...prev, ...data.order }));
+          }
+        })
+        .catch(() => {});
     }
-  }, [orderId, searchParams]);
+  }, [orderId]);
 
   const waSupportUrl = `https://wa.me/94756693358?text=${encodeURIComponent(
     `Hello DWstore, I placed order #${orderId}. Please let me know the delivery tracking status.`
