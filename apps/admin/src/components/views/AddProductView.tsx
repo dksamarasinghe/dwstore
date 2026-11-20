@@ -579,8 +579,65 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
   const [newShippingClassName, setNewShippingClassName] = useState('');
   const [newShippingClassRate, setNewShippingClassRate] = useState('');
 
-  // 7. Warranty Period (Completely blank if adding new!)
+  // 7. Warranty Period & Manageable Presets
+  const DEFAULT_WARRANTY_PRESETS = [
+    '7 Days Checking Warranty',
+    '1 Month Replacement Warranty',
+    '3 Months Warranty',
+    '6 Months Company Warranty',
+    '1 Year Official Warranty',
+    '2 Years Company Warranty',
+    'No Warranty / Checking Only',
+  ];
+
   const [warrantyPeriod, setWarrantyPeriod] = useState(initialProduct?.warrantyPeriod || '');
+  const [warrantyPresets, setWarrantyPresets] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('dwstore_warranty_presets_v2');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_WARRANTY_PRESETS;
+  });
+  const [newWarrantyPresetInput, setNewWarrantyPresetInput] = useState('');
+  const [isAddingWarrantyPreset, setIsAddingWarrantyPreset] = useState(false);
+
+  const handleSaveWarrantyPreset = (val: string) => {
+    const trimmed = val.trim();
+    if (!trimmed) return;
+    if (warrantyPresets.includes(trimmed)) {
+      showNotification('This warranty term already exists in presets.');
+      return;
+    }
+    const updated = [...warrantyPresets, trimmed];
+    setWarrantyPresets(updated);
+    try {
+      localStorage.setItem('dwstore_warranty_presets_v2', JSON.stringify(updated));
+    } catch {}
+    showNotification(`Added "${trimmed}" to saved warranty presets!`);
+    setNewWarrantyPresetInput('');
+    setIsAddingWarrantyPreset(false);
+  };
+
+  const handleDeleteWarrantyPreset = (presetToDelete: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = warrantyPresets.filter((p) => p !== presetToDelete);
+    setWarrantyPresets(updated);
+    try {
+      localStorage.setItem('dwstore_warranty_presets_v2', JSON.stringify(updated));
+    } catch {}
+    showNotification(`Removed "${presetToDelete}" from presets.`);
+  };
+
+  const handleResetWarrantyPresets = () => {
+    setWarrantyPresets(DEFAULT_WARRANTY_PRESETS);
+    try {
+      localStorage.setItem('dwstore_warranty_presets_v2', JSON.stringify(DEFAULT_WARRANTY_PRESETS));
+    } catch {}
+    showNotification('Reset warranty presets to default list.');
+  };
 
   // 8. Variable Product Attributes & Variations
   const [newAttrName, setNewAttrName] = useState('');
@@ -618,7 +675,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       setOpeningStock(initialProduct.stock !== undefined ? String(initialProduct.stock) : '');
       setStockAlertLevel(initialProduct.stockAlertLevel !== undefined ? String(initialProduct.stockAlertLevel) : '');
       setStockStatus(initialProduct.status && initialProduct.status !== 'Draft' ? initialProduct.status : 'Active');
-      setShortDesc(initialProduct.shortDesc || '');
+      setShortDesc(initialProduct.shortDesc || (initialProduct as any).shortDescription || '');
       setFullDesc(initialProduct.description || '');
       setWeightKg(initialProduct.shipping?.weight ? String(initialProduct.shipping.weight) : '');
       setDimLength(initialProduct.shipping?.length ? String(initialProduct.shipping.length) : '');
@@ -2580,7 +2637,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                 <h5 className="m-0 fw-bold">Product Descriptions</h5>
               </div>
 
-              {/* 5A. Short Description (Directly beside product image on storefront) */}
+              {/* 5A. Short Description (Directly beside product image on storefront) with Rich Text Editor */}
               <div className="mb-4">
                 <div className="d-flex align-items-center justify-content-between mb-2">
                   <div>
@@ -2591,46 +2648,32 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                       </span>
                     </label>
                     <small className="text-muted d-block" style={{ fontSize: '12px' }}>
-                      Shows on customer page directly to the right of product image (e.g. key bullet points).
+                      WYSIWYG Rich Text Editor: format bullet highlights, key specifications, bold text, and layout directly beside product image.
                     </small>
-                  </div>
-                  <div className="seg">
-                    <button
-                      type="button"
-                      className={shortDescMode === 'visual' ? 'on' : ''}
-                      onClick={() => setShortDescMode('visual')}
-                    >
-                      <Eye size={12} className="me-1 d-inline" /> Preview
-                    </button>
-                    <button
-                      type="button"
-                      className={shortDescMode === 'html' ? 'on' : ''}
-                      onClick={() => setShortDescMode('html')}
-                    >
-                      <Code size={12} className="me-1 d-inline" /> HTML
-                    </button>
                   </div>
                 </div>
 
-                <textarea
-                  rows={4}
-                  className="w-100 p-3 rounded-2"
-                  style={{
-                    background: 'var(--bg)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
-                    fontSize: '13px',
-                    outline: 'none'
-                  }}
-                  placeholder="Enter short bullet points shown beside product image..."
+                <RichTextEditor
                   value={shortDesc}
-                  onChange={(e) => setShortDesc(e.target.value)}
+                  onChange={setShortDesc}
+                  placeholder="Enter short bullet highlights shown directly beside product image..."
+                  minHeight="180px"
+                  onUploadImage={(file) => uploadMediaFile(file, 'products')}
                 />
 
-                {shortDescMode === 'visual' && shortDesc.trim() && (
+                {shortDesc.trim() && (
                   <div className="mt-2 p-3 rounded-2" style={{ background: 'var(--hover)', border: '1px solid var(--border)' }}>
-                    <small className="text-muted d-block mb-1">Storefront Visual Output:</small>
-                    <div dangerouslySetInnerHTML={{ __html: shortDesc }} style={{ fontSize: '13px' }} />
+                    <div className="d-flex align-items-center justify-content-between mb-1.5">
+                      <small className="text-muted fw-bold">Storefront Live Preview:</small>
+                      <span className="badge bg-secondary-subtle text-secondary" style={{ fontSize: '11px' }}>
+                        Beside Image Output
+                      </span>
+                    </div>
+                    <div
+                      className="storefront-desc-preview"
+                      style={{ fontSize: '13px', lineHeight: 1.6 }}
+                      dangerouslySetInnerHTML={{ __html: shortDesc }}
+                    />
                   </div>
                 )}
               </div>
@@ -2792,50 +2835,185 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
 
             {/* 7. Warranty Period Card */}
             <div className="card-x mb-4 shadow-sm">
-              <div className="card-head pb-3 mb-3 border-bottom" style={{ borderColor: 'var(--border)' }}>
-                <h5 className="m-0 fw-bold">Warranty Period</h5>
+              <div className="card-head d-flex justify-content-between align-items-center pb-3 mb-3 border-bottom" style={{ borderColor: 'var(--border)' }}>
+                <div>
+                  <h5 className="m-0 fw-bold">Warranty Period</h5>
+                  <small className="text-muted" style={{ fontSize: '12px' }}>
+                    Select a preset warranty term or type custom coverage for this product.
+                  </small>
+                </div>
+                <div className="d-flex align-items-center gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
+                    style={{ fontSize: '12px' }}
+                    onClick={() => setIsAddingWarrantyPreset(!isAddingWarrantyPreset)}
+                  >
+                    <Plus size={13} /> {isAddingWarrantyPreset ? 'Close' : '+ Add Warranty Option'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-link text-muted p-0 text-decoration-none"
+                    style={{ fontSize: '11px' }}
+                    onClick={handleResetWarrantyPresets}
+                    title="Reset to default warranty terms"
+                  >
+                    Reset Defaults
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
-                  Warranty Coverage & Terms
+                  Warranty Coverage &amp; Terms
                 </label>
-                <input
-                  type="text"
-                  className="w-100 p-2 rounded-2 mb-2"
-                  style={{
-                    background: 'var(--bg)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
-                    fontSize: '14px',
-                    outline: 'none'
-                  }}
-                  placeholder="e.g. 7 Days Checking Warranty / 6 Months Company Warranty"
-                  value={warrantyPeriod}
-                  onChange={(e) => setWarrantyPeriod(e.target.value)}
-                />
+                <div className="d-flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    className="w-100 p-2 rounded-2"
+                    style={{
+                      background: 'var(--bg)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text)',
+                      fontSize: '14px',
+                      outline: 'none'
+                    }}
+                    placeholder="e.g. 7 Days Checking Warranty / 6 Months Company Warranty"
+                    value={warrantyPeriod}
+                    onChange={(e) => setWarrantyPeriod(e.target.value)}
+                  />
+                  {warrantyPeriod.trim() && !warrantyPresets.includes(warrantyPeriod.trim()) && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-soft text-nowrap d-flex align-items-center gap-1 px-3"
+                      style={{ fontSize: '12px', border: '1px solid var(--primary, #2563eb)', color: 'var(--primary, #2563eb)' }}
+                      onClick={() => handleSaveWarrantyPreset(warrantyPeriod)}
+                      title="Save this entered text to presets list for future products"
+                    >
+                      <Plus size={13} /> Save as Preset
+                    </button>
+                  )}
+                  {warrantyPeriod && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary text-nowrap px-2"
+                      style={{ fontSize: '12px' }}
+                      onClick={() => setWarrantyPeriod('')}
+                      title="Clear warranty"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Inline Add New Preset Panel */}
+                {isAddingWarrantyPreset && (
+                  <div className="p-3 mb-3 rounded-2" style={{ background: 'var(--hover)', border: '1px dashed var(--border)' }}>
+                    <div className="d-flex align-items-center gap-2">
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        placeholder="Type new warranty term (e.g. 2 Years Agent Warranty)..."
+                        value={newWarrantyPresetInput}
+                        onChange={(e) => setNewWarrantyPresetInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSaveWarrantyPreset(newWarrantyPresetInput);
+                          }
+                        }}
+                        style={{ fontSize: '13px' }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-primary text-nowrap px-3"
+                        style={{ fontSize: '12px' }}
+                        onClick={() => handleSaveWarrantyPreset(newWarrantyPresetInput)}
+                        disabled={!newWarrantyPresetInput.trim()}
+                      >
+                        Add to Presets
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary"
+                        style={{ fontSize: '12px' }}
+                        onClick={() => {
+                          setIsAddingWarrantyPreset(false);
+                          setNewWarrantyPresetInput('');
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <small className="text-muted d-block mt-1" style={{ fontSize: '11px' }}>
+                      Once saved, this term will stay in your saved presets list for all products.
+                    </small>
+                  </div>
+                )}
 
                 {/* Quick preset chips */}
-                <div className="d-flex flex-wrap gap-2">
-                  {[
-                    '7 Days Checking Warranty',
-                    '1 Month Replacement Warranty',
-                    '3 Months Warranty',
-                    '6 Months Company Warranty',
-                    '1 Year Official Warranty'
-                  ].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      className="btn-soft"
-                      style={{ fontSize: '12px', padding: '4px 8px' }}
-                      onClick={() => setWarrantyPeriod(preset)}
-                    >
-                      {preset}
-                    </button>
-                  ))}
+                <div className="mb-2">
+                  <small className="text-muted d-block mb-1.5" style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Saved Presets (Click to select &bull; Click &times; to remove):
+                  </small>
+                  <div className="d-flex flex-wrap gap-2">
+                    {warrantyPresets.map((preset) => {
+                      const isSelected = warrantyPeriod.trim() === preset;
+                      return (
+                        <div
+                          key={preset}
+                          className={`btn-group ${isSelected ? 'shadow-xs' : ''}`}
+                          role="group"
+                        >
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${
+                              isSelected
+                                ? 'btn-primary fw-bold text-white'
+                                : 'btn-soft text-dark'
+                            }`}
+                            style={{
+                              fontSize: '12px',
+                              padding: '5px 10px',
+                              border: isSelected ? '1px solid var(--primary, #2563eb)' : '1px solid var(--border)',
+                              background: isSelected ? 'var(--primary, #2563eb)' : 'var(--bg)',
+                              color: isSelected ? '#ffffff' : 'var(--text)',
+                            }}
+                            onClick={() => setWarrantyPeriod(preset)}
+                          >
+                            {isSelected && <span className="me-1">&#10003;</span>}
+                            {preset}
+                          </button>
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${
+                              isSelected
+                                ? 'btn-primary text-white border-start'
+                                : 'btn-soft text-muted'
+                            }`}
+                            style={{
+                              fontSize: '13px',
+                              padding: '5px 8px',
+                              border: isSelected ? '1px solid var(--primary, #2563eb)' : '1px solid var(--border)',
+                              background: isSelected ? 'var(--primary, #2563eb)' : 'var(--bg)',
+                              opacity: 0.8,
+                            }}
+                            onClick={(e) => handleDeleteWarrantyPreset(preset, e)}
+                            title={`Remove "${preset}" from presets`}
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
+
+                <small className="text-muted d-block" style={{ fontSize: '11px' }}>
+                  The selected warranty displays on the product page directly beside pricing and delivery information.
+                </small>
               </div>
+            </div>
 
               {/* 8. Search Engine Optimization (SEO) & Google Preview Card */}
               <div className="card-x mb-4 shadow-sm">
@@ -2989,7 +3167,6 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                 </div>
               </div>
             </div>
-          </div>
 
           {/* Right Column: Actions, Profit Preview & Quick Tips */}
           <div className="col-12 col-xl-4">
