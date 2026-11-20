@@ -105,7 +105,15 @@ export default function Footer() {
       <div className="border-t border-slate-200 bg-slate-100/70 py-6">
         <div className="page-container flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p className="text-center md:text-left">
-            © 2026 <span className="font-semibold text-slate-700">DWstore.lk</span>. All Rights Reserved. Built in Sri Lanka.
+            © 2026 <span className="font-semibold text-slate-700">DWstore.lk</span>. All Rights Reserved | Develop By{' '}
+            <a
+              href="https://dksamarasinghe.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-slate-700 hover:text-blue-600 transition"
+            >
+              Dksamarasinghe.com
+            </a>
           </p>
           <div className="flex items-center justify-center">
             <img
