@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import PaymentInstallmentBoxes from '@/components/PaymentInstallmentBoxes';
 import productsData from '@/data/products.json';
 import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
+import { trackViewContent } from '@/lib/meta-pixel';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { resolveImageUrl } from '@/lib/image';
@@ -54,6 +55,13 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       isMounted = false;
     };
   }, [slug]);
+
+  // Track Meta Pixel ViewContent event for Facebook Dynamic Product Ads
+  useEffect(() => {
+    if (product) {
+      trackViewContent(product);
+    }
+  }, [product?.id, product?.slug]);
 
   // Attributes & variations logic (supports both array and object formats)
   const attributeEntries: Array<{ name: string; values: string[] }> = useMemo(() => {

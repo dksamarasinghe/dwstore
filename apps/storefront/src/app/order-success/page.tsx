@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { formatPriceLKR } from '@/lib/catalog';
+import { trackPurchase } from '@/lib/meta-pixel';
 import {
   CheckCircle2,
   PackageCheck,
@@ -26,7 +27,13 @@ function OrderSuccessContent() {
     try {
       const stored = sessionStorage.getItem('dwstore_last_order');
       if (stored) {
-        setOrder(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setOrder(parsed);
+        const trackedKey = `dwstore_fbp_tracked_${orderId}`;
+        if (!sessionStorage.getItem(trackedKey)) {
+          trackPurchase(parsed);
+          sessionStorage.setItem(trackedKey, '1');
+        }
       }
     } catch (e) {
       console.error(e);

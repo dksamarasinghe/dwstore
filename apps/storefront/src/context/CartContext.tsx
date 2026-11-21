@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { trackAddToCart } from '@/lib/meta-pixel';
 
 export interface CartItem {
   id: string; // product id or product id + variation id
@@ -90,6 +91,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     if (openDrawer) {
       setIsOpen(true);
+    }
+
+    try {
+      trackAddToCart(newItem);
+    } catch (e) {
+      // ignore
     }
   };
 
