@@ -362,3 +362,69 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500, headers: CORS_HEADERS });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    let id = searchParams.get('id');
+    let slug = searchParams.get('slug');
+
+    if (!id && !slug) {
+      try {
+        const body = await req.json();
+        if (body?.id) id = String(body.id);
+        if (body?.slug) slug = String(body.slug);
+      } catch (e) {}
+    }
+
+    if (!id && !slug) {
+      return NextResponse.json(
+        { success: false, error: 'Product ID or slug is required' },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    let products = getProducts();
+    const targetIndex = products.findIndex(
+      (p: any) => (id && String(p.id) === String(id)) || (slug && p.slug === slug)
+    );
+
+    if (targetIndex === -1) {
+      return NextResponse.json(
+        { success: false, error: 'Product not found' },
+        { status: 404, headers: CORS_HEADERS }
+      );
+    }
+
+    const removedProduct = products[targetIndex];
+
+    // Only delete this specific product record from the catalog.
+    // If it is a Group Product (Combo Deal), only the combo deal itself is deleted;
+    // all component products bundled inside it remain completely intact and unaffected.
+    products.splice(targetIndex, 1);
+    saveProducts(products);
+
+    // Revalidate storefront cache for instant updates
+    try {
+      if (removedProduct.slug) revalidatePath('/product/' + removedProduct.slug);
+      revalidatePath('/shop');
+      revalidatePath('/');
+    } catch (e) {}
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Product permanently deleted',
+        deletedId: removedProduct.id,
+        count: products.length,
+      },
+      { headers: CORS_HEADERS }
+    );
+  } catch (err: any) {
+    console.error('Error deleting product in API:', err);
+    return NextResponse.json(
+      { success: false, error: err.message },
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
+}

@@ -1419,9 +1419,34 @@ export default function App() {
     showNotification(`Product "${updatedProduct.name.slice(0, 24)}..." updated successfully!`);
   };
 
-  const handleDeleteProduct = (id: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+  const handleDeleteProduct = async (id: string) => {
+    setProducts((prev) => {
+      const next = prev.filter((p) => String(p.id) !== String(id));
+      try {
+        localStorage.setItem('dwstore_admin_products_v5', JSON.stringify(next));
+        localStorage.setItem('dwstore_admin_products_v4', JSON.stringify(next));
+        localStorage.setItem('dwstore_admin_products_v2', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
     showNotification('Product removed from catalog.');
+
+    try {
+      const endpoints = [
+        `${getStorefrontUrl()}/api/products?id=${encodeURIComponent(id)}`,
+        `/api/products?id=${encodeURIComponent(id)}`,
+      ];
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'DELETE',
+          });
+          if (res.ok) break;
+        } catch {}
+      }
+    } catch (e) {
+      console.warn('Storefront product delete sync failed:', e);
+    }
   };
 
   const handleUpdateStock = (productId: string, newStock: number) => {
