@@ -966,6 +966,11 @@ function CheckoutContent() {
                               {Object.entries(item.variation.attributes || {}).map(([k, v]) => `${k}: ${v}`).join(', ')}
                             </p>
                           )}
+                          {item.isGrouped && item.groupedProducts && item.groupedProducts.length > 0 && (
+                            <p className="text-[10px] text-purple-700 mt-0.5 font-medium line-clamp-1" title={item.groupedProducts.map((g: any) => `${g.name}${g.quantity && g.quantity > 1 ? ` (x${g.quantity})` : ''}`).join(', ')}>
+                              Combo: {item.groupedProducts.map((g: any) => `${g.name}${g.quantity && g.quantity > 1 ? ` (x${g.quantity})` : ''}`).join(', ')}
+                            </p>
+                          )}
                           <div className="flex items-center gap-2 mt-1.5">
                             {/* Quantity buttons */}
                             <div className="flex items-center border border-slate-200 rounded-lg bg-slate-50 overflow-hidden shadow-xs">

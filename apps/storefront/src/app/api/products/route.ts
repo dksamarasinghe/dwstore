@@ -54,22 +54,37 @@ function normalizeProductCategory(p: any) {
 
 function populateGroupedProducts(p: any, allProducts: any[]) {
   if (!p) return p;
-  if (p.type === 'grouped' || p.productType === 'grouped') {
-    const ids = Array.isArray(p.groupedProductIds) ? p.groupedProductIds : [];
-    if (ids.length > 0 && (!p.groupedProducts || p.groupedProducts.length === 0)) {
+  if (p.type === 'grouped' || p.productType === 'grouped' || p.type === 'combo') {
+    const existingGrouped = Array.isArray(p.groupedProducts) ? p.groupedProducts : [];
+    const ids = Array.isArray(p.groupedProductIds) ? p.groupedProductIds : existingGrouped.map((g: any) => String(g.id));
+    
+    if (ids.length > 0) {
       p.groupedProducts = ids.map((gId: string) => {
         const found = allProducts.find((item) => String(item.id) === String(gId));
-        if (!found) return null;
+        const prev = existingGrouped.find((g: any) => String(g.id) === String(gId));
+        if (!found && !prev) return null;
+        const name = found?.name || prev?.name || 'Product';
+        const slug = found?.slug || prev?.slug || '';
+        const image = found?.displayImage || (found?.imageUrls && found.imageUrls[0]) || prev?.image || prev?.displayImage || '';
+        const regularPrice = (found?.regularPriceMinor ? found.regularPriceMinor / 100 : found?.regularPrice) || prev?.regularPrice || 0;
+        const salePrice = (found?.salePriceMinor ? found.salePriceMinor / 100 : found?.salePrice) || prev?.salePrice || regularPrice;
+        const qty = prev?.quantity || 1;
+        const pType = found?.productType || found?.type || prev?.productType || (found?.variations?.length ? 'variable' : 'simple');
+
         return {
-          id: String(found.id),
-          name: found.name,
-          slug: found.slug,
-          image: found.displayImage || (found.imageUrls && found.imageUrls[0]) || '',
-          regularPriceMinor: found.regularPriceMinor || 0,
-          salePriceMinor: found.salePriceMinor || found.regularPriceMinor || 0,
-          regularPrice: (found.regularPriceMinor || 0) / 100,
-          salePrice: (found.salePriceMinor || found.regularPriceMinor || 0) / 100,
-          brand: found.brand || '',
+          id: String(gId),
+          name,
+          slug,
+          image,
+          displayImage: image,
+          regularPriceMinor: Math.round(regularPrice * 100),
+          salePriceMinor: Math.round(salePrice * 100),
+          regularPrice,
+          salePrice,
+          quantity: qty,
+          productType: pType,
+          brand: found?.brand || prev?.brand || '',
+          sku: found?.sku || prev?.sku || '',
         };
       }).filter(Boolean);
     }
@@ -183,20 +198,35 @@ export async function POST(req: NextRequest) {
 
     const groupedProductIds = isGrouped && Array.isArray(body.groupedProductIds) ? body.groupedProductIds : [];
     let groupedProducts = isGrouped && Array.isArray(body.groupedProducts) ? body.groupedProducts : [];
-    if (isGrouped && groupedProductIds.length > 0 && (!groupedProducts || groupedProducts.length === 0)) {
+    if (isGrouped && groupedProductIds.length > 0) {
       groupedProducts = groupedProductIds.map((gId: string) => {
         const found = products.find((item) => String(item.id) === String(gId));
-        if (!found) return null;
+        const passed = Array.isArray(body.groupedProducts)
+          ? body.groupedProducts.find((gp: any) => String(gp.id) === String(gId))
+          : null;
+        if (!found && !passed) return null;
+        const name = found?.name || passed?.name || 'Product';
+        const slug = found?.slug || passed?.slug || '';
+        const image = found?.displayImage || (found?.imageUrls && found.imageUrls[0]) || passed?.image || '';
+        const regularPrice = (found?.regularPriceMinor ? found.regularPriceMinor / 100 : found?.regularPrice) || passed?.regularPrice || 0;
+        const salePrice = (found?.salePriceMinor ? found.salePriceMinor / 100 : found?.salePrice) || passed?.salePrice || regularPrice;
+        const qty = passed?.quantity || 1;
+        const pType = found?.productType || found?.type || passed?.productType || (found?.variations?.length ? 'variable' : 'simple');
+
         return {
-          id: String(found.id),
-          name: found.name,
-          slug: found.slug,
-          image: found.displayImage || (found.imageUrls && found.imageUrls[0]) || '',
-          regularPriceMinor: found.regularPriceMinor || 0,
-          salePriceMinor: found.salePriceMinor || found.regularPriceMinor || 0,
-          regularPrice: (found.regularPriceMinor || 0) / 100,
-          salePrice: (found.salePriceMinor || found.regularPriceMinor || 0) / 100,
-          brand: found.brand || '',
+          id: String(gId),
+          name,
+          slug,
+          image,
+          displayImage: image,
+          regularPriceMinor: Math.round(regularPrice * 100),
+          salePriceMinor: Math.round(salePrice * 100),
+          regularPrice,
+          salePrice,
+          quantity: qty,
+          productType: pType,
+          brand: found?.brand || passed?.brand || '',
+          sku: found?.sku || passed?.sku || '',
         };
       }).filter(Boolean);
     }

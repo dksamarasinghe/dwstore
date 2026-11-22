@@ -47,6 +47,8 @@ export interface Product {
     salePriceMinor?: number;
     regularPrice?: number;
     salePrice?: number;
+    quantity?: number;
+    productType?: string;
     brand?: string;
   }>;
   sourceSystem: string;

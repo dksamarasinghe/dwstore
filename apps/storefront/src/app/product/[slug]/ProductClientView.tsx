@@ -309,10 +309,71 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
     return requiredAttributes.every((attrName) => Boolean(selectedAttributes[attrName]));
   }, [isVariable, requiredAttributes, selectedAttributes]);
 
+  // Grouped / Combo product helpers
+  const isGroupedProduct = Boolean(
+    product?.type === 'grouped' || 
+    product?.productType === 'grouped' || 
+    product?.type === 'combo'
+  );
+
+  const comboIncludedProducts = useMemo(() => {
+    if (!isGroupedProduct) return [];
+    if (product?.groupedProducts && Array.isArray(product.groupedProducts) && product.groupedProducts.length > 0) {
+      return product.groupedProducts.map((p: any) => ({
+        ...p,
+        quantity: p.quantity || 1,
+        productType: p.productType || (p.variations?.length ? 'variable' : 'simple'),
+      }));
+    }
+    if (product?.groupedProductIds && Array.isArray(product.groupedProductIds)) {
+      return product.groupedProductIds
+        .map((pid: string) => {
+          const match = (productsData as any[]).find((p) => String(p.id) === String(pid));
+          if (!match) return null;
+          return {
+            id: match.id,
+            name: match.name,
+            image: match.displayImage || match.imageUrls?.[0] || '/dwstore_logo.png',
+            regularPrice: (match.regularPriceMinor || 0) / 100,
+            salePrice: (match.salePriceMinor || match.minPriceMinor || 0) / 100,
+            sku: match.sku,
+            slug: match.slug,
+            quantity: 1,
+            productType: match.productType || match.type || (match.variations?.length ? 'variable' : 'simple'),
+          };
+        })
+        .filter(Boolean);
+    }
+    return [];
+  }, [isGroupedProduct, product]);
+
+  const comboTotalItemsValue = useMemo(() => {
+    if (!comboIncludedProducts.length) return 0;
+    return comboIncludedProducts.reduce((sum: number, item: any) => {
+      const p = item.salePrice || item.regularPrice || 0;
+      const q = item.quantity || 1;
+      return sum + (p * q);
+    }, 0);
+  }, [comboIncludedProducts]);
+
+  const comboSavings = Math.max(0, comboTotalItemsValue - (activePriceMinor / 100));
+
   // Overall stock check for product (at least one variation or simple product in stock)
+  // Section 12.3: If any component in a combo is out of stock, the combo is Out of Stock!
   const hasAnyStock = useMemo(() => {
+    if (isGroupedProduct) {
+      if (!comboIncludedProducts || comboIncludedProducts.length === 0) {
+        return isProductInStock(product);
+      }
+      const allComponentsInStock = comboIncludedProducts.every((comp: any) => {
+        const fullProd = (productsData as any[]).find((p) => String(p.id) === String(comp.id));
+        if (!fullProd) return true;
+        return isProductInStock(fullProd);
+      });
+      return allComponentsInStock && isProductInStock(product);
+    }
     return isProductInStock(product);
-  }, [product]);
+  }, [product, isGroupedProduct, comboIncludedProducts]);
 
   // Stock status of currently selected or general product (strictly follows admin stock status)
   const isOutOfStock = useMemo(() => {
@@ -368,48 +429,6 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       .slice(0, 4);
   }, [product]);
 
-  // Grouped / Combo product helpers
-  const isGroupedProduct = Boolean(
-    product?.type === 'grouped' || 
-    product?.productType === 'grouped' || 
-    product?.type === 'combo'
-  );
-
-  const comboIncludedProducts = useMemo(() => {
-    if (!isGroupedProduct) return [];
-    if (product?.groupedProducts && Array.isArray(product.groupedProducts) && product.groupedProducts.length > 0) {
-      return product.groupedProducts;
-    }
-    if (product?.groupedProductIds && Array.isArray(product.groupedProductIds)) {
-      return product.groupedProductIds
-        .map((pid: string) => {
-          const match = (productsData as any[]).find((p) => String(p.id) === String(pid));
-          if (!match) return null;
-          return {
-            id: match.id,
-            name: match.name,
-            image: match.displayImage || match.imageUrls?.[0] || '/dwstore_logo.png',
-            regularPrice: (match.regularPriceMinor || 0) / 100,
-            salePrice: (match.salePriceMinor || match.minPriceMinor || 0) / 100,
-            sku: match.sku,
-            slug: match.slug,
-          };
-        })
-        .filter(Boolean);
-    }
-    return [];
-  }, [isGroupedProduct, product]);
-
-  const comboTotalItemsValue = useMemo(() => {
-    if (!comboIncludedProducts.length) return 0;
-    return comboIncludedProducts.reduce((sum: number, item: any) => {
-      const p = item.salePrice || item.regularPrice || 0;
-      return sum + p;
-    }, 0);
-  }, [comboIncludedProducts]);
-
-  const comboSavings = Math.max(0, comboTotalItemsValue - (activePriceMinor / 100));
-
   const handleAddToCart = () => {
     setValidationError(null);
 
@@ -442,6 +461,8 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       priceMinor: activePriceMinor,
       regularPriceMinor: activeRegularPriceMinor,
       quantity,
+      isGrouped: isGroupedProduct,
+      groupedProducts: isGroupedProduct ? comboIncludedProducts : undefined,
       variation: matchedVariation
         ? {
             id: matchedVariation.id,
@@ -486,6 +507,8 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       priceMinor: activePriceMinor,
       regularPriceMinor: activeRegularPriceMinor,
       quantity,
+      isGrouped: isGroupedProduct,
+      groupedProducts: isGroupedProduct ? comboIncludedProducts : undefined,
       variation: matchedVariation
         ? {
             id: matchedVariation.id,
@@ -721,7 +744,7 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 text-[10px] text-purple-600 font-bold mb-0.5">
                             <CheckCircle2 className="w-3 h-3 text-purple-600 shrink-0" />
-                            <span>Included Item #{idx + 1}</span>
+                            <span>Included Item #{idx + 1} {item.quantity && item.quantity > 1 ? `(Qty: ${item.quantity})` : ''}</span>
                           </div>
                           {item.slug ? (
                             <Link
@@ -736,11 +759,18 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
                               {item.name}
                             </div>
                           )}
-                          {itemPrice > 0 && (
-                            <div className="text-[11px] text-slate-500 font-medium">
-                              Valued at <span className="font-bold text-slate-700">LKR {Number(itemPrice).toLocaleString()}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {itemPrice > 0 && (
+                              <span className="text-[11px] text-slate-500 font-medium">
+                                Valued at <strong className="text-slate-700">LKR {Number(itemPrice * (item.quantity || 1)).toLocaleString()}</strong>
+                              </span>
+                            )}
+                            {(item.productType === 'variable' || item.type === 'variable') && (
+                              <span className="text-[9px] font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                                Any available variation
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );

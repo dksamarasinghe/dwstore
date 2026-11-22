@@ -70,6 +70,8 @@ export interface ProductItem {
     salePrice?: number;
     sku?: string;
     slug?: string;
+    quantity?: number;
+    productType?: string;
   }>;
   regularPrice: number;
   salePrice: number;
@@ -159,6 +161,19 @@ export interface OrderItem {
     quantity: number;
     price: number;
     image?: string;
+    isGrouped?: boolean;
+    groupedProducts?: any[];
+    componentsSnapshot?: Array<{
+      originalProductId: string;
+      name: string;
+      type?: string;
+      sku?: string;
+      componentQty?: number;
+      totalQty?: number;
+      selectedVariationId?: string;
+      selectedVariationSku?: string;
+      selectedVariationAttributes?: Record<string, string>;
+    }>;
   }[];
   notes?: string;
   returnRecord?: ReturnRecord;

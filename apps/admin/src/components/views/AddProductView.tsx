@@ -309,6 +309,17 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
     }
     return [];
   });
+  const [groupedProductQuantities, setGroupedProductQuantities] = useState<Record<string, number>>(() => {
+    const init: Record<string, number> = {};
+    if ((initialProduct as any)?.groupedProducts && Array.isArray((initialProduct as any).groupedProducts)) {
+      (initialProduct as any).groupedProducts.forEach((gp: any) => {
+        if (gp && gp.id) {
+          init[String(gp.id)] = Number(gp.quantity) || 1;
+        }
+      });
+    }
+    return init;
+  });
   const [groupSearchQuery, setGroupSearchQuery] = useState('');
   const [groupSearchOpen, setGroupSearchOpen] = useState(false);
 
@@ -340,13 +351,14 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       .filter(Boolean) as ProductItem[];
   }, [groupedProductIds, catalogItems]);
 
-  // Combined sum of standard selling prices
+  // Combined sum of standard selling prices (accounting for component quantities)
   const totalBundleRegularValue = useMemo(() => {
     return selectedGroupedProducts.reduce((sum, p) => {
       const reg = p.regularPrice || (p.regularPriceMinor ? p.regularPriceMinor / 100 : 0) || (p.salePrice || 0);
-      return sum + reg;
+      const qty = groupedProductQuantities[String(p.id)] || 1;
+      return sum + (reg * qty);
     }, 0);
-  }, [selectedGroupedProducts]);
+  }, [selectedGroupedProducts, groupedProductQuantities]);
 
   // 2. Basic Information (Completely blank if adding new!)
   const resolveInitialCategory = (prod?: any): string => {
@@ -1123,6 +1135,21 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       ? (enteredSaleP > 0 ? enteredSaleP : finalReg)
       : (productType === 'variable' ? (saleP > 0 ? saleP : defaultSale) : saleP);
 
+    if (productType === 'grouped') {
+      if (selectedGroupedProducts.length < 2) {
+        showNotification('A Group Product (Combo Deal) must contain at least 2 products.');
+        return;
+      }
+      if (finalSale > finalReg) {
+        showNotification('Combo Discounted Price cannot be higher than Combo Total Price.');
+        return;
+      }
+      if (finalSale <= 0) {
+        showNotification('Combo Discounted Price must be greater than 0.');
+        return;
+      }
+    }
+
     const stockQty =
       productType === 'variable' && variations.length > 0
         ? variations.reduce((sum, v) => sum + (v.stock || 0), 0)
@@ -1195,6 +1222,8 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
           image: p.displayImage || p.image || (p.imageUrls && p.imageUrls[0]) || '',
           regularPrice: p.regularPrice || (p.regularPriceMinor ? p.regularPriceMinor / 100 : 0) || (p.salePrice || 0),
           salePrice: p.salePrice || (p.salePriceMinor ? p.salePriceMinor / 100 : 0) || (p.regularPrice || 0),
+          quantity: groupedProductQuantities[String(p.id)] || 1,
+          productType: p.productType || p.type || ((p.variations && p.variations.length > 0) ? 'variable' : 'simple'),
           slug: (p as any).slug || String(p.id),
           brand: p.brand || '',
         }))
@@ -3005,10 +3034,42 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                               </div>
 
                               <div className="d-flex align-items-center gap-3 flex-shrink-0 ms-3">
+                                {/* Component Quantity Controller */}
+                                <div className="d-flex align-items-center gap-1.5 px-2 py-1 rounded-2 border" style={{ background: 'var(--hover)', borderColor: 'var(--border)' }}>
+                                  <span className="text-muted" style={{ fontSize: '11px', fontWeight: 600 }}>Qty:</span>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-link p-0 text-decoration-none fw-bold text-muted"
+                                    style={{ width: '18px', height: '18px', lineHeight: '18px', textAlign: 'center' }}
+                                    onClick={() => {
+                                      const cur = groupedProductQuantities[String(p.id)] || 1;
+                                      if (cur > 1) {
+                                        setGroupedProductQuantities(prev => ({ ...prev, [String(p.id)]: cur - 1 }));
+                                      }
+                                    }}
+                                  >
+                                    -
+                                  </button>
+                                  <span className="fw-bold px-1" style={{ fontSize: '12px', minWidth: '16px', textAlign: 'center', color: 'var(--text)' }}>
+                                    {groupedProductQuantities[String(p.id)] || 1}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-link p-0 text-decoration-none fw-bold text-muted"
+                                    style={{ width: '18px', height: '18px', lineHeight: '18px', textAlign: 'center' }}
+                                    onClick={() => {
+                                      const cur = groupedProductQuantities[String(p.id)] || 1;
+                                      setGroupedProductQuantities(prev => ({ ...prev, [String(p.id)]: cur + 1 }));
+                                    }}
+                                  >
+                                    +
+                                  </button>
+                                </div>
+
                                 <div className="text-end">
                                   <span className="text-muted d-block" style={{ fontSize: '10px' }}>Item Price</span>
                                   <span className="fw-bold" style={{ fontSize: '13px', color: 'var(--text)' }}>
-                                    Rs. {pPrice.toLocaleString()}
+                                    Rs. {(pPrice * (groupedProductQuantities[String(p.id)] || 1)).toLocaleString()}
                                   </span>
                                 </div>
                                 <button

@@ -116,6 +116,24 @@ export default function CartDrawer() {
                           ))}
                         </div>
                       )}
+
+                      {item.isGrouped && item.groupedProducts && item.groupedProducts.length > 0 && (
+                        <div className="mt-1.5 p-1.5 bg-purple-50/80 border border-purple-100 rounded-lg">
+                          <span className="text-[10px] font-bold text-purple-800 block mb-0.5">
+                            Combo Includes ({item.groupedProducts.length} items):
+                          </span>
+                          <ul className="space-y-0.5 text-[10px] text-slate-600">
+                            {item.groupedProducts.map((gp, gIdx) => (
+                              <li key={gp.id || gIdx} className="flex items-center gap-1">
+                                <span className="text-purple-500">•</span>
+                                <span className="line-clamp-1">
+                                  {gp.name} {gp.quantity && gp.quantity > 1 ? `× ${gp.quantity}` : ''}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">

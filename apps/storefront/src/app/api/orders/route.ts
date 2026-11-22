@@ -101,6 +101,123 @@ export async function POST(req: NextRequest) {
       cleanPaymentMethod = 'Cash on Delivery (COD)';
     }
 
+    const productsCatalog = readDataJson<any[]>('products.json', []);
+    let productsUpdated = false;
+
+    const mappedItems = (body.items || []).map((it: any) => {
+      let varText = it.variationText || '';
+      if (!varText && it.variation?.attributes && typeof it.variation.attributes === 'object') {
+        varText = Object.entries(it.variation.attributes)
+          .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
+          .join(', ');
+      } else if (!varText && it.attributes && typeof it.attributes === 'object') {
+        varText = Object.entries(it.attributes)
+          .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
+          .join(', ');
+      }
+
+      const isGroupedItem = Boolean(it.isGrouped || it.productType === 'grouped' || it.type === 'grouped');
+      let componentsSnapshot: any[] | undefined = undefined;
+
+      if (isGroupedItem) {
+        // Find component items from it.groupedProducts or the product in catalog
+        const catalogProd = productsCatalog.find((p) => String(p.id) === String(it.productId || it.id));
+        const compsList = (Array.isArray(it.groupedProducts) && it.groupedProducts.length > 0)
+          ? it.groupedProducts
+          : (catalogProd?.groupedProducts || []);
+
+        componentsSnapshot = compsList.map((comp: any) => {
+          const compQty = Number(comp.quantity) || 1;
+          const totalQty = compQty * (Number(it.quantity) || 1);
+          const fullComp = productsCatalog.find((p) => String(p.id) === String(comp.id));
+
+          let selectedVariationId = '';
+          let selectedVariationSku = '';
+          let selectedVariationAttributes: any = undefined;
+
+          if (fullComp) {
+            const isVar = fullComp.productType === 'variable' || fullComp.type === 'variable' || (fullComp.variations && fullComp.variations.length > 0);
+            if (isVar && Array.isArray(fullComp.variations) && fullComp.variations.length > 0) {
+              // Section 3.3 & Section 12.2: Select an available in-stock variation
+              const availVar = fullComp.variations.find((v: any) => {
+                const isOut = v.stockStatus === 'Out of Stock' || v.stockStatus === 'out_of_stock' || v.status === 'Out of stock' || v.inStock === false;
+                const stockCount = v.stockQty !== undefined ? Number(v.stockQty) : (v.stock !== undefined ? Number(v.stock) : 10);
+                return !isOut && stockCount >= totalQty;
+              }) || fullComp.variations.find((v: any) => v.inStock !== false) || fullComp.variations[0];
+
+              if (availVar) {
+                selectedVariationId = String(availVar.id);
+                selectedVariationSku = availVar.sku || '';
+                selectedVariationAttributes = availVar.attributes || {};
+
+                // Deduct stock from selected variation
+                if (availVar.stockQty !== undefined && availVar.stockQty !== null) {
+                  availVar.stockQty = Math.max(0, Number(availVar.stockQty) - totalQty);
+                }
+                if (availVar.stock !== undefined && availVar.stock !== null) {
+                  availVar.stock = Math.max(0, Number(availVar.stock) - totalQty);
+                }
+                productsUpdated = true;
+              }
+            } else {
+              // Simple product stock deduction
+              if (fullComp.stockQty !== undefined && fullComp.stockQty !== null) {
+                fullComp.stockQty = Math.max(0, Number(fullComp.stockQty) - totalQty);
+                productsUpdated = true;
+              }
+              if (fullComp.stock !== undefined && fullComp.stock !== null) {
+                fullComp.stock = Math.max(0, Number(fullComp.stock) - totalQty);
+                productsUpdated = true;
+              }
+            }
+          }
+
+          return {
+            originalProductId: String(comp.id),
+            name: fullComp?.name || comp.name || 'Component Item',
+            type: fullComp?.productType || fullComp?.type || (fullComp?.variations?.length ? 'variable' : 'simple'),
+            sku: fullComp?.sku || comp.sku || '',
+            componentQty: compQty,
+            totalQty,
+            selectedVariationId,
+            selectedVariationSku,
+            selectedVariationAttributes,
+          };
+        });
+      } else {
+        // Standard item stock deduction
+        const catalogProd = productsCatalog.find((p) => String(p.id) === String(it.productId || it.id));
+        if (catalogProd) {
+          const orderQty = Number(it.quantity) || 1;
+          if (it.variation?.id && Array.isArray(catalogProd.variations)) {
+            const v = catalogProd.variations.find((varItem: any) => String(varItem.id) === String(it.variation.id));
+            if (v) {
+              if (v.stockQty !== undefined && v.stockQty !== null) v.stockQty = Math.max(0, Number(v.stockQty) - orderQty);
+              if (v.stock !== undefined && v.stock !== null) v.stock = Math.max(0, Number(v.stock) - orderQty);
+              productsUpdated = true;
+            }
+          } else {
+            if (catalogProd.stockQty !== undefined && catalogProd.stockQty !== null) catalogProd.stockQty = Math.max(0, Number(catalogProd.stockQty) - orderQty);
+            if (catalogProd.stock !== undefined && catalogProd.stock !== null) catalogProd.stock = Math.max(0, Number(catalogProd.stock) - orderQty);
+            productsUpdated = true;
+          }
+        }
+      }
+
+      return {
+        ...it,
+        isGrouped: isGroupedItem,
+        componentsSnapshot,
+        productTitle: it.productTitle || it.name || it.title || 'Product',
+        variationText: varText,
+        price: it.price || (it.priceMinor ? it.priceMinor / 100 : 0),
+      };
+    });
+
+    if (productsUpdated) {
+      writeDataJson('products.json', productsCatalog);
+    }
+
     const newOrder = {
       orderId: body.orderId || `DWS-${Date.now().toString().slice(-6)}`,
       createdAt: body.createdAt || new Date().toISOString(),
@@ -123,23 +240,7 @@ export async function POST(req: NextRequest) {
       district: body.district || body.customer?.district || 'Colombo',
       postalCode: body.postalCode || body.customer?.postalCode || '',
       notes: body.notes || body.orderNotes || body.customer?.orderNotes || '',
-      items: (body.items || []).map((it: any) => {
-        let varText = it.variationText || '';
-        if (!varText && it.variation?.attributes && typeof it.variation.attributes === 'object') {
-          varText = Object.entries(it.variation.attributes)
-            .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
-            .join(', ');
-        } else if (!varText && it.attributes && typeof it.attributes === 'object') {
-          varText = Object.entries(it.attributes)
-            .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
-            .join(', ');
-        }
-        return {
-          ...it,
-          productTitle: it.productTitle || it.name || it.title || 'Product',
-          variationText: varText,
-        };
-      }),
+      items: mappedItems,
       subtotalMinor: body.subtotalMinor || (body.subtotal ? Math.round(body.subtotal * 100) : 0),
       shippingFeeMinor: body.shippingFeeMinor || (body.shippingCost ? Math.round(body.shippingCost * 100) : 0),
       totalMinor: body.totalMinor || (body.total ? Math.round(body.total * 100) : 0),
@@ -289,6 +390,46 @@ export async function PATCH(req: NextRequest) {
     if (notes) {
       orders[index].notes = notes;
       orders[index].customer.orderNotes = notes;
+    }
+
+    // Section 12.4 & Section 14: Restore stock if order is cancelled or refunded
+    const isNewCancellation = (status === 'cancelled' || status === 'refunded') &&
+      orders[index].status !== 'cancelled' && orders[index].status !== 'refunded';
+
+    if (isNewCancellation) {
+      try {
+        const productsCatalog = readDataJson<any[]>('products.json', []);
+        let productsRestored = false;
+
+        (orders[index].items || []).forEach((it: any) => {
+          if (it.isGrouped && Array.isArray(it.componentsSnapshot)) {
+            it.componentsSnapshot.forEach((comp: any) => {
+              const fullComp = productsCatalog.find((p) => String(p.id) === String(comp.originalProductId));
+              if (fullComp) {
+                const restoreQty = Number(comp.totalQty) || 1;
+                if (comp.selectedVariationId && Array.isArray(fullComp.variations)) {
+                  const v = fullComp.variations.find((vItem: any) => String(vItem.id) === String(comp.selectedVariationId));
+                  if (v) {
+                    if (v.stockQty !== undefined && v.stockQty !== null) v.stockQty = Number(v.stockQty) + restoreQty;
+                    if (v.stock !== undefined && v.stock !== null) v.stock = Number(v.stock) + restoreQty;
+                    productsRestored = true;
+                  }
+                } else {
+                  if (fullComp.stockQty !== undefined && fullComp.stockQty !== null) fullComp.stockQty = Number(fullComp.stockQty) + restoreQty;
+                  if (fullComp.stock !== undefined && fullComp.stock !== null) fullComp.stock = Number(fullComp.stock) + restoreQty;
+                  productsRestored = true;
+                }
+              }
+            });
+          }
+        });
+
+        if (productsRestored) {
+          writeDataJson('products.json', productsCatalog);
+        }
+      } catch (e) {
+        console.error('Stock restoration error on cancellation:', e);
+      }
     }
 
     saveOrders(orders);

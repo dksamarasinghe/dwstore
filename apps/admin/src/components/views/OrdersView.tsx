@@ -672,6 +672,11 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                         <div style={{ maxWidth: '240px' }}>
                           <small className="d-block text-truncate" title={order?.items?.[0]?.productTitle}>
                             {order?.items?.[0]?.productTitle || 'DW Product'}
+                            {order?.items?.[0]?.isGrouped && (
+                              <span className="badge rounded-pill ms-1" style={{ background: '#7c3aed', color: '#fff', fontSize: '9px', padding: '1px 5px' }}>
+                                Combo
+                              </span>
+                            )}
                             {order?.items?.[0]?.variationText && (
                               <span className="ms-1 text-primary fw-semibold" style={{ fontSize: '11px' }}>
                                 ({order.items[0].variationText})
@@ -934,32 +939,69 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                 {selectedOrder.items?.map((item, idx) => (
                   <div
                     key={idx}
-                    className="d-flex align-items-center justify-content-between p-2 rounded-2"
+                    className="p-2 rounded-2"
                     style={{ background: 'var(--hover)' }}
                   >
-                    <div>
-                      <div className="d-flex align-items-center gap-2 flex-wrap">
-                        <b>{item.productTitle}</b>
-                        {item.variationText && (
-                          <span
-                            className="badge text-body border"
-                            style={{
-                              background: 'var(--bg)',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                            }}
-                          >
-                            {item.variationText}
-                          </span>
-                        )}
+                    <div className="d-flex align-items-center justify-content-between">
+                      <div>
+                        <div className="d-flex align-items-center gap-2 flex-wrap">
+                          <b>{item.productTitle}</b>
+                          {item.isGrouped && (
+                            <span
+                              className="badge rounded-pill"
+                              style={{ background: '#7c3aed', color: '#fff', fontSize: '10px', padding: '2px 7px' }}
+                            >
+                              Combo Deal
+                            </span>
+                          )}
+                          {item.variationText && (
+                            <span
+                              className="badge text-body border"
+                              style={{
+                                background: 'var(--bg)',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                              }}
+                            >
+                              {item.variationText}
+                            </span>
+                          )}
+                        </div>
+                        <small className="d-block text-muted">
+                          Qty: {item.quantity} × Rs. {item.price.toLocaleString()}
+                        </small>
                       </div>
-                      <small className="d-block text-muted">
-                        Qty: {item.quantity} × Rs. {item.price.toLocaleString()}
-                      </small>
+                      <b>Rs. {(item.quantity * item.price).toLocaleString()}</b>
                     </div>
-                    <b>Rs. {(item.quantity * item.price).toLocaleString()}</b>
+
+                    {/* Section 13: Grouped Product Component Snapshot */}
+                    {(item.isGrouped || (item.componentsSnapshot && item.componentsSnapshot.length > 0)) && (
+                      <div className="mt-2 p-2 rounded-2 border" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+                        <span className="text-muted d-block mb-1 fw-bold" style={{ fontSize: '11px' }}>
+                          📦 Bundle Components Snapshot ({item.componentsSnapshot?.length || item.groupedProducts?.length || 0} items):
+                        </span>
+                        <div className="d-flex flex-column gap-1" style={{ fontSize: '11px' }}>
+                          {(item.componentsSnapshot || item.groupedProducts || []).map((comp: any, cIdx: number) => (
+                            <div key={comp.originalProductId || comp.id || cIdx} className="d-flex align-items-center justify-content-between text-muted">
+                              <span>
+                                • <strong className="text-body">{comp.name}</strong> {comp.componentQty > 1 ? `(×${comp.componentQty})` : ''}
+                                {comp.selectedVariationAttributes && (
+                                  <span className="ms-1 text-primary fw-medium">
+                                    [{Object.entries(comp.selectedVariationAttributes).map(([k, v]) => `${k}: ${v}`).join(', ')}]
+                                  </span>
+                                )}
+                                {comp.type === 'variable' && !comp.selectedVariationAttributes && (
+                                  <span className="ms-1 text-primary fw-medium">[Any Available Variant]</span>
+                                )}
+                              </span>
+                              <span>Total: {comp.totalQty || (comp.quantity ? comp.quantity * item.quantity : item.quantity)} pcs</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

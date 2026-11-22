@@ -12,6 +12,18 @@ export interface CartItem {
   priceMinor: number;
   regularPriceMinor?: number | null;
   quantity: number;
+  isGrouped?: boolean;
+  groupedProducts?: Array<{
+    id: string;
+    name: string;
+    image?: string;
+    regularPrice?: number;
+    salePrice?: number;
+    sku?: string;
+    slug?: string;
+    quantity?: number;
+    productType?: string;
+  }>;
   variation?: {
     id?: string;
     attributes: Record<string, string>;
