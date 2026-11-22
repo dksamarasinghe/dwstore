@@ -1233,10 +1233,8 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       id: initialProduct?.id || `prod-${Date.now()}`,
       name: productName.trim(),
       sku: finalSku,
-      brand: brand.trim() || (productType === 'grouped' ? 'DWstore' : 'Generic'),
-      category: productType === 'grouped' && (!selectedCategory.trim() || selectedCategory === 'Uncategorized')
-        ? 'Combo Deals'
-        : (selectedCategory.trim() || 'SmartWatches'),
+      brand: productType === 'grouped' ? 'DWstore' : (brand.trim() || 'Generic'),
+      category: productType === 'grouped' ? 'Combo Deals' : (selectedCategory.trim() || 'SmartWatches'),
       productType,
       type: productType,
       groupedProductIds: productType === 'grouped' ? groupedProductIds : undefined,
@@ -1475,7 +1473,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
 
               {/* SKU, Categories & Brand */}
               <div className="row g-3">
-                <div className="col-12 col-md-3">
+                <div className={productType === 'grouped' ? 'col-12 col-md-5' : 'col-12 col-md-3'}>
                   <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
                     SKU (Optional)
                   </label>
@@ -1498,8 +1496,31 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                   </small>
                 </div>
 
-                {/* Searchable Hierarchical Category Selector */}
-                <div className="col-12 col-md-5 position-relative" style={{ zIndex: 35 }}>
+                {productType === 'grouped' ? (
+                  <div className="col-12 col-md-7 d-flex align-items-center">
+                    <div
+                      className="w-100 p-2.5 rounded-2 d-flex align-items-center gap-2.5"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%)',
+                        border: '1px solid rgba(124, 58, 237, 0.25)',
+                        fontSize: '12px'
+                      }}
+                    >
+                      <span className="p-1 rounded bg-purple-subtle text-purple fw-bold" style={{ fontSize: '16px' }}>📦</span>
+                      <div style={{ lineHeight: 1.35 }}>
+                        <strong className="d-block text-purple-950" style={{ fontSize: '12px' }}>
+                          Category &amp; Brand Not Required for Combo Deals
+                        </strong>
+                        <span className="text-muted" style={{ fontSize: '11px' }}>
+                          Original products preserve their individual Categories &amp; Brands without any changes.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Searchable Hierarchical Category Selector */}
+                    <div className="col-12 col-md-5 position-relative" style={{ zIndex: 35 }}>
                   <div className="d-flex justify-content-between align-items-center mb-1">
                     <label className="text-muted m-0" style={{ fontSize: '13px', fontWeight: 600 }}>
                       Categories (Hierarchical)
@@ -1802,8 +1823,10 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
+              </>
+            )}
+          </div>
+        </div>
 
             {/* 3. Product Media & Gallery Card (VPS Self-Hosted Storage) */}
             <div className="card-x mb-4 shadow-sm">
