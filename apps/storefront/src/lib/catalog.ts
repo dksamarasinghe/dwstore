@@ -36,6 +36,19 @@ export interface Product {
   seoTitle?: string;
   seoDescription?: string;
   variations: ProductVariation[];
+  groupedProductIds?: string[];
+  groupedProducts?: Array<{
+    id: string;
+    name: string;
+    slug?: string;
+    image?: string;
+    displayImage?: string;
+    regularPriceMinor?: number;
+    salePriceMinor?: number;
+    regularPrice?: number;
+    salePrice?: number;
+    brand?: string;
+  }>;
   sourceSystem: string;
   sourceId: string;
 }

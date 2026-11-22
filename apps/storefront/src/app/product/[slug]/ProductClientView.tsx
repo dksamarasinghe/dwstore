@@ -25,7 +25,8 @@ import {
   MessageCircle,
   GitCompare,
   Zap,
-  PhoneCall
+  PhoneCall,
+  Package
 } from 'lucide-react';
 
 export function ProductClientView({ slug, initialProduct }: { slug: string; initialProduct?: any }) {
@@ -367,6 +368,48 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       .slice(0, 4);
   }, [product]);
 
+  // Grouped / Combo product helpers
+  const isGroupedProduct = Boolean(
+    product?.type === 'grouped' || 
+    product?.productType === 'grouped' || 
+    product?.type === 'combo'
+  );
+
+  const comboIncludedProducts = useMemo(() => {
+    if (!isGroupedProduct) return [];
+    if (product?.groupedProducts && Array.isArray(product.groupedProducts) && product.groupedProducts.length > 0) {
+      return product.groupedProducts;
+    }
+    if (product?.groupedProductIds && Array.isArray(product.groupedProductIds)) {
+      return product.groupedProductIds
+        .map((pid: string) => {
+          const match = (productsData as any[]).find((p) => String(p.id) === String(pid));
+          if (!match) return null;
+          return {
+            id: match.id,
+            name: match.name,
+            image: match.displayImage || match.imageUrls?.[0] || '/dwstore_logo.png',
+            regularPrice: (match.regularPriceMinor || 0) / 100,
+            salePrice: (match.salePriceMinor || match.minPriceMinor || 0) / 100,
+            sku: match.sku,
+            slug: match.slug,
+          };
+        })
+        .filter(Boolean);
+    }
+    return [];
+  }, [isGroupedProduct, product]);
+
+  const comboTotalItemsValue = useMemo(() => {
+    if (!comboIncludedProducts.length) return 0;
+    return comboIncludedProducts.reduce((sum: number, item: any) => {
+      const p = item.salePrice || item.regularPrice || 0;
+      return sum + p;
+    }, 0);
+  }, [comboIncludedProducts]);
+
+  const comboSavings = Math.max(0, comboTotalItemsValue - (activePriceMinor / 100));
+
   const handleAddToCart = () => {
     setValidationError(null);
 
@@ -576,6 +619,12 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
               </div>
 
               {/* Title */}
+              {isGroupedProduct && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-xs font-black uppercase tracking-wider mb-2 shadow-xs">
+                  <Package className="w-3.5 h-3.5" />
+                  <span>Combo Deal Package</span>
+                </div>
+              )}
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight leading-snug">
                 {product.name}
               </h1>
@@ -624,6 +673,92 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
                     ''
               }
             />
+
+            {/* Included Products in Combo Deal (Grouped Product) */}
+            {isGroupedProduct && comboIncludedProducts.length > 0 && (
+              <div className="bg-gradient-to-br from-purple-50 via-indigo-50/40 to-blue-50 border-2 border-purple-200 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xs">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-purple-200/80">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 bg-purple-600 text-white rounded-lg shadow-xs">
+                      <Package className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-black text-purple-950 uppercase tracking-wide">
+                        Package Includes ({comboIncludedProducts.length} Items)
+                      </h3>
+                      <p className="text-[11px] text-purple-700 font-medium">
+                        මෙම Combo පැකේජය සමග ඔබට ලැබෙන සියලුම භාණ්ඩ
+                      </p>
+                    </div>
+                  </div>
+                  {comboSavings > 0 && (
+                    <span className="bg-emerald-600 text-white text-[11px] font-black px-2.5 py-1 rounded-full shadow-xs">
+                      Save LKR {Math.round(comboSavings).toLocaleString()} as a Combo!
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {comboIncludedProducts.map((item: any, idx: number) => {
+                    const itemPrice = item.salePrice || item.regularPrice;
+                    return (
+                      <div
+                        key={item.id || idx}
+                        className="flex items-center gap-3 p-2.5 bg-white rounded-xl border border-purple-100 hover:border-purple-300 transition shadow-xs"
+                      >
+                        <div className="w-12 h-12 bg-slate-50 rounded-lg p-1 border border-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
+                          <img
+                            src={resolveImageUrl(item.image)}
+                            alt={item.name}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.src = '/dwstore_logo.png';
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 text-[10px] text-purple-600 font-bold mb-0.5">
+                            <CheckCircle2 className="w-3 h-3 text-purple-600 shrink-0" />
+                            <span>Included Item #{idx + 1}</span>
+                          </div>
+                          {item.slug ? (
+                            <Link
+                              href={`/product/${item.slug}`}
+                              target="_blank"
+                              className="text-xs font-bold text-slate-800 hover:text-blue-600 line-clamp-1 block"
+                            >
+                              {item.name}
+                            </Link>
+                          ) : (
+                            <div className="text-xs font-bold text-slate-800 line-clamp-1">
+                              {item.name}
+                            </div>
+                          )}
+                          {itemPrice > 0 && (
+                            <div className="text-[11px] text-slate-500 font-medium">
+                              Valued at <span className="font-bold text-slate-700">LKR {Number(itemPrice).toLocaleString()}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {comboTotalItemsValue > 0 && (
+                  <div className="pt-2 border-t border-purple-200/60 flex items-center justify-between text-xs">
+                    <span className="text-slate-600 font-medium">
+                      Total Individual Value: <span className="line-through text-slate-400">LKR {Math.round(comboTotalItemsValue).toLocaleString()}</span>
+                    </span>
+                    <span className="font-bold text-purple-900">
+                      Combo Deal Price: <span className="text-sm font-black text-purple-700">LKR {formatPriceLKR(activePriceMinor)}</span>
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Bullet Highlights / Short Description */}
             {formattedShortDescription && (

@@ -1725,6 +1725,7 @@ export default function App() {
               initialProduct={editingProductForForm}
               onAddProduct={handleAddProduct}
               onUpdateProduct={handleUpdateProduct}
+              products={products}
               categories={categories}
               onAddCategory={handleAddCategory}
               brands={brands}

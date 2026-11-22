@@ -537,6 +537,11 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                                   Variable ({prod.variations?.length || 0})
                                 </span>
                               )}
+                              {(prod.productType === 'grouped' || prod.type === 'grouped' || (prod as any).type === 'combo') && (
+                                <span className="badge text-white" style={{ fontSize: '10px', padding: '2px 6px', background: '#7c3aed' }}>
+                                  Combo Deal ({prod.groupedProductIds?.length || (prod as any).groupedProducts?.length || 0} items)
+                                </span>
+                              )}
                             </small>
                           </div>
                         </div>

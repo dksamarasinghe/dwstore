@@ -59,10 +59,22 @@ export interface ProductItem {
   sku: string;
   brand: string;
   category: string;
-  productType?: 'simple' | 'variable';
-  type?: 'simple' | 'variable';
+  productType?: 'simple' | 'variable' | 'grouped';
+  type?: 'simple' | 'variable' | 'grouped';
+  groupedProductIds?: string[];
+  groupedProducts?: Array<{
+    id: string;
+    name: string;
+    image?: string;
+    regularPrice?: number;
+    salePrice?: number;
+    sku?: string;
+    slug?: string;
+  }>;
   regularPrice: number;
   salePrice: number;
+  regularPriceMinor?: number;
+  salePriceMinor?: number;
   costPrice?: number;
   stock: number;
   stockAlertLevel?: number;

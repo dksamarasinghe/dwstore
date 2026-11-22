@@ -12,7 +12,7 @@ import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { resolveImageUrl } from '@/lib/image';
-import { Star, ShoppingCart, Heart, SlidersHorizontal, ChevronRight, X, Check, Filter } from 'lucide-react';
+import { Star, ShoppingCart, Heart, SlidersHorizontal, ChevronRight, X, Check, Filter, Package } from 'lucide-react';
 import { useLiveProducts, getProductTimestamp } from '@/lib/useLiveProducts';
 
 function ShopContent() {
@@ -33,6 +33,9 @@ function ShopContent() {
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'name'>('featured');
   const [onlyDeals, setOnlyDeals] = useState<boolean>(
     () => searchParams.get('filter') === 'deals'
+  );
+  const [onlyCombos, setOnlyCombos] = useState<boolean>(
+    () => searchParams.get('filter') === 'combos' || searchParams.get('combo') === 'true'
   );
   const [stockFilter, setStockFilter] = useState<'all' | 'in-stock' | 'out-of-stock'>(
     () => (searchParams.get('stock') as any) || 'all'
@@ -117,6 +120,7 @@ function ShopContent() {
     const br = searchParams.get('brand') || 'all';
     const q = searchParams.get('q') || '';
     const filter = searchParams.get('filter') || 'all';
+    const combo = searchParams.get('combo') === 'true';
     const stock = (searchParams.get('stock') as any) || 'all';
     const minP = searchParams.get('minPrice') || '';
     const maxP = searchParams.get('maxPrice') || '';
@@ -125,6 +129,7 @@ function ShopContent() {
     setSelectedBrand(br);
     setSearchQuery(q);
     setOnlyDeals(filter === 'deals');
+    setOnlyCombos(filter === 'combos' || combo);
     setStockFilter(stock);
     setMinPrice(minP);
     setMaxPrice(maxP);
@@ -139,6 +144,7 @@ function ShopContent() {
     brand?: string;
     q?: string;
     deals?: boolean;
+    combos?: boolean;
     stock?: 'all' | 'in-stock' | 'out-of-stock';
     minPrice?: string;
     maxPrice?: string;
@@ -147,6 +153,7 @@ function ShopContent() {
     const nextBrand = newParams.brand !== undefined ? newParams.brand : selectedBrand;
     const nextQ = newParams.q !== undefined ? newParams.q : searchQuery;
     const nextDeals = newParams.deals !== undefined ? newParams.deals : onlyDeals;
+    const nextCombos = newParams.combos !== undefined ? newParams.combos : onlyCombos;
     const nextStock = newParams.stock !== undefined ? newParams.stock : stockFilter;
     const nextMin = newParams.minPrice !== undefined ? newParams.minPrice : minPrice;
     const nextMax = newParams.maxPrice !== undefined ? newParams.maxPrice : maxPrice;
@@ -155,6 +162,7 @@ function ShopContent() {
     setSelectedBrand(nextBrand);
     setSearchQuery(nextQ);
     setOnlyDeals(nextDeals);
+    setOnlyCombos(nextCombos);
     setStockFilter(nextStock);
     setMinPrice(nextMin);
     setMaxPrice(nextMax);
@@ -167,6 +175,7 @@ function ShopContent() {
     if (nextBrand && nextBrand !== 'all') query.set('brand', nextBrand);
     if (nextQ) query.set('q', nextQ);
     if (nextDeals) query.set('filter', 'deals');
+    else if (nextCombos) query.set('filter', 'combos');
     if (nextStock && nextStock !== 'all') query.set('stock', nextStock);
     if (nextMin) query.set('minPrice', nextMin);
     if (nextMax) query.set('maxPrice', nextMax);
@@ -224,6 +233,12 @@ function ShopContent() {
           return false;
         }
 
+        // Combos filter
+        if (onlyCombos) {
+          const isGrouped = p.type === 'grouped' || (p as any).productType === 'grouped' || p.type === 'combo';
+          if (!isGrouped) return false;
+        }
+
         // Stock filter (in-stock vs out-of-stock)
         const isInStock = isProductInStock(p);
         if (stockFilter === 'in-stock' && !isInStock) {
@@ -274,7 +289,7 @@ function ShopContent() {
 
         return 0;
       });
-  }, [allProducts, selectedCategory, selectedBrand, searchQuery, onlyDeals, stockFilter, minPrice, maxPrice, sortBy]);
+  }, [allProducts, selectedCategory, selectedBrand, searchQuery, onlyDeals, onlyCombos, stockFilter, minPrice, maxPrice, sortBy]);
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
   const paginatedProducts = filteredProducts.slice(
@@ -293,6 +308,7 @@ function ShopContent() {
     selectedBrand !== 'all' ||
     searchQuery ||
     onlyDeals ||
+    onlyCombos ||
     stockFilter !== 'all' ||
     Boolean(minPrice) ||
     Boolean(maxPrice);
@@ -327,8 +343,8 @@ function ShopContent() {
 
   const renderFilterSections = () => (
     <>
-      {/* Special Deals Toggle */}
-      <div>
+      {/* Special Deals & Combos Toggles */}
+      <div className="space-y-2">
         <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer select-none">
           <input
             type="checkbox"
@@ -339,6 +355,21 @@ function ShopContent() {
             className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
           />
           <span>Show Discounted Deals Only</span>
+        </label>
+
+        <label className="flex items-center gap-2 text-xs font-bold text-purple-700 bg-purple-50/80 hover:bg-purple-100 p-2 rounded-xl border border-purple-200 cursor-pointer select-none transition">
+          <input
+            type="checkbox"
+            checked={onlyCombos}
+            onChange={(e) => {
+              updateFilters({ combos: e.target.checked });
+            }}
+            className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+          />
+          <span className="flex items-center gap-1.5 font-bold">
+            <Package className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+            <span>Combo Deals (Grouped)</span>
+          </span>
         </label>
       </div>
 
@@ -585,6 +616,7 @@ function ShopContent() {
                   brand: 'all',
                   q: '',
                   deals: false,
+                  combos: false,
                   stock: 'all',
                   minPrice: '',
                   maxPrice: '',
@@ -601,6 +633,15 @@ function ShopContent() {
               <>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                 <span className="text-rose-600 font-bold">Hot Deals</span>
+              </>
+            )}
+
+            {onlyCombos && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-purple-700 font-bold flex items-center gap-1">
+                  <Package className="w-3 h-3 text-purple-600" /> Combo Deals
+                </span>
               </>
             )}
 
@@ -666,6 +707,7 @@ function ShopContent() {
                         brand: 'all',
                         q: '',
                         deals: false,
+                        combos: false,
                         stock: 'all',
                         minPrice: '',
                         maxPrice: '',
@@ -742,6 +784,7 @@ function ShopContent() {
                         brand: 'all',
                         q: '',
                         deals: false,
+                        combos: false,
                         stock: 'all',
                         minPrice: '',
                         maxPrice: '',
@@ -771,8 +814,14 @@ function ShopContent() {
                       key={product.id}
                       className="bg-white rounded-2xl border border-slate-200/90 p-3 flex flex-col justify-between hover:shadow-lg hover:border-blue-200 transition-all group relative"
                     >
-                      {/* Top Badges Container: Discount */}
+                      {/* Top Badges Container: Discount & Combo */}
                       <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 items-start">
+                        {(product.type === 'grouped' || (product as any).productType === 'grouped' || product.type === 'combo') && (
+                          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1">
+                            <Package className="w-2.5 h-2.5" />
+                            Combo Deal
+                          </div>
+                        )}
                         {discountPercent > 0 && (
                           <div className="bg-rose-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
                             -{discountPercent}%
@@ -1013,6 +1062,7 @@ function ShopContent() {
                         brand: 'all',
                         q: '',
                         deals: false,
+                        combos: false,
                         stock: 'all',
                         minPrice: '',
                         maxPrice: '',

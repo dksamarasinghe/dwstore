@@ -52,6 +52,31 @@ function normalizeProductCategory(p: any) {
   return p;
 }
 
+function populateGroupedProducts(p: any, allProducts: any[]) {
+  if (!p) return p;
+  if (p.type === 'grouped' || p.productType === 'grouped') {
+    const ids = Array.isArray(p.groupedProductIds) ? p.groupedProductIds : [];
+    if (ids.length > 0 && (!p.groupedProducts || p.groupedProducts.length === 0)) {
+      p.groupedProducts = ids.map((gId: string) => {
+        const found = allProducts.find((item) => String(item.id) === String(gId));
+        if (!found) return null;
+        return {
+          id: String(found.id),
+          name: found.name,
+          slug: found.slug,
+          image: found.displayImage || (found.imageUrls && found.imageUrls[0]) || '',
+          regularPriceMinor: found.regularPriceMinor || 0,
+          salePriceMinor: found.salePriceMinor || found.regularPriceMinor || 0,
+          regularPrice: (found.regularPriceMinor || 0) / 100,
+          salePrice: (found.salePriceMinor || found.regularPriceMinor || 0) / 100,
+          brand: found.brand || '',
+        };
+      }).filter(Boolean);
+    }
+  }
+  return p;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const idOrSlug = searchParams.get('id') || searchParams.get('slug');
@@ -62,10 +87,11 @@ export async function GET(req: NextRequest) {
     if (!found) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404, headers: CORS_HEADERS });
     }
-    return NextResponse.json(normalizeProductCategory(found), { headers: CORS_HEADERS });
+    const populated = populateGroupedProducts(normalizeProductCategory({ ...found }), products);
+    return NextResponse.json(populated, { headers: CORS_HEADERS });
   }
 
-  const normalizedList = products.map(normalizeProductCategory);
+  const normalizedList = products.map((p) => populateGroupedProducts(normalizeProductCategory({ ...p }), products));
   return NextResponse.json(normalizedList, { headers: CORS_HEADERS });
 }
 
@@ -151,7 +177,30 @@ export async function POST(req: NextRequest) {
         })
       : (existingIndex >= 0 ? products[existingIndex].variations || [] : []);
 
-    const isVariable = body.productType === 'variable' || body.type === 'variable' || formattedVariations.length > 0;
+    const isGrouped = body.productType === 'grouped' || body.type === 'grouped' || (Array.isArray(body.groupedProductIds) && body.groupedProductIds.length > 0);
+    const isVariable = !isGrouped && (body.productType === 'variable' || body.type === 'variable' || formattedVariations.length > 0);
+    const finalType = isGrouped ? 'grouped' : (isVariable ? 'variable' : 'simple');
+
+    const groupedProductIds = isGrouped && Array.isArray(body.groupedProductIds) ? body.groupedProductIds : [];
+    let groupedProducts = isGrouped && Array.isArray(body.groupedProducts) ? body.groupedProducts : [];
+    if (isGrouped && groupedProductIds.length > 0 && (!groupedProducts || groupedProducts.length === 0)) {
+      groupedProducts = groupedProductIds.map((gId: string) => {
+        const found = products.find((item) => String(item.id) === String(gId));
+        if (!found) return null;
+        return {
+          id: String(found.id),
+          name: found.name,
+          slug: found.slug,
+          image: found.displayImage || (found.imageUrls && found.imageUrls[0]) || '',
+          regularPriceMinor: found.regularPriceMinor || 0,
+          salePriceMinor: found.salePriceMinor || found.regularPriceMinor || 0,
+          regularPrice: (found.regularPriceMinor || 0) / 100,
+          salePrice: (found.salePriceMinor || found.regularPriceMinor || 0) / 100,
+          brand: found.brand || '',
+        };
+      }).filter(Boolean);
+    }
+
     const hasVarStock = formattedVariations.length > 0
       ? formattedVariations.some((v: any) => v.inStock === true)
       : false;
@@ -195,7 +244,10 @@ export async function POST(req: NextRequest) {
       // Update existing product
       const updatedProduct = {
         ...products[existingIndex],
-        type: isVariable ? 'variable' : 'simple',
+        type: finalType,
+        productType: finalType,
+        groupedProductIds: isGrouped ? groupedProductIds : (products[existingIndex].groupedProductIds || undefined),
+        groupedProducts: isGrouped ? groupedProducts : (products[existingIndex].groupedProducts || undefined),
         name: body.name || products[existingIndex].name,
         category: finalCategoryName,
         categories: [finalCategoryName],
@@ -232,7 +284,10 @@ export async function POST(req: NextRequest) {
         name: body.name,
         slug: productSlug,
         sku: body.sku || `WC-${Date.now()}`,
-        type: isVariable ? 'variable' : 'simple',
+        type: finalType,
+        productType: finalType,
+        groupedProductIds: isGrouped ? groupedProductIds : undefined,
+        groupedProducts: isGrouped ? groupedProducts : undefined,
         status: body.status || (inStock ? 'Active' : 'Out of stock'),
         catalogStatus: body.status || (inStock ? 'Active' : 'Out of stock'),
         regularPriceMinor: regMinor,
