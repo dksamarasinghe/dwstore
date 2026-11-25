@@ -45,6 +45,11 @@ function OrderSuccessContent() {
         .then((data) => {
           if (data?.success && data.order) {
             setOrder((prev: any) => ({ ...prev, ...data.order }));
+            const trackedKey = `dwstore_fbp_tracked_${orderId}`;
+            if (!sessionStorage.getItem(trackedKey)) {
+              trackPurchase(data.order);
+              sessionStorage.setItem(trackedKey, '1');
+            }
           }
         })
         .catch(() => {});

@@ -55,6 +55,10 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: '/products/:slug*',
+        destination: '/product/:slug*',
+      },
+      {
         source: '/media/:path*',
         destination: '/api/media/:path*',
       },
