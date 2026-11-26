@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TabType, ProductItem, AttributeItem, OrderItem, ReviewItem, CategoryItem, BrandItem, CouponItem, ShipmentItem, AbandonedCartItem, CustomerItem } from './types';
 import {
   initialReviews,
@@ -898,34 +898,51 @@ export default function App() {
     }, 3500);
   };
 
+  // Track recently manually modified order statuses / payment statuses to prevent background polling from reverting admin actions
+  const recentOrderOverrides = useRef<Map<string, { status?: string; paymentStatus?: string; timestamp: number }>>(new Map());
+
   // Fetch orders from API with normalization (syncs latest status & customer updates)
   const fetchOrders = () => {
-    fetch(`${getStorefrontUrl()}/api/orders`)
+    fetch(`${getStorefrontUrl()}/api/orders?t=${Date.now()}`, { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
         if (data && Array.isArray(data.orders) && data.orders.length > 0) {
           const normalized = data.orders.map(normalizeOrder);
+          const now = Date.now();
           setOrders((prev) => {
             const map = new Map(prev.map((o) => [o.orderId, o]));
             const newlyAdded: OrderItem[] = [];
             normalized.forEach((n) => {
+              const cleanNId = String(n.orderId).replace(/^#+/, '');
+              const override = recentOrderOverrides.current.get(cleanNId);
+              let itemToMerge = n;
+              if (override && (now - override.timestamp) < 60000) {
+                // If admin modified status/paymentStatus within last 60 seconds, keep admin's values
+                itemToMerge = {
+                  ...n,
+                  status: (override.status as any) || n.status,
+                  paymentStatus: (override.paymentStatus as any) || n.paymentStatus,
+                };
+              }
+
               const existing = map.get(n.orderId);
               if (existing) {
                 // If status changed to delivered (e.g. from customer portal)
-                if (n.status === 'delivered' && existing.status !== 'delivered') {
+                if (itemToMerge.status === 'delivered' && existing.status !== 'delivered') {
                   setShipments((shps) =>
                     shps.map((s) => (s.orderId === n.orderId ? { ...s, status: 'Delivered' } : s))
                   );
                 }
-                map.set(n.orderId, { ...existing, ...n });
+                map.set(n.orderId, { ...existing, ...itemToMerge });
               } else {
-                newlyAdded.push(n);
+                newlyAdded.push(itemToMerge);
               }
             });
-            if (newlyAdded.length > 0) {
-              return [...newlyAdded, ...Array.from(map.values())];
-            }
-            return Array.from(map.values());
+            const result = newlyAdded.length > 0 ? [...newlyAdded, ...Array.from(map.values())] : Array.from(map.values());
+            try {
+              localStorage.setItem('dwstore_admin_orders_v3', JSON.stringify(result));
+            } catch (e) {}
+            return result;
           });
         }
       })
@@ -955,6 +972,9 @@ export default function App() {
   // Update order status PATCH API
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     const cleanId = String(orderId).replace(/^#+/, '');
+    // 0. Lock manual override for 60 seconds so polling doesn't overwrite it
+    recentOrderOverrides.current.set(cleanId, { status: newStatus, timestamp: Date.now() });
+
     // 1. Update order status locally and in localStorage
     setOrders((prev) => {
       const next = prev.map((o) => {
@@ -1031,6 +1051,49 @@ export default function App() {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId: cleanId, status: newStatus }),
+        });
+        if (res.ok) break;
+      } catch {}
+    }
+  };
+
+  // Update order payment status PATCH API (Paid | Unpaid | Refunded)
+  const handleUpdatePaymentStatus = async (orderId: string, newPaymentStatus: 'Paid' | 'Unpaid' | 'Refunded') => {
+    const cleanId = String(orderId).replace(/^#+/, '');
+    recentOrderOverrides.current.set(cleanId, { paymentStatus: newPaymentStatus, timestamp: Date.now() });
+
+    setOrders((prev) => {
+      const next = prev.map((o) => {
+        const oClean = String(o.orderId).replace(/^#+/, '');
+        return (oClean === cleanId || o.orderId === orderId)
+          ? { ...o, paymentStatus: newPaymentStatus }
+          : o;
+      });
+      try {
+        localStorage.setItem('dwstore_admin_orders_v3', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+
+    if (selectedOrder) {
+      const selClean = String(selectedOrder.orderId).replace(/^#+/, '');
+      if (selClean === cleanId || selectedOrder.orderId === orderId) {
+        setSelectedOrder((prev) => (prev ? { ...prev, paymentStatus: newPaymentStatus } : null));
+      }
+    }
+
+    showNotification(`Order #${cleanId} payment status set to ${newPaymentStatus.toUpperCase()}`);
+
+    const endpoints = [
+      `${getStorefrontUrl()}/api/orders`,
+      `/api/orders`,
+    ];
+    for (const endpoint of endpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: cleanId, paymentStatus: newPaymentStatus }),
         });
         if (res.ok) break;
       } catch {}
@@ -1714,6 +1777,7 @@ export default function App() {
             <OrdersView
               orders={orders}
               onUpdateStatus={handleUpdateOrderStatus}
+              onUpdatePaymentStatus={handleUpdatePaymentStatus}
               onUpdateOrder={handleUpdateFullOrder}
               onDispatchOrder={handleDispatchOrder}
               onCreateOrder={handleCreateOrder}

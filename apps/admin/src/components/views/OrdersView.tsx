@@ -38,6 +38,7 @@ import { downloadCSV } from '../../utils/csv';
 interface OrdersViewProps {
   orders: OrderItem[];
   onUpdateStatus: (orderId: string, newStatus: string) => Promise<void>;
+  onUpdatePaymentStatus?: (orderId: string, newPaymentStatus: 'Paid' | 'Unpaid' | 'Refunded') => Promise<void>;
   onUpdateOrder: (updatedOrder: OrderItem) => Promise<void>;
   onDispatchOrder: (orderId: string, carrier: string, trackingNumber: string, dispatchedDate: string) => Promise<void>;
   onCreateOrder?: (newOrder: OrderItem) => Promise<void> | void;
@@ -54,6 +55,7 @@ interface OrdersViewProps {
 export const OrdersView: React.FC<OrdersViewProps> = ({
   orders,
   onUpdateStatus,
+  onUpdatePaymentStatus,
   onUpdateOrder,
   onDispatchOrder,
   onCreateOrder,
@@ -692,9 +694,18 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                         <b>Rs. {totalVal.toLocaleString()}</b>
                       </td>
                       <td>
-                        <span className={`badge-x ${order?.paymentStatus === 'Paid' ? 's-Paid' : 's-Unpaid'}`}>
-                          {order?.paymentStatus || 'Unpaid'}
-                        </span>
+                        {/* Live Quick Payment Status Selector */}
+                        <select
+                          className={`badge-x ${order?.paymentStatus === 'Paid' ? 's-Paid' : 's-Unpaid'} border-0 py-1 pe-3`}
+                          style={{ cursor: 'pointer', outline: 'none' }}
+                          value={order?.paymentStatus || 'Unpaid'}
+                          onChange={(e) => onUpdatePaymentStatus?.(order?.orderId, e.target.value as any)}
+                          title="Click to change payment status (Paid / Unpaid)"
+                        >
+                          <option value="Unpaid">Unpaid</option>
+                          <option value="Paid">Paid</option>
+                          <option value="Refunded">Refunded</option>
+                        </select>
                         <small className="d-block text-muted text-truncate" style={{ fontSize: '11px', maxWidth: '140px' }}>
                           {order?.paymentMethod || 'COD'}
                         </small>
@@ -1021,8 +1032,25 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                 <b>Total Amount:</b>
                 <b className="fs-5 text-primary">Rs. {selectedOrder.total.toLocaleString()}</b>
               </div>
-              <div className="mt-2 text-muted" style={{ fontSize: '12px' }}>
-                Payment Method: <b>{selectedOrder.paymentMethod}</b> ({selectedOrder.paymentStatus})
+              <div className="mt-2 d-flex align-items-center justify-content-between" style={{ fontSize: '12px' }}>
+                <div>Payment Method: <b>{selectedOrder.paymentMethod}</b></div>
+                <div className="d-flex align-items-center gap-2">
+                  <span className="text-muted">Payment:</span>
+                  <select
+                    className={`badge-x ${selectedOrder.paymentStatus === 'Paid' ? 's-Paid' : 's-Unpaid'} border-0 py-1 pe-3`}
+                    style={{ cursor: 'pointer', outline: 'none' }}
+                    value={selectedOrder.paymentStatus || 'Unpaid'}
+                    onChange={(e) => {
+                      const newPs = e.target.value as any;
+                      onUpdatePaymentStatus?.(selectedOrder.orderId, newPs);
+                      setSelectedOrder({ ...selectedOrder, paymentStatus: newPs });
+                    }}
+                  >
+                    <option value="Unpaid">Unpaid</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Refunded">Refunded</option>
+                  </select>
+                </div>
               </div>
               {selectedOrder.notes && (
                 <div className="mt-2 p-2 rounded-2" style={{ background: 'var(--hover)', fontSize: '12px' }}>

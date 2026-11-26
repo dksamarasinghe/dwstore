@@ -1,29 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { readDataJson, writeDataJson } from '@/lib/data-paths';
 
-const ORDERS_FILE = path.join(process.cwd(), 'src', 'data', 'orders.json');
+export const dynamic = 'force-dynamic';
 
-function getOrders() {
-  try {
-    if (fs.existsSync(ORDERS_FILE)) {
-      const content = fs.readFileSync(ORDERS_FILE, 'utf-8');
-      return JSON.parse(content);
-    }
-  } catch (err) {
-    console.error('Error reading orders:', err);
-  }
-  return [];
+function getOrders(): any[] {
+  return readDataJson<any[]>('orders.json', []);
 }
 
-function saveOrders(orders: any[]) {
-  try {
-    fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2), 'utf-8');
-    return true;
-  } catch (err) {
-    console.error('Error saving orders:', err);
-    return false;
-  }
+function saveOrders(orders: any[]): boolean {
+  return writeDataJson('orders.json', orders);
 }
 
 const CORS_HEADERS = {

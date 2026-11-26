@@ -36,10 +36,12 @@ export function readDataJson<T = any>(filename: string, defaultValue: T): T {
         const backupData = JSON.parse(backupContent);
 
         if (Array.isArray(data) && Array.isArray(backupData)) {
-          const existingIds = new Set(data.map((item: any) => String(item.id || item.sku || item.slug)));
-          const missingFromData = backupData.filter(
-            (item: any) => !existingIds.has(String(item.id || item.sku || item.slug))
-          );
+          const getItemKey = (item: any) => String(item.orderId || item.id || item.sku || item.slug || '').trim();
+          const existingIds = new Set(data.map(getItemKey));
+          const missingFromData = backupData.filter((item: any) => {
+            const k = getItemKey(item);
+            return k && !existingIds.has(k);
+          });
           if (missingFromData.length > 0) {
             data = [...missingFromData, ...data];
             // Resave to primary file so it's always complete

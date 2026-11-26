@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readDataJson, writeDataJson } from '@/lib/data-paths';
-import { sendOrderEmails } from '@/lib/email';
+import { sendOrderEmails, sendPaymentReceivedEmail } from '@/lib/email';
 import { sendOrderWhatsAppNotification } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +17,9 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Cache-Control': 'no-cache, no-store, must-revalidate',
+  'Pragma': 'no-cache',
+  'Expires': '0',
 };
 
 export async function OPTIONS() {
@@ -331,6 +334,9 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    const previousPaymentStatus = String(orders[index].paymentStatus || 'Unpaid').trim().toLowerCase();
+    const previousStatus = orders[index].status;
+
     if (status) orders[index].status = status;
     const finalTracking = courierTrackingNumber !== undefined ? courierTrackingNumber : trackingNumber;
     if (finalTracking !== undefined) {
@@ -342,6 +348,18 @@ export async function PATCH(req: NextRequest) {
     if (paymentStatus !== undefined) orders[index].paymentStatus = paymentStatus;
     if (paymentMethod !== undefined) orders[index].paymentMethod = paymentMethod;
     if (returnRecord !== undefined) orders[index].returnRecord = returnRecord;
+
+    // Check if order payment was newly updated to Paid
+    const currentPaymentStatus = String(orders[index].paymentStatus || '').trim().toLowerCase();
+    if (currentPaymentStatus === 'paid' && previousPaymentStatus !== 'paid') {
+      orders[index].paidAt = new Date().toISOString();
+      Promise.allSettled([
+        sendPaymentReceivedEmail(orders[index]),
+      ]).catch((err) => {
+        console.error('[Payment Received Notification Error]', err);
+      });
+    }
+
     if (total !== undefined) {
       orders[index].total = total;
       orders[index].totalMinor = Math.round(total * 100);
@@ -394,7 +412,7 @@ export async function PATCH(req: NextRequest) {
 
     // Section 12.4 & Section 14: Restore stock if order is cancelled or refunded
     const isNewCancellation = (status === 'cancelled' || status === 'refunded') &&
-      orders[index].status !== 'cancelled' && orders[index].status !== 'refunded';
+      previousStatus !== 'cancelled' && previousStatus !== 'refunded';
 
     if (isNewCancellation) {
       try {

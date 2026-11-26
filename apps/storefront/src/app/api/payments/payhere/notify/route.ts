@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { readDataJson, writeDataJson } from '@/lib/data-paths';
 import { getPaymentGatewaysConfig } from '@/lib/payment-gateways';
+import { sendPaymentReceivedEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,6 +55,12 @@ export async function POST(req: NextRequest) {
           orders[orderIndex].paidAt = new Date().toISOString();
           writeDataJson('orders.json', orders);
           console.log(`[PayHere IPN] Order ${order_id} marked as PAID via PayHere (Transaction: ${payment_id})`);
+          // Dispatch payment confirmed email to customer and admin
+          Promise.allSettled([
+            sendPaymentReceivedEmail(orders[orderIndex]),
+          ]).catch((err) => {
+            console.error('[PayHere IPN Email Error]', err);
+          });
         }
       } catch (err) {
         console.error('Error updating order on PayHere IPN:', err);

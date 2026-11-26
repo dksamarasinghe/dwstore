@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readDataJson, writeDataJson } from '@/lib/data-paths';
+import { sendPaymentReceivedEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,12 @@ function markOrderPaid(orderId: string, trnId?: string, gateway: string = 'koko'
       orders[idx].paidAt = new Date().toISOString();
       writeDataJson('orders.json', orders);
       console.log(`[Koko Callback] Order ${orderId} successfully marked as PAID via Koko!`);
+      // Dispatch payment confirmed email
+      Promise.allSettled([
+        sendPaymentReceivedEmail(orders[idx]),
+      ]).catch((err) => {
+        console.error('[Koko Email Error]', err);
+      });
       return true;
     }
   } catch (err) {
