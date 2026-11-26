@@ -10,6 +10,7 @@ interface PaymentInstallmentBoxesProps {
   inStock?: boolean;
   warranty?: string;
   gatewaysConfig?: any;
+  allowedPaymentMethods?: string[];
 }
 
 export default function PaymentInstallmentBoxes({
@@ -18,6 +19,7 @@ export default function PaymentInstallmentBoxes({
   inStock = true,
   warranty,
   gatewaysConfig: initialGatewaysProp,
+  allowedPaymentMethods,
 }: PaymentInstallmentBoxesProps) {
   const [gateways, setGateways] = useState<any>(initialGatewaysProp || initialPaymentGateways);
 
@@ -104,224 +106,262 @@ export default function PaymentInstallmentBoxes({
   const payzyTotal = payzyCalc.hasDiscount ? payzyDiscountedTotal : payzyStandardTotal;
   const payzyMonthly = payzyTotal / 4;
 
+  // Determine allowed payment methods
+  const isMethodAllowed = (gwKey: string) => {
+    if (!allowedPaymentMethods || allowedPaymentMethods.length === 0) return true;
+    if (allowedPaymentMethods.includes(gwKey)) return true;
+    if (gwKey === 'payhere' && (allowedPaymentMethods.includes('card') || allowedPaymentMethods.includes('payhere'))) return true;
+    if (gwKey === 'card' && (allowedPaymentMethods.includes('card') || allowedPaymentMethods.includes('payhere'))) return true;
+    return false;
+  };
+
+  const showCash = isMethodAllowed('cod');
+  const showBank = isMethodAllowed('bank');
+  const showCard = isMethodAllowed('payhere');
+  const topCount = (showCash ? 1 : 0) + (showBank ? 1 : 0) + (showCard ? 1 : 0);
+
+  const showKoko = isMethodAllowed('koko');
+  const showPayzy = isMethodAllowed('payzy');
+  const showInstallments = showKoko || showPayzy;
+
   return (
     <div className="w-full my-4 space-y-4">
       {/* Top Section: Cash Price, Bank Transfer, Visa / Mastercard */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* 1. Cash Price Box */}
-        <div
-          className={`relative overflow-hidden bg-white border-2 ${
-            cashCalc.hasDiscount ? 'border-emerald-600 bg-emerald-50/20' : 'border-emerald-600'
-          } rounded-xl p-3.5 flex items-center justify-between shadow-2xs hover:shadow-xs transition`}
-        >
-          <div className="flex items-center gap-3">
-            {/* Cash & Coins Icon */}
-            <div className="w-11 h-11 flex items-center justify-center flex-shrink-0">
-              <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="5" y="10" width="30" height="18" rx="3" fill="#10B981" />
-                <rect x="7" y="12" width="26" height="14" rx="2" fill="#34D399" />
-                <circle cx="20" cy="19" r="4" fill="#059669" />
-                <circle cx="34" cy="30" r="7" fill="#F59E0B" stroke="#D97706" strokeWidth="1.5" />
-                <circle cx="28" cy="33" r="6" fill="#FBBF24" stroke="#D97706" strokeWidth="1.5" />
-                <text x="34" y="32.5" fontSize="7" fontWeight="bold" fill="#78350F" textAnchor="middle">Rs</text>
-              </svg>
-            </div>
-            <div>
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                CASH PRICE
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-0.5">
-                <strong className="text-base sm:text-lg font-black text-slate-900 block leading-tight">
-                  {fmt(cashCalc.finalPrice)}
-                </strong>
-                {cashCalc.hasDiscount && (
-                  <span className="text-xs text-slate-400 line-through font-semibold">
-                    {fmt(price)}
+      {topCount > 0 && (
+        <div className={`grid gap-3 ${topCount === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
+          {/* 1. Cash Price Box */}
+          {showCash && (
+            <div
+              className={`relative overflow-hidden bg-white border-2 ${
+                cashCalc.hasDiscount ? 'border-emerald-600 bg-emerald-50/20' : 'border-emerald-600'
+              } rounded-xl p-3.5 flex items-center justify-between shadow-2xs hover:shadow-xs transition`}
+            >
+              <div className="flex items-center gap-3">
+                {/* Cash & Coins Icon */}
+                <div className="w-11 h-11 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="5" y="10" width="30" height="18" rx="3" fill="#10B981" />
+                    <rect x="7" y="12" width="26" height="14" rx="2" fill="#34D399" />
+                    <circle cx="20" cy="19" r="4" fill="#059669" />
+                    <circle cx="34" cy="30" r="7" fill="#F59E0B" stroke="#D97706" strokeWidth="1.5" />
+                    <circle cx="28" cy="33" r="6" fill="#FBBF24" stroke="#D97706" strokeWidth="1.5" />
+                    <text x="34" y="32.5" fontSize="7" fontWeight="bold" fill="#78350F" textAnchor="middle">Rs</text>
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                    CASH PRICE
                   </span>
-                )}
+                  <div className="flex items-baseline gap-1.5 mt-0.5">
+                    <strong className="text-base sm:text-lg font-black text-slate-900 block leading-tight">
+                      {fmt(cashCalc.finalPrice)}
+                    </strong>
+                    {cashCalc.hasDiscount && (
+                      <span className="text-xs text-slate-400 line-through font-semibold">
+                        {fmt(price)}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
+              {/* Top-right "BEST DEAL" or Promotional Discount Badge */}
+              <span className="absolute top-0 right-0 bg-emerald-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-bl-lg tracking-wider shadow-2xs">
+                {cashCalc.hasDiscount ? cashCalc.badge : 'BEST DEAL'}
+              </span>
             </div>
-          </div>
-          {/* Top-right "BEST DEAL" or Promotional Discount Badge */}
-          <span className="absolute top-0 right-0 bg-emerald-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-bl-lg tracking-wider shadow-2xs">
-            {cashCalc.hasDiscount ? cashCalc.badge : 'BEST DEAL'}
-          </span>
-        </div>
+          )}
 
-        {/* 2. Bank Transfer Box */}
-        <div
-          className={`relative overflow-hidden bg-white border-2 ${
-            bankCalc.hasDiscount ? 'border-emerald-600 bg-emerald-50/20' : 'border-emerald-600'
-          } rounded-xl p-3.5 flex items-center justify-between shadow-2xs hover:shadow-xs transition`}
-        >
-          <div className="flex items-center gap-3">
-            {/* Bank Pillars Icon */}
-            <div className="w-11 h-11 flex items-center justify-center flex-shrink-0">
-              <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M24 8L8 17H40L24 8Z" fill="#38BDF8" stroke="#0284C7" strokeWidth="1.5" />
-                <rect x="11" y="19" width="4" height="13" rx="1" fill="#0284C7" />
-                <rect x="19" y="19" width="4" height="13" rx="1" fill="#0284C7" />
-                <rect x="25" y="19" width="4" height="13" rx="1" fill="#0284C7" />
-                <rect x="33" y="19" width="4" height="13" rx="1" fill="#0284C7" />
-                <rect x="7" y="34" width="34" height="4" rx="1" fill="#38BDF8" stroke="#0284C7" strokeWidth="1" />
-              </svg>
-            </div>
-            <div>
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                BANK TRANSFER
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-0.5">
-                <strong className="text-base sm:text-lg font-black text-slate-900 block leading-tight">
-                  {fmt(bankCalc.finalPrice)}
-                </strong>
-                {bankCalc.hasDiscount && (
-                  <span className="text-xs text-slate-400 line-through font-semibold">
-                    {fmt(price)}
+          {/* 2. Bank Transfer Box */}
+          {showBank && (
+            <div
+              className={`relative overflow-hidden bg-white border-2 ${
+                bankCalc.hasDiscount ? 'border-emerald-600 bg-emerald-50/20' : 'border-emerald-600'
+              } rounded-xl p-3.5 flex items-center justify-between shadow-2xs hover:shadow-xs transition`}
+            >
+              <div className="flex items-center gap-3">
+                {/* Bank Pillars Icon */}
+                <div className="w-11 h-11 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M24 8L8 17H40L24 8Z" fill="#38BDF8" stroke="#0284C7" strokeWidth="1.5" />
+                    <rect x="11" y="19" width="4" height="13" rx="1" fill="#0284C7" />
+                    <rect x="19" y="19" width="4" height="13" rx="1" fill="#0284C7" />
+                    <rect x="25" y="19" width="4" height="13" rx="1" fill="#0284C7" />
+                    <rect x="33" y="19" width="4" height="13" rx="1" fill="#0284C7" />
+                    <rect x="7" y="34" width="34" height="4" rx="1" fill="#38BDF8" stroke="#0284C7" strokeWidth="1" />
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                    BANK TRANSFER
                   </span>
-                )}
+                  <div className="flex items-baseline gap-1.5 mt-0.5">
+                    <strong className="text-base sm:text-lg font-black text-slate-900 block leading-tight">
+                      {fmt(bankCalc.finalPrice)}
+                    </strong>
+                    {bankCalc.hasDiscount && (
+                      <span className="text-xs text-slate-400 line-through font-semibold">
+                        {fmt(price)}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
+              {/* Top-right "BEST DEAL" or Promotional Discount Badge */}
+              <span className="absolute top-0 right-0 bg-emerald-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-bl-lg tracking-wider shadow-2xs">
+                {bankCalc.hasDiscount ? bankCalc.badge : 'BEST DEAL'}
+              </span>
             </div>
-          </div>
-          {/* Top-right "BEST DEAL" or Promotional Discount Badge */}
-          <span className="absolute top-0 right-0 bg-emerald-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-bl-lg tracking-wider shadow-2xs">
-            {bankCalc.hasDiscount ? bankCalc.badge : 'BEST DEAL'}
-          </span>
-        </div>
+          )}
 
-        {/* 3. Visa / Mastercard Box */}
-        <div
-          className={`relative overflow-hidden bg-white border ${
-            cardCalc.hasDiscount
-              ? 'border-2 border-blue-600 bg-blue-50/20'
-              : 'border border-blue-300'
-          } rounded-xl p-3.5 flex items-center justify-between shadow-2xs hover:border-blue-500 transition sm:col-span-2 md:col-span-1`}
-        >
-          <div className="flex items-center gap-3">
-            {/* Visa + Mastercard Dual Logo */}
-            <div className="w-14 h-8 flex items-center justify-center gap-1.5 flex-shrink-0 bg-white rounded border border-slate-100 px-1">
-              <span className="text-xs font-black text-[#1A1F71] tracking-tighter italic">VISA</span>
-              <svg className="w-5 h-4" viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="13" cy="12" r="10" fill="#EB001B" />
-                <circle cx="23" cy="12" r="10" fill="#F79E1B" fillOpacity="0.9" />
-              </svg>
-            </div>
-            <div>
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                VISA / MASTERCARD
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-0.5">
-                <strong className="text-base sm:text-lg font-black text-slate-900 block leading-tight">
-                  {fmt(cardCalc.finalPrice)}
-                </strong>
-                {cardCalc.hasDiscount && (
-                  <span className="text-xs text-slate-400 line-through font-semibold">
-                    {fmt(price)}
+          {/* 3. Visa / Mastercard Box */}
+          {showCard && (
+            <div
+              className={`relative overflow-hidden bg-white border ${
+                cardCalc.hasDiscount
+                  ? 'border-2 border-blue-600 bg-blue-50/20'
+                  : 'border border-blue-300'
+              } rounded-xl p-3.5 flex items-center justify-between shadow-2xs hover:border-blue-500 transition ${
+                topCount === 3 ? 'sm:col-span-2 md:col-span-1' : ''
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                {/* Visa + Mastercard Dual Logo */}
+                <div className="w-14 h-8 flex items-center justify-center gap-1.5 flex-shrink-0 bg-white rounded border border-slate-100 px-1">
+                  <span className="text-xs font-black text-[#1A1F71] tracking-tighter italic">VISA</span>
+                  <svg className="w-5 h-4" viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="13" cy="12" r="10" fill="#EB001B" />
+                    <circle cx="23" cy="12" r="10" fill="#F79E1B" fillOpacity="0.9" />
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                    VISA / MASTERCARD
                   </span>
-                )}
+                  <div className="flex items-baseline gap-1.5 mt-0.5">
+                    <strong className="text-base sm:text-lg font-black text-slate-900 block leading-tight">
+                      {fmt(cardCalc.finalPrice)}
+                    </strong>
+                    {cardCalc.hasDiscount && (
+                      <span className="text-xs text-slate-400 line-through font-semibold">
+                        {fmt(price)}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
+              {/* Top-right promotional discount badge for card payment */}
+              {cardCalc.hasDiscount && (
+                <span className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-bl-lg tracking-wider shadow-2xs">
+                  {cardCalc.badge}
+                </span>
+              )}
             </div>
-          </div>
-          {/* Top-right promotional discount badge for card payment */}
-          {cardCalc.hasDiscount && (
-            <span className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-bl-lg tracking-wider shadow-2xs">
-              {cardCalc.badge}
-            </span>
           )}
         </div>
-      </div>
+      )}
 
-      {/* Horizontal Divider */}
-      <div className="border-t border-slate-200/80 pt-3">
-        {/* Section Title */}
-        <h4 className="text-xs sm:text-sm font-bold text-slate-800 mb-2.5">
-          Pay in 3 or 4 instalments
-        </h4>
+      {/* Horizontal Divider & Installments Section */}
+      {showInstallments && (
+        <div className="border-t border-slate-200/80 pt-3">
+          {/* Section Title */}
+          <h4 className="text-xs sm:text-sm font-bold text-slate-800 mb-2.5">
+            {showKoko && showPayzy
+              ? 'Pay in 3 or 4 instalments'
+              : showKoko
+              ? 'Pay in 3 instalments with KOKO'
+              : 'Pay in 4 instalments with Payzy'}
+          </h4>
 
-        {/* Installment Boxes Grid (KOKO & PAYZY) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* KOKO Box (Pay in 3) */}
-          <div
-            className={`relative overflow-hidden bg-purple-50/50 border ${
-              kokoCalc.hasDiscount ? 'border-2 border-purple-500' : 'border border-purple-200'
-            } rounded-xl p-3 sm:p-3.5 flex items-center justify-between hover:border-purple-400 transition shadow-2xs`}
-          >
-            <div className="flex items-center gap-3">
-              {/* KOKO Badge with real logo */}
-              <div className="w-16 h-10 flex items-center justify-center flex-shrink-0 bg-white rounded-lg border border-purple-100 shadow-2xs p-1">
-                <img
-                  src="/koko.png"
-                  alt="Koko"
-                  className="max-h-full max-w-full object-contain"
-                />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                  KOKO
-                </span>
-                <strong className="text-sm sm:text-base font-black text-slate-900 block leading-tight">
-                  3 × {fmt(kokoMonthly)}
-                </strong>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[11px] text-slate-500 font-medium block">
-                    Total {fmt(kokoTotal)}
-                  </span>
-                  {kokoCalc.hasDiscount && (
-                    <span className="text-[10px] text-slate-400 line-through font-medium">
-                      {fmt(kokoStandardTotal)}
+          {/* Installment Boxes Grid (KOKO & PAYZY) */}
+          <div className={`grid gap-3 ${showKoko && showPayzy ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 max-w-md'}`}>
+            {/* KOKO Box (Pay in 3) */}
+            {showKoko && (
+              <div
+                className={`relative overflow-hidden bg-purple-50/50 border ${
+                  kokoCalc.hasDiscount ? 'border-2 border-purple-500' : 'border border-purple-200'
+                } rounded-xl p-3 sm:p-3.5 flex items-center justify-between hover:border-purple-400 transition shadow-2xs`}
+              >
+                <div className="flex items-center gap-3">
+                  {/* KOKO Badge with real logo */}
+                  <div className="w-16 h-10 flex items-center justify-center flex-shrink-0 bg-white rounded-lg border border-purple-100 shadow-2xs p-1">
+                    <img
+                      src="/koko.png"
+                      alt="Koko"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      KOKO
                     </span>
-                  )}
+                    <strong className="text-sm sm:text-base font-black text-slate-900 block leading-tight">
+                      3 × {fmt(kokoMonthly)}
+                    </strong>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[11px] text-slate-500 font-medium block">
+                        Total {fmt(kokoTotal)}
+                      </span>
+                      {kokoCalc.hasDiscount && (
+                        <span className="text-[10px] text-slate-400 line-through font-medium">
+                          {fmt(kokoStandardTotal)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
+                {kokoCalc.hasDiscount && (
+                  <span className="absolute top-0 right-0 bg-purple-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-bl-lg tracking-wider shadow-2xs">
+                    {kokoCalc.badge}
+                  </span>
+                )}
               </div>
-            </div>
-            {kokoCalc.hasDiscount && (
-              <span className="absolute top-0 right-0 bg-purple-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-bl-lg tracking-wider shadow-2xs">
-                {kokoCalc.badge}
-              </span>
             )}
-          </div>
 
-          {/* PAYZY Box (Pay in 4) */}
-          <div
-            className={`relative overflow-hidden bg-teal-50/50 border ${
-              payzyCalc.hasDiscount ? 'border-2 border-teal-500' : 'border border-teal-200'
-            } rounded-xl p-3 sm:p-3.5 flex items-center justify-between hover:border-teal-400 transition shadow-2xs`}
-          >
-            <div className="flex items-center gap-3">
-              {/* PAYZY Badge with real logo */}
-              <div className="w-16 h-10 flex items-center justify-center flex-shrink-0 bg-white rounded-lg border border-teal-100 shadow-2xs p-1">
-                <img
-                  src="/payzy.png"
-                  alt="Payzy"
-                  className="max-h-full max-w-full object-contain"
-                />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                  PAYZY
-                </span>
-                <strong className="text-sm sm:text-base font-black text-slate-900 block leading-tight">
-                  4 × {fmt(payzyMonthly)}
-                </strong>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[11px] text-slate-500 font-medium block">
-                    Total {fmt(payzyTotal)}
-                  </span>
-                  {payzyCalc.hasDiscount && (
-                    <span className="text-[10px] text-slate-400 line-through font-medium">
-                      {fmt(payzyStandardTotal)}
+            {/* PAYZY Box (Pay in 4) */}
+            {showPayzy && (
+              <div
+                className={`relative overflow-hidden bg-teal-50/50 border ${
+                  payzyCalc.hasDiscount ? 'border-2 border-teal-500' : 'border border-teal-200'
+                } rounded-xl p-3 sm:p-3.5 flex items-center justify-between hover:border-teal-400 transition shadow-2xs`}
+              >
+                <div className="flex items-center gap-3">
+                  {/* PAYZY Badge with real logo */}
+                  <div className="w-16 h-10 flex items-center justify-center flex-shrink-0 bg-white rounded-lg border border-teal-100 shadow-2xs p-1">
+                    <img
+                      src="/payzy.png"
+                      alt="Payzy"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      PAYZY
                     </span>
-                  )}
+                    <strong className="text-sm sm:text-base font-black text-slate-900 block leading-tight">
+                      4 × {fmt(payzyMonthly)}
+                    </strong>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[11px] text-slate-500 font-medium block">
+                        Total {fmt(payzyTotal)}
+                      </span>
+                      {payzyCalc.hasDiscount && (
+                        <span className="text-[10px] text-slate-400 line-through font-medium">
+                          {fmt(payzyStandardTotal)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
+                {payzyCalc.hasDiscount && (
+                  <span className="absolute top-0 right-0 bg-teal-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-bl-lg tracking-wider shadow-2xs">
+                    {payzyCalc.badge}
+                  </span>
+                )}
               </div>
-            </div>
-            {payzyCalc.hasDiscount && (
-              <span className="absolute top-0 right-0 bg-teal-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-bl-lg tracking-wider shadow-2xs">
-                {payzyCalc.badge}
-              </span>
             )}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Stock & Warranty Pills */}
       <div className="flex flex-wrap items-center gap-3 pt-1">

@@ -33,6 +33,7 @@ export interface Product {
   displayImage: string;
   inStock: boolean;
   stockQty?: number | null;
+  allowedPaymentMethods?: string[];
   seoTitle?: string;
   seoDescription?: string;
   variations: ProductVariation[];

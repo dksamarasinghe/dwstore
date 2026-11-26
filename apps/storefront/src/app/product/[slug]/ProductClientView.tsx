@@ -461,6 +461,7 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       priceMinor: activePriceMinor,
       regularPriceMinor: activeRegularPriceMinor,
       quantity,
+      allowedPaymentMethods: product.allowedPaymentMethods,
       isGrouped: isGroupedProduct,
       groupedProducts: isGroupedProduct ? comboIncludedProducts : undefined,
       variation: matchedVariation
@@ -507,6 +508,7 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       priceMinor: activePriceMinor,
       regularPriceMinor: activeRegularPriceMinor,
       quantity,
+      allowedPaymentMethods: product.allowedPaymentMethods,
       isGrouped: isGroupedProduct,
       groupedProducts: isGroupedProduct ? comboIncludedProducts : undefined,
       variation: matchedVariation
@@ -686,6 +688,7 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
               priceCents={activePriceMinor}
               stockQty={matchedVariation ? matchedVariation.stockQty : (hasAnyStock ? product.stockQty : 0)}
               inStock={!isOutOfStock}
+              allowedPaymentMethods={product.allowedPaymentMethods}
               warranty={
                 product.warrantyPeriod !== undefined
                   ? product.warrantyPeriod

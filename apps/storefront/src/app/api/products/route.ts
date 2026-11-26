@@ -293,6 +293,9 @@ export async function POST(req: NextRequest) {
         brand: body.brand !== undefined ? body.brand : products[existingIndex].brand,
         shortDescription: body.shortDesc !== undefined ? body.shortDesc : products[existingIndex].shortDescription,
         description: body.description !== undefined ? body.description : products[existingIndex].description,
+        allowedPaymentMethods: Array.isArray(body.allowedPaymentMethods)
+          ? body.allowedPaymentMethods
+          : products[existingIndex].allowedPaymentMethods,
         shipping: body.shipping || products[existingIndex].shipping,
         seoTitle: body.seoTitle !== undefined ? String(body.seoTitle).trim() : (products[existingIndex].seoTitle || ''),
         seoDescription: body.seoDescription !== undefined ? String(body.seoDescription).trim() : (products[existingIndex].seoDescription || ''),
@@ -329,6 +332,9 @@ export async function POST(req: NextRequest) {
         brand: body.brand || '',
         shortDescription: body.shortDesc || '',
         description: body.description || '',
+        allowedPaymentMethods: Array.isArray(body.allowedPaymentMethods)
+          ? body.allowedPaymentMethods
+          : undefined,
         seoTitle: body.seoTitle !== undefined ? String(body.seoTitle).trim() : '',
         seoDescription: body.seoDescription !== undefined ? String(body.seoDescription).trim() : '',
         category: finalCategoryName,

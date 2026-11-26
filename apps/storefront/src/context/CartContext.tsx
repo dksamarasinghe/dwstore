@@ -12,6 +12,7 @@ export interface CartItem {
   priceMinor: number;
   regularPriceMinor?: number | null;
   quantity: number;
+  allowedPaymentMethods?: string[];
   isGrouped?: boolean;
   groupedProducts?: Array<{
     id: string;

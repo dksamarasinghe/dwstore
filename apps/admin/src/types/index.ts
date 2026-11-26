@@ -90,6 +90,7 @@ export interface ProductItem {
   shortDesc?: string;
   description?: string;
   warrantyPeriod?: string;
+  allowedPaymentMethods?: string[];
   seoTitle?: string;
   seoDescription?: string;
   shipping?: ShippingDetails;

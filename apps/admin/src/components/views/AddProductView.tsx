@@ -30,6 +30,7 @@ import {
   Trash2,
   Star,
   CheckCircle2,
+  CreditCard,
   FolderOpen
 } from 'lucide-react';
 import { AttributeItem, BrandItem, CategoryItem, ProductItem, ProductVariationItem, ShippingDetails, TabType } from '../../types';
@@ -48,6 +49,56 @@ interface AddProductViewProps {
   setActiveTab: (tab: TabType) => void;
   showNotification: (msg: string) => void;
 }
+
+const ALL_PAYMENT_GATEWAY_KEYS = ['cod', 'bank', 'payhere', 'koko', 'payzy'];
+
+const PAYMENT_GATEWAY_CONFIG = [
+  {
+    id: 'cod',
+    name: 'Cash on Delivery (COD)',
+    badge: 'Cash',
+    badgeBg: '#dcfce7',
+    badgeColor: '#166534',
+    desc: 'Pay cash to the courier delivery rider upon doorstep arrival.',
+    icon: '💵',
+  },
+  {
+    id: 'bank',
+    name: 'Direct Bank Transfer / Deposit',
+    badge: 'Bank Transfer',
+    badgeBg: '#e0f2fe',
+    badgeColor: '#0369a1',
+    desc: 'Direct bank deposit into Commercial Bank account with slip upload.',
+    icon: '🏦',
+  },
+  {
+    id: 'payhere',
+    name: 'Visa / MasterCard (PayHere Online Card)',
+    badge: 'Online Card',
+    badgeBg: '#dbeafe',
+    badgeColor: '#1d4ed8',
+    desc: 'Instant 256-bit secure online card payment via PayHere.',
+    icon: '💳',
+  },
+  {
+    id: 'koko',
+    name: 'Koko (Buy Now Pay Later)',
+    badge: '3 Installments',
+    badgeBg: '#f3e8ff',
+    badgeColor: '#6d28d9',
+    desc: 'Pay in 3 monthly installments with 0% interest using debit/credit card.',
+    icon: '🟣',
+  },
+  {
+    id: 'payzy',
+    name: 'Payzy (Buy Now Pay Later)',
+    badge: '4 Installments',
+    badgeBg: '#ccfbf1',
+    badgeColor: '#0f766e',
+    desc: 'Pay in 4 monthly installments with Payzy.',
+    icon: '🟢',
+  },
+];
 
 interface WorkingAttribute {
   id: string;
@@ -710,6 +761,23 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
     showNotification('Reset warranty presets to default list.');
   };
 
+  // Payment Methods / Gateways configuration (all vs custom)
+  const [paymentMethodsMode, setPaymentMethodsMode] = useState<'all' | 'custom'>(() => {
+    if (initialProduct?.allowedPaymentMethods && Array.isArray(initialProduct.allowedPaymentMethods)) {
+      if (initialProduct.allowedPaymentMethods.length < 5 && initialProduct.allowedPaymentMethods.length > 0) {
+        return 'custom';
+      }
+    }
+    return 'all';
+  });
+
+  const [selectedPaymentMethods, setSelectedPaymentMethods] = useState<string[]>(() => {
+    if (initialProduct?.allowedPaymentMethods && Array.isArray(initialProduct.allowedPaymentMethods) && initialProduct.allowedPaymentMethods.length > 0) {
+      return initialProduct.allowedPaymentMethods;
+    }
+    return ALL_PAYMENT_GATEWAY_KEYS;
+  });
+
   // 8. Variable Product Attributes & Variations
   const [newAttrName, setNewAttrName] = useState('');
   const [workingAttributes, setWorkingAttributes] = useState<WorkingAttribute[]>(() => {
@@ -756,6 +824,19 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       setWarrantyPeriod(initialProduct.warrantyPeriod || '');
       setSeoTitle(initialProduct.seoTitle || '');
       setSeoDescription(initialProduct.seoDescription || '');
+
+      if (initialProduct.allowedPaymentMethods && Array.isArray(initialProduct.allowedPaymentMethods)) {
+        if (initialProduct.allowedPaymentMethods.length < 5 && initialProduct.allowedPaymentMethods.length > 0) {
+          setPaymentMethodsMode('custom');
+          setSelectedPaymentMethods(initialProduct.allowedPaymentMethods);
+        } else {
+          setPaymentMethodsMode('all');
+          setSelectedPaymentMethods(ALL_PAYMENT_GATEWAY_KEYS);
+        }
+      } else {
+        setPaymentMethodsMode('all');
+        setSelectedPaymentMethods(ALL_PAYMENT_GATEWAY_KEYS);
+      }
 
       const img = initialProduct.image || initialProduct.displayImage || '';
       setMainImage(img);
@@ -1087,6 +1168,11 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       return;
     }
 
+    if (paymentMethodsMode === 'custom' && selectedPaymentMethods.length === 0) {
+      showNotification('Please select at least 1 payment gateway when using Custom Payment Methods.');
+      return;
+    }
+
     const regP = parseFloat(regularPrice) || 0;
     if (productType === 'simple' && regP <= 0) {
       showNotification('Regular Price is required. Please enter standard selling price.');
@@ -1254,6 +1340,9 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       shortDesc: cleanDescriptionInput(shortDesc),
       description: cleanDescriptionInput(fullDesc),
       warrantyPeriod: warrantyPeriod.trim(),
+      allowedPaymentMethods: paymentMethodsMode === 'custom'
+        ? (selectedPaymentMethods.length > 0 ? selectedPaymentMethods : ALL_PAYMENT_GATEWAY_KEYS)
+        : ALL_PAYMENT_GATEWAY_KEYS,
       seoTitle: seoTitle.trim(),
       seoDescription: seoDescription.trim(),
       shipping: shippingInfo,
@@ -3663,6 +3752,174 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                 <small className="text-muted d-block" style={{ fontSize: '11px' }}>
                   The selected warranty displays on the product page directly beside pricing and delivery information.
                 </small>
+              </div>
+            </div>
+
+            {/* 7B. Product-Wise Payment Methods & Gateways Card */}
+            <div className="card-x mb-4 shadow-sm">
+              <div className="card-head d-flex justify-content-between align-items-center pb-3 mb-3 border-bottom" style={{ borderColor: 'var(--border)' }}>
+                <div>
+                  <div className="d-flex align-items-center gap-2">
+                    <CreditCard size={18} className="text-primary" />
+                    <h5 className="m-0 fw-bold">Payment Methods &amp; Gateways</h5>
+                    <span className="badge bg-primary-subtle text-primary" style={{ fontSize: '11px' }}>
+                      Storefront &amp; Checkout
+                    </span>
+                  </div>
+                  <small className="text-muted" style={{ fontSize: '12px' }}>
+                    Control which payment methods are active for this product. By default, all payment gateways are enabled.
+                  </small>
+                </div>
+              </div>
+
+              <div>
+                {/* Mode Selector */}
+                <div className="d-flex flex-wrap gap-2 mb-3">
+                  <button
+                    type="button"
+                    className={`btn btn-sm d-flex align-items-center gap-2 px-3 py-2 rounded-2 ${
+                      paymentMethodsMode === 'all'
+                        ? 'btn-primary text-white fw-bold shadow-xs'
+                        : 'btn-soft text-muted border'
+                    }`}
+                    onClick={() => {
+                      setPaymentMethodsMode('all');
+                      setSelectedPaymentMethods(ALL_PAYMENT_GATEWAY_KEYS);
+                    }}
+                    style={{ fontSize: '13px' }}
+                  >
+                    <CheckCircle2 size={15} /> All Payment Gateways (Default)
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`btn btn-sm d-flex align-items-center gap-2 px-3 py-2 rounded-2 ${
+                      paymentMethodsMode === 'custom'
+                        ? 'btn-primary text-white fw-bold shadow-xs'
+                        : 'btn-soft text-muted border'
+                    }`}
+                    onClick={() => setPaymentMethodsMode('custom')}
+                    style={{ fontSize: '13px' }}
+                  >
+                    <ListFilter size={15} /> Custom / Specific Gateways Only
+                  </button>
+                </div>
+
+                {paymentMethodsMode === 'all' ? (
+                  <div
+                    className="p-3 rounded-2"
+                    style={{
+                      background: 'var(--bg)',
+                      border: '1px dashed var(--border)',
+                      fontSize: '13px',
+                      color: 'var(--text-muted)'
+                    }}
+                  >
+                    <div className="d-flex align-items-center gap-2 text-success fw-bold mb-1">
+                      <Check size={16} /> All 5 standard payment gateways are active for this product:
+                    </div>
+                    <div className="d-flex flex-wrap gap-2 mt-2">
+                      <span className="badge bg-white text-dark border p-2">💵 Cash on Delivery (COD)</span>
+                      <span className="badge bg-white text-dark border p-2">🏦 Direct Bank Transfer</span>
+                      <span className="badge bg-white text-dark border p-2">💳 Visa / MasterCard (PayHere)</span>
+                      <span className="badge bg-white text-dark border p-2">🟣 Koko (3 Installments)</span>
+                      <span className="badge bg-white text-dark border p-2">🟢 Payzy (4 Installments)</span>
+                    </div>
+                    <small className="d-block mt-2 text-muted" style={{ fontSize: '11px' }}>
+                      All corresponding installment / payment cards will display on the storefront product page and will be active during checkout.
+                    </small>
+                  </div>
+                ) : (
+                  <div className="border rounded-2 p-3" style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}>
+                    <div className="d-flex justify-content-between align-items-center mb-2.5 pb-2 border-bottom" style={{ borderColor: 'var(--border)' }}>
+                      <span className="fw-bold" style={{ fontSize: '13px', color: 'var(--text)' }}>
+                        Select Allowed Gateways ({selectedPaymentMethods.length} of 5 selected):
+                      </span>
+                      <div className="d-flex gap-2">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-link p-0 text-decoration-none"
+                          style={{ fontSize: '12px' }}
+                          onClick={() => setSelectedPaymentMethods(ALL_PAYMENT_GATEWAY_KEYS)}
+                        >
+                          Select All
+                        </button>
+                        <span className="text-muted">|</span>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-link text-danger p-0 text-decoration-none"
+                          style={{ fontSize: '12px' }}
+                          onClick={() => setSelectedPaymentMethods([])}
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="d-flex flex-column gap-2">
+                      {PAYMENT_GATEWAY_CONFIG.map((gw) => {
+                        const isChecked = selectedPaymentMethods.includes(gw.id);
+                        return (
+                          <label
+                            key={gw.id}
+                            className="d-flex align-items-center justify-content-between p-2.5 rounded-2 border transition"
+                            style={{
+                              background: isChecked ? 'rgba(37, 99, 235, 0.05)' : 'var(--card-bg, #ffffff)',
+                              borderColor: isChecked ? '#2563eb' : 'var(--border)',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <div className="d-flex align-items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedPaymentMethods((prev) => [...prev, gw.id]);
+                                  } else {
+                                    setSelectedPaymentMethods((prev) => prev.filter((id) => id !== gw.id));
+                                  }
+                                }}
+                                style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
+                              />
+                              <div>
+                                <div className="d-flex align-items-center gap-2">
+                                  <span style={{ fontSize: '16px' }}>{gw.icon}</span>
+                                  <strong style={{ fontSize: '13px', color: 'var(--text)' }}>{gw.name}</strong>
+                                </div>
+                                <small className="text-muted d-block" style={{ fontSize: '11px' }}>
+                                  {gw.desc}
+                                </small>
+                              </div>
+                            </div>
+                            <span
+                              className="badge px-2.5 py-1"
+                              style={{
+                                backgroundColor: gw.badgeBg,
+                                color: gw.badgeColor,
+                                fontSize: '11px',
+                                fontWeight: 700,
+                              }}
+                            >
+                              {gw.badge}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+
+                    {selectedPaymentMethods.length === 0 && (
+                      <div className="alert alert-warning mt-2.5 mb-0 py-2 px-3 d-flex align-items-center gap-2" style={{ fontSize: '12px' }}>
+                        <Info size={14} className="flex-shrink-0" />
+                        <span>Please select at least 1 payment gateway so customers can purchase this product.</span>
+                      </div>
+                    )}
+
+                    <small className="d-block mt-2 text-muted" style={{ fontSize: '11px' }}>
+                      Only the selected payment gateways will be displayed as price boxes on the product page, and only these will be active for checkout.
+                    </small>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -156,6 +156,68 @@ function CheckoutContent() {
       .catch((err) => console.error('Failed to load gateways config:', err));
   }, []);
 
+  // Fetch fresh catalog products for fallback allowed payment methods
+  const [catalogProducts, setCatalogProducts] = useState<any[]>(() => (productsData as any[]) || []);
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/api/products?t=' + Date.now(), { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (isMounted && data?.products && Array.isArray(data.products)) {
+          setCatalogProducts(data.products);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Intersect allowed payment methods across all items in cart
+  const cartAllowedMethods = useMemo(() => {
+    if (!activeCart || activeCart.length === 0) return ['cod', 'bank', 'payhere', 'koko', 'payzy'];
+
+    const ALL_GW = ['cod', 'bank', 'payhere', 'koko', 'payzy'];
+
+    const perItemAllowed = activeCart.map((item) => {
+      // 1. Direct on cart item
+      if (Array.isArray(item.allowedPaymentMethods) && item.allowedPaymentMethods.length > 0) {
+        return item.allowedPaymentMethods.map((m: string) => (m === 'card' ? 'payhere' : m));
+      }
+      // 2. Lookup in catalog
+      const found = catalogProducts.find(
+        (p) => String(p.id) === String(item.productId) || p.slug === item.slug
+      );
+      if (found && Array.isArray(found.allowedPaymentMethods) && found.allowedPaymentMethods.length > 0) {
+        return found.allowedPaymentMethods.map((m: string) => (m === 'card' ? 'payhere' : m));
+      }
+      // 3. Default: all allowed
+      return ALL_GW;
+    });
+
+    const intersection = perItemAllowed.reduce((acc: string[], curr: string[]) => {
+      return acc.filter((method: string) => curr.includes(method));
+    }, ALL_GW);
+
+    return intersection.length > 0 ? intersection : ALL_GW;
+  }, [activeCart, catalogProducts]);
+
+  const isMethodAllowed = (gwKey: 'cod' | 'bank' | 'payhere' | 'koko' | 'payzy') => {
+    if (!cartAllowedMethods || cartAllowedMethods.length === 0) return true;
+    return cartAllowedMethods.includes(gwKey);
+  };
+
+  // If current paymentMethod is not allowed, auto-switch to first available allowed method
+  useEffect(() => {
+    if (cartAllowedMethods && cartAllowedMethods.length > 0) {
+      const currentGw = paymentMethod === 'card' ? 'payhere' : paymentMethod;
+      if (!cartAllowedMethods.includes(currentGw)) {
+        const firstAllowed = cartAllowedMethods[0];
+        setPaymentMethod((firstAllowed === 'payhere' ? 'card' : firstAllowed) as any);
+      }
+    }
+  }, [cartAllowedMethods, paymentMethod]);
+
   // Map paymentMethod ('cod' | 'bank' | 'card' | 'koko' | 'payzy') to gateway config key ('cod' | 'bank' | 'payhere' | 'koko' | 'payzy')
   const activeGatewayKey = paymentMethod === 'card' ? 'payhere' : paymentMethod;
   const activeGateway = gatewaysConfig?.[activeGatewayKey];
@@ -739,204 +801,221 @@ function CheckoutContent() {
                   </div>
 
                   <div className="space-y-3">
+                    {cartAllowedMethods && cartAllowedMethods.length < 5 && (
+                      <div className="flex items-center gap-2 p-2.5 bg-blue-50/80 border border-blue-200/80 rounded-xl text-xs text-blue-800">
+                        <CreditCard className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <span>Available payment methods have been updated for your selected items.</span>
+                      </div>
+                    )}
+
                     {/* COD */}
-                    <label
-                      className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition ${
-                        paymentMethod === 'cod'
-                          ? 'border-blue-600 bg-blue-50/40 ring-1 ring-blue-600'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="cod"
-                        checked={paymentMethod === 'cod'}
-                        onChange={() => setPaymentMethod('cod')}
-                        className="mt-0.5 text-blue-600 focus:ring-blue-500"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="text-xs font-black text-slate-900 flex items-center gap-2">
-                            <Banknote className="w-4 h-4 text-emerald-600" />
-                            Cash on Delivery (COD)
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            {getGatewayPromoBadge('cod') && (
-                              <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('cod')}
-                              </span>
-                            )}
-                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
-                              Most Popular
+                    {isMethodAllowed('cod') && (
+                      <label
+                        className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition ${
+                          paymentMethod === 'cod'
+                            ? 'border-blue-600 bg-blue-50/40 ring-1 ring-blue-600'
+                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="cod"
+                          checked={paymentMethod === 'cod'}
+                          onChange={() => setPaymentMethod('cod')}
+                          className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className="text-xs font-black text-slate-900 flex items-center gap-2">
+                              <Banknote className="w-4 h-4 text-emerald-600" />
+                              Cash on Delivery (COD)
                             </span>
-                          </div>
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-1">
-                          {gatewaysConfig?.cod?.description || 'Pay cash to the courier delivery rider when your package arrives at your doorstep.'}
-                        </p>
-                      </div>
-                    </label>
-
-                    {/* Bank Transfer */}
-                    <label
-                      className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition ${
-                        paymentMethod === 'bank'
-                          ? 'border-blue-600 bg-blue-50/40 ring-1 ring-blue-600'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="bank"
-                        checked={paymentMethod === 'bank'}
-                        onChange={() => setPaymentMethod('bank')}
-                        className="mt-0.5 text-blue-600 focus:ring-blue-500"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="text-xs font-black text-slate-900 flex items-center gap-2">
-                            <Building2 className="w-4 h-4 text-blue-600" />
-                            Direct Bank Transfer / Deposit
-                          </span>
-                          {getGatewayPromoBadge('bank') && (
-                            <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('bank')}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-1">
-                          {gatewaysConfig?.bank?.description || 'Transfer directly into our bank account and WhatsApp the deposit slip.'}
-                        </p>
-                        {paymentMethod === 'bank' && (
-                          <div className="mt-3 p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2.5 animate-in fade-in duration-200 shadow-xs">
-                            <Sparkles className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                            <p className="leading-relaxed font-medium">
-                              Pay via Direct Bank Transfer and enjoy an extra discount on your order! Please WhatsApp your Order ID to <strong className="font-bold text-blue-700">0756693358</strong> &amp; get our bank details.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </label>
-
-                    {/* KOKO */}
-                    <label
-                      className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition ${
-                        paymentMethod === 'koko'
-                          ? 'border-purple-600 bg-purple-50/40 ring-1 ring-purple-600'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="koko"
-                        checked={paymentMethod === 'koko'}
-                        onChange={() => setPaymentMethod('koko')}
-                        className="mt-0.5 text-purple-600 focus:ring-purple-500"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="text-xs font-black text-slate-900 flex items-center gap-2">
-                            <img src="/koko.png" alt="Koko" className="h-5 w-auto object-contain" />
-                            KOKO - Pay in 3 Installments (BNPL)
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            {getGatewayPromoBadge('koko') && (
-                              <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('koko')}
+                            <div className="flex items-center gap-1.5">
+                              {getGatewayPromoBadge('cod') && (
+                                <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('cod')}
+                                </span>
+                              )}
+                              <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                                Most Popular
                               </span>
-                            )}
-                            <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                              3 X LKR {formatPriceLKR(Math.round((baseTotalMinor * 1.10) / 3))}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-1">
-                          Pay 1/3 today using debit/credit card and the remainder over 2 months (+10% interest rate).
-                        </p>
-                      </div>
-                    </label>
-
-                    {/* Card Payment */}
-                    <label
-                      className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition ${
-                        paymentMethod === 'card'
-                          ? 'border-blue-600 bg-blue-50/40 ring-1 ring-blue-600'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="card"
-                        checked={paymentMethod === 'card'}
-                        onChange={() => setPaymentMethod('card')}
-                        className="mt-0.5 text-blue-600 focus:ring-blue-500"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="text-xs font-black text-slate-900 flex items-center gap-2">
-                            <CreditCard className="w-4 h-4 text-blue-600" />
-                            Credit or Debit Card (Visa / Mastercard)
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            {getGatewayPromoBadge('card') && (
-                              <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('card')}
-                              </span>
-                            )}
-                            <div className="flex items-center gap-1">
-                              <span className="text-[9px] font-black text-blue-700 border border-slate-200 px-1.5 py-0.5 rounded">VISA</span>
-                              <span className="text-[9px] font-black text-red-600 border border-slate-200 px-1.5 py-0.5 rounded">MC</span>
                             </div>
                           </div>
+                          <p className="text-[11px] text-slate-500 mt-1">
+                            {gatewaysConfig?.cod?.description || 'Pay cash to the courier delivery rider when your package arrives at your doorstep.'}
+                          </p>
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-1">
-                          Secure 256-bit encrypted online card payment via PayHere Sri Lanka.
-                        </p>
-                      </div>
-                    </label>
+                      </label>
+                    )}
 
-                    {/* Payzy BNPL */}
-                    <label
-                      className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition ${
-                        paymentMethod === 'payzy'
-                          ? 'border-teal-600 bg-teal-50/40 ring-1 ring-teal-600'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="payzy"
-                        checked={paymentMethod === 'payzy'}
-                        onChange={() => setPaymentMethod('payzy')}
-                        className="mt-0.5 text-teal-600 focus:ring-teal-500"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="text-xs font-black text-slate-900 flex items-center gap-2">
-                            <img src="/payzy.png" alt="Payzy" className="h-5 w-auto object-contain" />
-                            Payzy - Flexible Installments (BNPL)
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            {getGatewayPromoBadge('payzy') && (
+                    {/* Bank Transfer */}
+                    {isMethodAllowed('bank') && (
+                      <label
+                        className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition ${
+                          paymentMethod === 'bank'
+                            ? 'border-blue-600 bg-blue-50/40 ring-1 ring-blue-600'
+                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="bank"
+                          checked={paymentMethod === 'bank'}
+                          onChange={() => setPaymentMethod('bank')}
+                          className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className="text-xs font-black text-slate-900 flex items-center gap-2">
+                              <Building2 className="w-4 h-4 text-blue-600" />
+                              Direct Bank Transfer / Deposit
+                            </span>
+                            {getGatewayPromoBadge('bank') && (
                               <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('payzy')}
+                                <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('bank')}
                               </span>
                             )}
-                            <span className="text-[10px] font-bold bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full">
-                              4 X LKR {formatPriceLKR(Math.round((baseTotalMinor * 1.13) / 4))}
-                            </span>
                           </div>
+                          <p className="text-[11px] text-slate-500 mt-1">
+                            {gatewaysConfig?.bank?.description || 'Transfer directly into our bank account and WhatsApp the deposit slip.'}
+                          </p>
+                          {paymentMethod === 'bank' && (
+                            <div className="mt-3 p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2.5 animate-in fade-in duration-200 shadow-xs">
+                              <Sparkles className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                              <p className="leading-relaxed font-medium">
+                                Pay via Direct Bank Transfer and enjoy an extra discount on your order! Please WhatsApp your Order ID to <strong className="font-bold text-blue-700">0756693358</strong> &amp; get our bank details.
+                              </p>
+                            </div>
+                          )}
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-1">
-                          Split your purchase into interest-free installments using your Debit or Credit card (+13% installment rate).
-                        </p>
-                      </div>
-                    </label>
+                      </label>
+                    )}
+
+                    {/* KOKO */}
+                    {isMethodAllowed('koko') && (
+                      <label
+                        className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition ${
+                          paymentMethod === 'koko'
+                            ? 'border-purple-600 bg-purple-50/40 ring-1 ring-purple-600'
+                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="koko"
+                          checked={paymentMethod === 'koko'}
+                          onChange={() => setPaymentMethod('koko')}
+                          className="mt-0.5 text-purple-600 focus:ring-purple-500"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className="text-xs font-black text-slate-900 flex items-center gap-2">
+                              <img src="/koko.png" alt="Koko" className="h-5 w-auto object-contain" />
+                              KOKO - Pay in 3 Installments (BNPL)
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {getGatewayPromoBadge('koko') && (
+                                <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('koko')}
+                                </span>
+                              )}
+                              <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                                3 X LKR {formatPriceLKR(Math.round((baseTotalMinor * 1.10) / 3))}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-1">
+                            Pay 1/3 today using debit/credit card and the remainder over 2 months (+10% interest rate).
+                          </p>
+                        </div>
+                      </label>
+                    )}
+
+                    {/* Card Payment */}
+                    {isMethodAllowed('payhere') && (
+                      <label
+                        className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition ${
+                          paymentMethod === 'card'
+                            ? 'border-blue-600 bg-blue-50/40 ring-1 ring-blue-600'
+                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="card"
+                          checked={paymentMethod === 'card'}
+                          onChange={() => setPaymentMethod('card')}
+                          className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className="text-xs font-black text-slate-900 flex items-center gap-2">
+                              <CreditCard className="w-4 h-4 text-blue-600" />
+                              Credit or Debit Card (Visa / Mastercard)
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {getGatewayPromoBadge('card') && (
+                                <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('card')}
+                                </span>
+                              )}
+                              <div className="flex items-center gap-1">
+                                <span className="text-[9px] font-black text-blue-700 border border-slate-200 px-1.5 py-0.5 rounded">VISA</span>
+                                <span className="text-[9px] font-black text-red-600 border border-slate-200 px-1.5 py-0.5 rounded">MC</span>
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-1">
+                            Secure 256-bit encrypted online card payment via PayHere Sri Lanka.
+                          </p>
+                        </div>
+                      </label>
+                    )}
+
+                    {/* Payzy BNPL */}
+                    {isMethodAllowed('payzy') && (
+                      <label
+                        className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition ${
+                          paymentMethod === 'payzy'
+                            ? 'border-teal-600 bg-teal-50/40 ring-1 ring-teal-600'
+                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="payzy"
+                          checked={paymentMethod === 'payzy'}
+                          onChange={() => setPaymentMethod('payzy')}
+                          className="mt-0.5 text-teal-600 focus:ring-teal-500"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className="text-xs font-black text-slate-900 flex items-center gap-2">
+                              <img src="/payzy.png" alt="Payzy" className="h-5 w-auto object-contain" />
+                              Payzy - Flexible Installments (BNPL)
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {getGatewayPromoBadge('payzy') && (
+                                <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3 text-emerald-600" /> {getGatewayPromoBadge('payzy')}
+                                </span>
+                              )}
+                              <span className="text-[10px] font-bold bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full">
+                                4 X LKR {formatPriceLKR(Math.round((baseTotalMinor * 1.13) / 4))}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-1">
+                            Split your purchase into interest-free installments using your Debit or Credit card (+13% installment rate).
+                          </p>
+                        </div>
+                      </label>
+                    )}
                   </div>
                 </div>
               </div>
