@@ -19,6 +19,7 @@ import {
   Tag,
   MessageCircle,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
 
 const STANDARD_SHIPPING_FEE_MINOR = 35000; // LKR 350.00
@@ -245,6 +246,15 @@ export default function CartPage() {
                                 ))}
                               </div>
                             )}
+                            {item.comboDiscountBadge && (
+                              <div className="mt-1">
+                                <span className="inline-flex items-center gap-1 text-[10px] bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-800 font-bold px-2 py-0.5 rounded-md border border-purple-200">
+                                  <Sparkles className="w-2.5 h-2.5 text-purple-600" />
+                                  {item.comboDiscountBadge}
+                                </span>
+                              </div>
+                            )}
+
                             {item.isGrouped && item.groupedProducts && item.groupedProducts.length > 0 && (
                               <div className="mt-1.5 p-2 bg-purple-50/80 border border-purple-100 rounded-lg max-w-sm">
                                 <span className="text-[10px] font-bold text-purple-800 block mb-0.5">
@@ -276,7 +286,14 @@ export default function CartPage() {
                         {/* Price */}
                         <div className="sm:col-span-2 sm:text-center flex justify-between sm:block text-xs">
                           <span className="sm:hidden text-slate-500">Unit Price:</span>
-                          <span className="font-bold text-slate-800">LKR {formatPriceLKR(item.priceMinor)}</span>
+                          <div>
+                            <span className="font-bold text-slate-800">LKR {formatPriceLKR(item.priceMinor)}</span>
+                            {item.regularPriceMinor && item.regularPriceMinor > item.priceMinor && (
+                              <span className="block text-[10px] text-slate-400 line-through">
+                                LKR {formatPriceLKR(item.regularPriceMinor)}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Quantity */}

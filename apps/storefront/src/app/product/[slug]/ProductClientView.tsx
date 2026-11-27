@@ -32,7 +32,7 @@ import {
 
 export function ProductClientView({ slug, initialProduct }: { slug: string; initialProduct?: any }) {
   const router = useRouter();
-  const { addToCart } = useCart();
+  const { addToCart, addMultipleToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   
   const [product, setProduct] = useState<any>(() => {
@@ -382,20 +382,21 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
     product.comboDeal.companionProducts.length > 0
   );
 
-  const primaryCompanion = useMemo(() => {
-    if (!hasComboDeal || !product?.comboDeal?.companionProducts) return null;
-    return product.comboDeal.companionProducts[0];
+  const comboCompanions = useMemo(() => {
+    if (!hasComboDeal || !product?.comboDeal?.companionProducts) return [];
+    return product.comboDeal.companionProducts;
   }, [hasComboDeal, product]);
 
-  const companionPriceMinor = useMemo(() => {
-    if (!primaryCompanion) return 0;
-    const p = primaryCompanion.salePrice || primaryCompanion.price || primaryCompanion.regularPrice || 0;
-    return Math.round(p * 100);
-  }, [primaryCompanion]);
+  const companionsTotalRegularMinor = useMemo(() => {
+    return comboCompanions.reduce((sum: number, comp: any) => {
+      const p = comp.salePrice || comp.price || comp.regularPrice || 0;
+      return sum + Math.round(p * 100);
+    }, 0);
+  }, [comboCompanions]);
 
   const comboCombinedRegularMinor = useMemo(() => {
-    return activePriceMinor + companionPriceMinor;
-  }, [activePriceMinor, companionPriceMinor]);
+    return activePriceMinor + companionsTotalRegularMinor;
+  }, [activePriceMinor, companionsTotalRegularMinor]);
 
   const comboDealPriceMinor = useMemo(() => {
     if (!product?.comboDeal) return comboCombinedRegularMinor;
@@ -583,7 +584,7 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
   };
 
   const handleAddComboToCart = () => {
-    if (!primaryCompanion) return;
+    if (comboCompanions.length === 0) return;
     setValidationError(null);
 
     // If variable product and customer hasn't selected an option
@@ -604,47 +605,75 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       ? ` (${Object.values(matchedVariation.attributes).join(' / ')})`
       : '';
 
-    addToCart({
-      productId: `${product.id}-combo-${primaryCompanion.id}`,
-      name: `${product.name}${mainVarLabel} + ${primaryCompanion.name} (Combo Deal)`,
-      slug: product.slug,
-      image: activeImage,
-      priceMinor: comboDealPriceMinor,
-      regularPriceMinor: comboCombinedRegularMinor,
-      quantity: 1,
-      allowedPaymentMethods: product.allowedPaymentMethods,
-      isGrouped: true,
-      groupedProducts: [
-        {
-          id: product.id,
-          name: `${product.name}${mainVarLabel}`,
-          image: activeImage,
-          regularPrice: (activeRegularPriceMinor ? activeRegularPriceMinor / 100 : activePriceMinor / 100),
-          salePrice: activePriceMinor / 100,
-          quantity: 1,
-          productType: isVariable ? 'variable' : 'simple',
-          slug: product.slug,
-          sku: product.sku || ''
-        },
-        {
-          id: primaryCompanion.id,
-          name: primaryCompanion.name,
-          image: primaryCompanion.image || '/placeholder-product.png',
-          regularPrice: primaryCompanion.regularPrice || (companionPriceMinor / 100),
-          salePrice: companionPriceMinor / 100,
-          quantity: 1,
-          productType: 'simple',
-          slug: primaryCompanion.slug || primaryCompanion.id,
-          sku: primaryCompanion.sku || ''
+    // Calculate proportional discounted prices so the individual items sum up to exactly comboDealPriceMinor
+    let mainDiscountedPriceMinor = activePriceMinor;
+    const compAllocatedPrices: number[] = [];
+
+    if (comboCombinedRegularMinor > 0 && comboSavingsMinor > 0) {
+      let allocatedTotal = 0;
+      const mainRatio = activePriceMinor / comboCombinedRegularMinor;
+      mainDiscountedPriceMinor = Math.round(comboDealPriceMinor * mainRatio);
+      allocatedTotal += mainDiscountedPriceMinor;
+
+      comboCompanions.forEach((comp: any, idx: number) => {
+        const compReg = Math.round((comp.salePrice || comp.price || comp.regularPrice || 0) * 100);
+        if (idx === comboCompanions.length - 1) {
+          // Final item absorbs any cent remainder so the exact sum matches comboDealPriceMinor
+          const remainder = Math.max(0, comboDealPriceMinor - allocatedTotal);
+          compAllocatedPrices.push(remainder);
+        } else {
+          const compRatio = compReg / comboCombinedRegularMinor;
+          const discounted = Math.round(comboDealPriceMinor * compRatio);
+          compAllocatedPrices.push(discounted);
+          allocatedTotal += discounted;
         }
-      ],
-      variation: matchedVariation
-        ? {
-            id: matchedVariation.id,
-            attributes: matchedVariation.attributes || selectedAttributes,
-          }
-        : null,
-    }, true);
+      });
+    } else {
+      comboCompanions.forEach((comp: any) => {
+        compAllocatedPrices.push(Math.round((comp.salePrice || comp.price || comp.regularPrice || 0) * 100));
+      });
+    }
+
+    const comboSavingsLabel = comboSavingsMinor > 0 ? 'Combo Savings Included' : undefined;
+
+    const itemsToAdd: any[] = [
+      // 1. Main Product as its own cart item
+      {
+        productId: String(product.id),
+        name: `${product.name}${mainVarLabel}`,
+        slug: (product.slug || '').replace(/-\d+$/, ''),
+        image: activeImage,
+        priceMinor: mainDiscountedPriceMinor,
+        regularPriceMinor: activePriceMinor,
+        quantity: 1,
+        allowedPaymentMethods: product.allowedPaymentMethods,
+        comboDiscountBadge: comboSavingsLabel,
+        variation: matchedVariation
+          ? {
+              id: matchedVariation.id,
+              attributes: matchedVariation.attributes || selectedAttributes,
+            }
+          : null,
+      },
+      // 2. All Companion Products as individual cart items
+      ...comboCompanions.map((comp: any, idx: number) => {
+        const compReg = Math.round((comp.salePrice || comp.price || comp.regularPrice || 0) * 100);
+        return {
+          productId: String(comp.id),
+          name: comp.name,
+          slug: (comp.slug || comp.id).replace(/-\d+$/, ''),
+          image: comp.image || '/placeholder-product.png',
+          priceMinor: compAllocatedPrices[idx],
+          regularPriceMinor: compReg,
+          quantity: 1,
+          allowedPaymentMethods: comp.allowedPaymentMethods || product.allowedPaymentMethods,
+          comboDiscountBadge: comboSavingsLabel,
+          variation: null,
+        };
+      }),
+    ];
+
+    addMultipleToCart(itemsToAdd, true);
     setAddedNotice(true);
     setTimeout(() => setAddedNotice(false), 3000);
   };
@@ -1125,99 +1154,124 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
               )}
 
               {/* Frequently Bought Together / Combo Deal Box (Optional Add-on) */}
-              {hasComboDeal && primaryCompanion && (
-                <div className="rounded-2xl border-2 border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-purple-50/30 to-white p-4 sm:p-5 shadow-xs space-y-3.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-600 text-white shadow-xs">
+              {hasComboDeal && comboCompanions.length > 0 && (
+                <div className="rounded-2xl border-2 border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-purple-50/30 to-white p-3.5 sm:p-5 shadow-xs space-y-3 sm:space-y-4">
+                  {/* Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-xs flex-shrink-0">
                         <Package className="w-4 h-4" />
                       </span>
                       <div>
-                        <h4 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
-                          Frequently Bought Together (Combo Deal)
+                        <h4 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight flex items-center gap-1.5 flex-wrap">
+                          <span>Frequently Bought Together</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-100/70 px-1.5 py-0.5 rounded">
+                            Combo Deal
+                          </span>
                         </h4>
                         <p className="text-[11px] text-slate-500 font-medium">
-                          Buy both gadgets together and enjoy an instant combo discount!
+                          Buy gadgets together and enjoy an instant combo bundle discount!
                         </p>
                       </div>
                     </div>
                     {comboSavingsMinor > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-black shadow-xs">
+                      <span className="inline-flex self-start sm:self-center items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-black shadow-xs flex-shrink-0">
                         <Sparkles className="w-3 h-3" />
                         <span>Save Rs. {(comboSavingsMinor / 100).toLocaleString()}</span>
                       </span>
                     )}
                   </div>
 
-                  {/* Dual Product Thumbnail Row */}
-                  <div className="flex items-center gap-2 sm:gap-3 bg-white/80 backdrop-blur-xs p-3 rounded-xl border border-indigo-100/70">
-                    {/* Main Item */}
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-slate-50 border border-slate-200 p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                  {/* Responsive Product Cards: Stacks cleanly on mobile, side-by-side on wider screens */}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2.5">
+                    {/* Main Item Card */}
+                    <div className="flex items-center gap-3 bg-white/95 p-3 rounded-xl border border-indigo-100/90 shadow-2xs flex-1 min-w-0">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-slate-50 border border-slate-200 p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
                         <img
                           src={activeImage}
                           alt={product.name}
-                          className="w-full h-full object-contain"
+                          className="w-full h-full object-contain mix-blend-multiply"
                         />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
-                          This Item {matchedVariation ? `(${Object.values(matchedVariation.attributes || {}).join(', ')})` : ''}
+                        <span className="inline-block text-[10px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-200/60 px-1.5 py-0.5 rounded mb-1 truncate max-w-full">
+                          This Item {matchedVariation ? `• ${Object.values(matchedVariation.attributes || {}).join(' / ')}` : ''}
                         </span>
-                        <p className="text-xs font-bold text-slate-800 truncate" title={product.name}>
+                        <p className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-2 leading-tight" title={product.name}>
                           {product.name}
                         </p>
-                        <p className="text-xs font-black text-slate-900">
-                          Rs. {(activePriceMinor / 100).toLocaleString()}
-                        </p>
+                        <div className="flex items-baseline gap-1.5 mt-1">
+                          <span className="text-xs sm:text-sm font-black text-slate-900">
+                            Rs. {(activePriceMinor / 100).toLocaleString()}
+                          </span>
+                          {activeRegularPriceMinor && activeRegularPriceMinor > activePriceMinor && (
+                            <span className="text-[10px] sm:text-xs text-slate-400 line-through font-semibold">
+                              Rs. {(activeRegularPriceMinor / 100).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Plus Icon */}
-                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-black text-xs flex-shrink-0">
-                      +
-                    </div>
+                    {/* Plus Divider between main and companions */}
+                    {comboCompanions.map((comp: any, cIdx: number) => (
+                      <React.Fragment key={comp.id || cIdx}>
+                        <div className="flex items-center justify-center my-0.5 sm:my-0 flex-shrink-0">
+                          <span className="flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-black text-xs shadow-xs ring-2 ring-indigo-100">
+                            +
+                          </span>
+                        </div>
 
-                    {/* Companion Item */}
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-slate-50 border border-slate-200 p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                        <img
-                          src={primaryCompanion.image || '/placeholder-product.png'}
-                          alt={primaryCompanion.name}
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
-                          Companion Gadget
-                        </span>
-                        <p className="text-xs font-bold text-slate-800 truncate" title={primaryCompanion.name}>
-                          {primaryCompanion.name}
-                        </p>
-                        <p className="text-xs font-black text-slate-900">
-                          Rs. {(companionPriceMinor / 100).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
+                        {/* Companion Item Card */}
+                        <div className="flex items-center gap-3 bg-white/95 p-3 rounded-xl border border-indigo-100/90 shadow-2xs flex-1 min-w-0">
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-slate-50 border border-slate-200 p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                            <img
+                              src={comp.image || '/placeholder-product.png'}
+                              alt={comp.name}
+                              className="w-full h-full object-contain mix-blend-multiply"
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="inline-block text-[10px] font-black uppercase tracking-wider text-purple-700 bg-purple-50 border border-purple-200/60 px-1.5 py-0.5 rounded mb-1 truncate max-w-full">
+                              Companion Gadget
+                            </span>
+                            <p className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-2 leading-tight" title={comp.name}>
+                              {comp.name}
+                            </p>
+                            <div className="flex items-baseline gap-1.5 mt-1">
+                              <span className="text-xs sm:text-sm font-black text-slate-900">
+                                Rs. {((comp.salePrice || comp.price || comp.regularPrice || 0)).toLocaleString()}
+                              </span>
+                              {comp.regularPrice && comp.salePrice && comp.regularPrice > comp.salePrice && (
+                                <span className="text-[10px] sm:text-xs text-slate-400 line-through font-semibold">
+                                  Rs. {comp.regularPrice.toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    ))}
                   </div>
 
                   {/* Pricing Comparison & Add Both Button */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                  <div className="bg-indigo-950/5 p-3 sm:p-4 rounded-xl border border-indigo-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                     <div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-xs text-slate-500 font-bold">Combo Deal Price:</span>
-                        <span className="text-base sm:text-lg font-black text-indigo-600">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <span className="text-xs text-slate-600 font-bold">Total Combo Price:</span>
+                        <span className="text-base sm:text-xl font-black text-indigo-700">
                           Rs. {(comboDealPriceMinor / 100).toLocaleString()}
                         </span>
                         {comboSavingsMinor > 0 && (
-                          <span className="text-xs text-slate-400 line-through font-semibold">
+                          <span className="text-xs sm:text-sm text-slate-400 line-through font-semibold">
                             Rs. {(comboCombinedRegularMinor / 100).toLocaleString()}
                           </span>
                         )}
                       </div>
                       {comboSavingsMinor > 0 && (
-                        <p className="text-[11px] text-emerald-600 font-bold">
-                          🎉 Instant Combo Savings: Rs. {(comboSavingsMinor / 100).toLocaleString()} OFF
+                        <p className="text-[11px] sm:text-xs text-emerald-700 font-black mt-0.5 flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600 inline" />
+                          <span>Instant Combo Savings: Rs. {(comboSavingsMinor / 100).toLocaleString()} OFF</span>
                         </p>
                       )}
                     </div>
@@ -1225,10 +1279,10 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
                     <button
                       type="button"
                       onClick={handleAddComboToCart}
-                      className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg transition cursor-pointer flex-shrink-0"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:scale-[0.98] text-white font-black text-xs sm:text-sm px-5 py-3 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer flex-shrink-0"
                     >
                       <ShoppingCart className="w-4 h-4" />
-                      <span>Add Both to Cart</span>
+                      <span>{comboCompanions.length > 1 ? `Add All (${comboCompanions.length + 1} Items) to Cart` : 'Add Both to Cart'}</span>
                     </button>
                   </div>
                 </div>

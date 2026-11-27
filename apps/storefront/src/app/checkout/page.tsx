@@ -1045,6 +1045,14 @@ function CheckoutContent() {
                               {Object.entries(item.variation.attributes || {}).map(([k, v]) => `${k}: ${v}`).join(', ')}
                             </p>
                           )}
+                          {item.comboDiscountBadge && (
+                            <div className="mt-0.5">
+                              <span className="inline-flex items-center gap-1 text-[10px] bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-800 font-bold px-1.5 py-0.2 rounded-md border border-purple-200">
+                                <Sparkles className="w-2.5 h-2.5 text-purple-600" />
+                                {item.comboDiscountBadge}
+                              </span>
+                            </div>
+                          )}
                           {item.isGrouped && item.groupedProducts && item.groupedProducts.length > 0 && (
                             <p className="text-[10px] text-purple-700 mt-0.5 font-medium line-clamp-1" title={item.groupedProducts.map((g: any) => `${g.name}${g.quantity && g.quantity > 1 ? ` (x${g.quantity})` : ''}`).join(', ')}>
                               Combo: {item.groupedProducts.map((g: any) => `${g.name}${g.quantity && g.quantity > 1 ? ` (x${g.quantity})` : ''}`).join(', ')}
@@ -1089,6 +1097,11 @@ function CheckoutContent() {
                           <span className="font-bold text-slate-900 block">
                             LKR {formatPriceLKR(item.priceMinor * item.quantity)}
                           </span>
+                          {item.regularPriceMinor && item.regularPriceMinor > item.priceMinor && (
+                            <span className="text-[10px] text-slate-400 line-through block">
+                              LKR {formatPriceLKR(item.regularPriceMinor * item.quantity)}
+                            </span>
+                          )}
                           {item.quantity > 1 && (
                             <span className="text-[10px] text-slate-400">
                               LKR {formatPriceLKR(item.priceMinor)} ea

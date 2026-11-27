@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { formatPriceLKR } from '@/lib/catalog';
-import { X, ShoppingBag, Plus, Minus, Trash2, ArrowRight, ShieldCheck, Truck, MessageCircle } from 'lucide-react';
+import { X, ShoppingBag, Plus, Minus, Trash2, ArrowRight, ShieldCheck, Truck, MessageCircle, Sparkles } from 'lucide-react';
 
 export default function CartDrawer() {
   const { cart, isOpen, closeCart, updateQuantity, removeFromCart, subtotalMinor, itemCount } = useCart();
@@ -117,6 +117,15 @@ export default function CartDrawer() {
                         </div>
                       )}
 
+                      {item.comboDiscountBadge && (
+                        <div className="mt-1">
+                          <span className="inline-flex items-center gap-1 text-[10px] bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-800 font-bold px-2 py-0.5 rounded-md border border-purple-200">
+                            <Sparkles className="w-2.5 h-2.5 text-purple-600" />
+                            {item.comboDiscountBadge}
+                          </span>
+                        </div>
+                      )}
+
                       {item.isGrouped && item.groupedProducts && item.groupedProducts.length > 0 && (
                         <div className="mt-1.5 p-1.5 bg-purple-50/80 border border-purple-100 rounded-lg">
                           <span className="text-[10px] font-bold text-purple-800 block mb-0.5">
@@ -161,6 +170,11 @@ export default function CartDrawer() {
                         <span className="text-xs font-black text-slate-900 block leading-tight">
                           LKR {formatPriceLKR(item.priceMinor * item.quantity)}
                         </span>
+                        {item.regularPriceMinor && item.regularPriceMinor > item.priceMinor && (
+                          <span className="text-[10px] text-slate-400 line-through block">
+                            LKR {formatPriceLKR(item.regularPriceMinor * item.quantity)}
+                          </span>
+                        )}
                         {item.quantity > 1 && (
                           <span className="text-[10px] text-slate-400 block">
                             (LKR {formatPriceLKR(item.priceMinor)} each)

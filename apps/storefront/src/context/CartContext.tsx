@@ -13,6 +13,7 @@ export interface CartItem {
   regularPriceMinor?: number | null;
   quantity: number;
   allowedPaymentMethods?: string[];
+  comboDiscountBadge?: string;
   isGrouped?: boolean;
   groupedProducts?: Array<{
     id: string;
@@ -38,6 +39,7 @@ interface CartContextType {
   closeCart: () => void;
   toggleCart: () => void;
   addToCart: (item: Omit<CartItem, 'id'>, openDrawer?: boolean) => void;
+  addMultipleToCart: (items: Array<Omit<CartItem, 'id'>>, openDrawer?: boolean) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
@@ -113,6 +115,46 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const addMultipleToCart = (newItems: Array<Omit<CartItem, 'id'>>, openDrawer = true) => {
+    if (!newItems || newItems.length === 0) return;
+
+    setCart((prevCart) => {
+      let updated = [...prevCart];
+      newItems.forEach((newItem) => {
+        const variationKey = newItem.variation
+          ? Object.entries(newItem.variation.attributes)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([k, v]) => `${k}:${v}`)
+              .join('|')
+          : '';
+        const cartItemId = `${newItem.productId}_${variationKey}`;
+        const existingIndex = updated.findIndex((i) => i.id === cartItemId);
+        if (existingIndex > -1) {
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            quantity: updated[existingIndex].quantity + newItem.quantity,
+            priceMinor: newItem.priceMinor,
+            regularPriceMinor: newItem.regularPriceMinor ?? updated[existingIndex].regularPriceMinor,
+            comboDiscountBadge: newItem.comboDiscountBadge || updated[existingIndex].comboDiscountBadge,
+          };
+        } else {
+          updated.push({ ...newItem, id: cartItemId });
+        }
+      });
+      return updated;
+    });
+
+    if (openDrawer) {
+      setIsOpen(true);
+    }
+
+    newItems.forEach((item) => {
+      try {
+        trackAddToCart(item);
+      } catch (e) {}
+    });
+  };
+
   const removeFromCart = (id: string) => {
     setCart((prev) => prev.filter((item) => item.id !== id));
   };
@@ -147,6 +189,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         closeCart,
         toggleCart,
         addToCart,
+        addMultipleToCart,
         removeFromCart,
         updateQuantity,
         clearCart,
