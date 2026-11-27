@@ -1743,8 +1743,8 @@ export default function App() {
       <div
         className="main flex-grow-1 d-flex flex-column"
         style={{
-          marginLeft: collapsed ? 'var(--sb-w-c, 76px)' : 'var(--sb-w, 264px)',
           minHeight: '100vh',
+          minWidth: 0,
         }}
       >
         {/* Topbar */}

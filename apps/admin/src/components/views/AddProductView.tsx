@@ -1348,7 +1348,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
   return (
     <div className="content">
       {/* Top Header */}
-      <div className="page-head d-flex justify-content-between align-items-center mb-4">
+      <div className="page-head d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
           <button
             type="button"
@@ -1367,12 +1367,37 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
               : 'Configure product type, pricing, variations, stock, shipping and technical details.'}
           </p>
         </div>
+
+        {/* Top Actions (Desktop & Mobile accessible) */}
+        <div className="d-flex align-items-center gap-2">
+          <button
+            type="button"
+            className="btn-soft px-3 py-2 d-flex align-items-center gap-1.5"
+            style={{ fontSize: '13px', borderRadius: '8px' }}
+            onClick={() => setActiveTab('products')}
+          >
+            <X size={15} /> Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSaveProduct()}
+            className="btn text-white px-4 py-2 fw-semibold d-flex align-items-center gap-2 shadow-sm"
+            style={{
+              background: '#0f172a',
+              border: '1px solid #0f172a',
+              fontSize: '13px',
+              borderRadius: '8px'
+            }}
+          >
+            <Check size={16} /> {isEditing ? 'Update Product' : 'Save Product'}
+          </button>
+        </div>
       </div>
 
-      <form onSubmit={handleSaveProduct}>
-        <div className="row g-4">
+      <form onSubmit={handleSaveProduct} className="pb-5 pb-lg-0">
+        <div className="row g-3 g-xl-4">
           {/* Main Left Columns */}
-          <div className="col-12 col-xl-8">
+          <div className="col-12 col-lg-8 col-xl-8 col-xxl-8">
             {/* 1. Product Type Card (Black Border & Dark Theme) */}
             <div className="card-x mb-4 shadow-sm">
               <div className="card-head pb-3 mb-3 border-bottom" style={{ borderColor: 'var(--border)' }}>
@@ -3880,18 +3905,21 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
             </div>
 
           {/* Right Column: Actions, Profit Preview & Quick Tips */}
-          <div className="col-12 col-xl-4">
-            <div style={{ position: 'sticky', top: '90px' }}>
+          <div className="col-12 col-lg-4 col-xl-4 col-xxl-4">
+            <div style={{ position: 'sticky', top: '85px', zIndex: 10 }}>
               {/* Actions Card (Black Buttons) */}
               <div className="card-x mb-3 shadow-sm">
-                <div className="card-head pb-2 mb-3 border-bottom" style={{ borderColor: 'var(--border)' }}>
+                <div className="card-head pb-2 mb-3 border-bottom d-flex align-items-center justify-content-between" style={{ borderColor: 'var(--border)' }}>
                   <h6 className="m-0 fw-bold">Actions</h6>
+                  <span className="badge rounded-pill bg-primary-subtle text-primary" style={{ fontSize: '10px' }}>
+                    {isEditing ? 'Editing' : 'New'}
+                  </span>
                 </div>
 
                 <div className="d-flex flex-column gap-2">
                   <button
                     type="submit"
-                    className="btn w-100 text-white py-2 fw-semibold d-flex align-items-center justify-content-center gap-2"
+                    className="btn w-100 text-white py-2.5 fw-semibold d-flex align-items-center justify-content-center gap-2 shadow-sm"
                     style={{
                       background: '#0f172a',
                       border: '1px solid #0f172a',
@@ -3920,24 +3948,24 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                 </div>
 
                 <div className="d-flex flex-column gap-2" style={{ fontSize: '13px' }}>
-                  <div className="d-flex justify-content-between">
+                  <div className="d-flex justify-content-between align-items-center flex-wrap gap-1">
                     <span className="text-muted">Selling Price</span>
-                    <b>Rs {profitData.selling.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
+                    <b className="text-nowrap">Rs {profitData.selling.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
                   </div>
-                  <div className="d-flex justify-content-between">
+                  <div className="d-flex justify-content-between align-items-center flex-wrap gap-1">
                     <span className="text-muted">Cost Price</span>
-                    <b>Rs {profitData.cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
+                    <b className="text-nowrap">Rs {profitData.cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
                   </div>
                   <hr className="my-1" style={{ borderColor: 'var(--border)' }} />
-                  <div className="d-flex justify-content-between">
+                  <div className="d-flex justify-content-between align-items-center flex-wrap gap-1">
                     <span className="fw-semibold">Gross Profit</span>
-                    <b style={{ fontSize: '15px' }}>
+                    <b className="text-nowrap text-success" style={{ fontSize: '15px' }}>
                       Rs {profitData.grossProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </b>
                   </div>
-                  <div className="d-flex justify-content-between">
+                  <div className="d-flex justify-content-between align-items-center flex-wrap gap-1">
                     <span className="text-muted">Margin</span>
-                    <b>{profitData.margin.toFixed(1)}%</b>
+                    <b className="text-nowrap">{profitData.margin.toFixed(1)}%</b>
                   </div>
                 </div>
               </div>
@@ -3965,6 +3993,39 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Mobile Floating Bottom Action Bar */}
+        <div
+          className="d-lg-none position-fixed bottom-0 start-0 end-0 p-3 shadow-lg border-top d-flex align-items-center gap-2"
+          style={{
+            background: 'var(--card)',
+            borderColor: 'var(--border)',
+            zIndex: 1040,
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <button
+            type="button"
+            className="btn-soft flex-grow-1 py-2.5 d-flex align-items-center justify-content-center gap-1.5"
+            style={{ fontSize: '13px', borderRadius: '8px' }}
+            onClick={() => setActiveTab('products')}
+          >
+            <X size={15} /> Cancel
+          </button>
+          <button
+            type="submit"
+            className="btn text-white py-2.5 fw-semibold d-flex align-items-center justify-content-center gap-2 shadow-sm"
+            style={{
+              flex: '2 1 0%',
+              background: '#0f172a',
+              border: '1px solid #0f172a',
+              fontSize: '13px',
+              borderRadius: '8px'
+            }}
+          >
+            <Check size={16} /> {isEditing ? 'Update Product' : 'Save Product'}
+          </button>
         </div>
       </form>
 
