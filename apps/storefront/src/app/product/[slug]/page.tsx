@@ -16,17 +16,31 @@ const BASE_URL = 'https://www.dwstore.lk';
 function findProduct(slug: string) {
   const decoded = decodeURIComponent(slug).trim();
   const products = readDataJson<any[]>('products.json', productsData as any[]);
-  // 1. Direct match by exact slug or id
+  const cleanUrlSlug = decoded.replace(/-\d+$/, '');
+
+  // 1. Direct match by exact slug, id, or clean slug
   const direct = products.find(
-    (p) => p.slug === decoded || String(p.id) === decoded || p.slug === slug || String(p.id) === slug
+    (p) => {
+      const pSlug = (p.slug || '').replace(/-\d+$/, '');
+      return p.slug === decoded || pSlug === cleanUrlSlug || String(p.id) === decoded || String(p.id) === cleanUrlSlug;
+    }
   );
-  if (direct) return direct;
+  if (direct) {
+    if (direct.slug) direct.slug = direct.slug.replace(/-\d+$/, '');
+    return direct;
+  }
 
   // 2. Backward compatibility: if URL has old trailing SKU/ID number (e.g. anker-soundcore-r60i-nc-true-wireless-anc-earbuds-33554)
-  const cleanUrlSlug = decoded.replace(/-\d+$/, '');
-  return products.find(
-    (p) => p.slug === cleanUrlSlug || p.slug.replace(/-\d+$/, '') === cleanUrlSlug || String(p.id) === decoded.split('-').pop()
+  const fallback = products.find(
+    (p) => {
+      const pSlug = (p.slug || '').replace(/-\d+$/, '');
+      return pSlug === cleanUrlSlug || String(p.id) === decoded.split('-').pop();
+    }
   );
+  if (fallback && fallback.slug) {
+    fallback.slug = fallback.slug.replace(/-\d+$/, '');
+  }
+  return fallback;
 }
 
 function getAbsoluteImageUrl(imagePath?: string): string {
@@ -122,8 +136,9 @@ export default function ProductPage({ params }: PageProps) {
 
   // If visitor navigated using an old SKU-suffixed link (e.g. ...-33554), redirect to the clean SEO URL
   const decodedParam = decodeURIComponent(params.slug).trim();
-  if (product.slug && decodedParam !== product.slug) {
-    redirect(`/product/${product.slug}`);
+  const cleanCanonicalSlug = (product.slug || '').replace(/-\d+$/, '');
+  if (cleanCanonicalSlug && (decodedParam !== cleanCanonicalSlug || /-\d+$/.test(decodedParam))) {
+    redirect(`/product/${cleanCanonicalSlug}`);
   }
 
   const priceMinor = product.salePriceMinor || product.minPriceMinor || product.regularPriceMinor || 0;

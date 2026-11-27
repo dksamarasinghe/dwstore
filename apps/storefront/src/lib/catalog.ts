@@ -104,9 +104,16 @@ export function getAllBrands(): Brand[] {
 export function getProductBySlug(slug: string): Product | undefined {
   const products = getAllProducts();
   const direct = products.find((p) => p.slug === slug || p.id === slug);
-  if (direct) return direct;
+  if (direct) {
+    if (direct.slug) direct.slug = direct.slug.replace(/-\d+$/, '');
+    return direct;
+  }
   const clean = slug.replace(/-\d+$/, '');
-  return products.find((p) => p.slug === clean || p.slug.replace(/-\d+$/, '') === clean);
+  const found = products.find((p) => p.slug === clean || p.slug.replace(/-\d+$/, '') === clean);
+  if (found && found.slug) {
+    found.slug = found.slug.replace(/-\d+$/, '');
+  }
+  return found;
 }
 
 export function getProductsByCategory(categorySlug: string): Product[] {

@@ -36,6 +36,13 @@ export function readDataJson<T = any>(filename: string, defaultValue: T): T {
         const backupData = JSON.parse(backupContent);
 
         if (Array.isArray(data) && Array.isArray(backupData)) {
+          if (filename === 'products.json') {
+            backupData.forEach((item: any) => {
+              if (item && item.slug && /-\d+$/.test(item.slug)) {
+                item.slug = item.slug.replace(/-\d+$/, '');
+              }
+            });
+          }
           const getItemKey = (item: any) => String(item.orderId || item.id || item.sku || item.slug || '').trim();
           const existingIds = new Set(data.map(getItemKey));
           const missingFromData = backupData.filter((item: any) => {
@@ -57,6 +64,24 @@ export function readDataJson<T = any>(filename: string, defaultValue: T): T {
       console.warn(`[DataPaths] Warning checking backup for ${filename}:`, e);
     }
 
+    // Automatically ensure products.json never contains trailing numeric SKU slugs (e.g. -33554)
+    if (filename === 'products.json' && Array.isArray(data)) {
+      let slugModified = false;
+      data.forEach((item: any) => {
+        if (item && item.slug && /-\d+$/.test(item.slug)) {
+          item.slug = item.slug.replace(/-\d+$/, '');
+          slugModified = true;
+        }
+      });
+      if (slugModified) {
+        try {
+          fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+          const backupPath = getPersistentBackupPath(filename);
+          fs.writeFileSync(backupPath, JSON.stringify(data, null, 2), 'utf-8');
+        } catch {}
+      }
+    }
+
     return (data !== null ? data : defaultValue) as T;
   } catch (err) {
     console.error(`[DataPaths] Error reading ${filename}:`, err);
@@ -66,6 +91,13 @@ export function readDataJson<T = any>(filename: string, defaultValue: T): T {
 
 export function writeDataJson(filename: string, data: any): boolean {
   try {
+    if (filename === 'products.json' && Array.isArray(data)) {
+      data.forEach((item: any) => {
+        if (item && item.slug && /-\d+$/.test(item.slug)) {
+          item.slug = item.slug.replace(/-\d+$/, '');
+        }
+      });
+    }
     const filePath = getDataFilePath(filename);
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     const jsonStr = JSON.stringify(data, null, 2);

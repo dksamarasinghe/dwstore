@@ -100,7 +100,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
         subtitle: 'Large HD Display • Bluetooth Call • Sports Modes',
         priceText: 'Rs. 1,990',
         buttonText: 'Order now',
-        link: '/product/t800-ultra-smartwatch-series-8-29517',
+        link: '/product/t800-ultra-smartwatch-series-8',
         image: '/media/products/T800-Ultra-Smart-Watch-1_d7ac6b08.jpg',
       },
       sideBox2: {
@@ -111,7 +111,7 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
         subtitle: '20,000mAh 22.5W Super Fast Charging with LED',
         priceText: 'Rs. 9,990',
         buttonText: 'Order now',
-        link: '/product/remax-rpp-292-225w-20000mah-pdqc-power-bank-29534',
+        link: '/product/remax-rpp-292-225w-20000mah-pdqc-power-bank',
         image: '/media/products/RPP2921_5d0c7431.jpg',
       },
     },
@@ -506,8 +506,8 @@ export const HomeCustomizerView: React.FC<HomeCustomizerViewProps> = ({
             title: prod.name,
             priceText: prod.salePrice ? `Rs. ${prod.salePrice.toLocaleString()}` : box.priceText,
             image: prod.image || box.image,
-            link: `/product/${prod.sku ? prod.sku.toLowerCase() : prod.id}`,
-            button1Link: boxKey === 'mainBox' ? `/product/${prod.sku ? prod.sku.toLowerCase() : prod.id}` : undefined,
+            link: `/product/${(prod as any).slug ? (prod as any).slug.replace(/-\d+$/, '') : prod.id}`,
+            button1Link: boxKey === 'mainBox' ? `/product/${(prod as any).slug ? (prod as any).slug.replace(/-\d+$/, '') : prod.id}` : undefined,
           },
         },
       };

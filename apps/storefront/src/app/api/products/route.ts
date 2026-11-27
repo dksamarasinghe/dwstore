@@ -14,6 +14,11 @@ function getProducts(): any[] {
 
   const products = readDataJson('products.json', []);
   if (products && products.length > 0) {
+    products.forEach((p: any) => {
+      if (p && p.slug && /-\d+$/.test(p.slug)) {
+        p.slug = p.slug.replace(/-\d+$/, '');
+      }
+    });
     globalMemoryCache.set(CACHE_KEY, products);
   }
   return products;
@@ -106,6 +111,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404, headers: CORS_HEADERS });
     }
     const populated = populateGroupedProducts(normalizeProductCategory({ ...found }), products);
+    if (populated && populated.slug) {
+      populated.slug = populated.slug.replace(/-\d+$/, '');
+    }
     return NextResponse.json(populated, { headers: CORS_HEADERS });
   }
 

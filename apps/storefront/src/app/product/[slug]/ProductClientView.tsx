@@ -59,6 +59,21 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
     };
   }, [slug]);
 
+  // Ensure the browser address bar NEVER shows trailing SKU numbers (e.g. -33554)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      if (pathname.startsWith('/product/')) {
+        const pathSlug = pathname.replace(/^\/product\//, '');
+        const cleanPathSlug = pathSlug.replace(/-\d+$/, '');
+        const targetSlug = (product?.slug ? product.slug.replace(/-\d+$/, '') : cleanPathSlug);
+        if (targetSlug && pathSlug !== targetSlug) {
+          window.history.replaceState(null, '', `/product/${targetSlug}`);
+        }
+      }
+    }
+  }, [product?.slug]);
+
   // Track Meta Pixel ViewContent event for Facebook Dynamic Product Ads
   useEffect(() => {
     if (product) {
