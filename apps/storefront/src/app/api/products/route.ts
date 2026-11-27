@@ -293,6 +293,7 @@ export async function POST(req: NextRequest) {
         brand: body.brand !== undefined ? body.brand : products[existingIndex].brand,
         shortDescription: body.shortDesc !== undefined ? body.shortDesc : products[existingIndex].shortDescription,
         description: body.description !== undefined ? body.description : products[existingIndex].description,
+        comboDeal: body.comboDeal !== undefined ? body.comboDeal : products[existingIndex].comboDeal,
         allowedPaymentMethods: Array.isArray(body.allowedPaymentMethods)
           ? body.allowedPaymentMethods
           : products[existingIndex].allowedPaymentMethods,
@@ -332,6 +333,7 @@ export async function POST(req: NextRequest) {
         brand: body.brand || '',
         shortDescription: body.shortDesc || '',
         description: body.description || '',
+        comboDeal: body.comboDeal !== undefined ? body.comboDeal : undefined,
         allowedPaymentMethods: Array.isArray(body.allowedPaymentMethods)
           ? body.allowedPaymentMethods
           : undefined,

@@ -325,17 +325,9 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
 }) => {
   const isEditing = Boolean(initialProduct);
 
-  // 1. Product Type: 'simple' | 'variable' | 'grouped' (Auto-detected from variations, grouped, or attributes!)
-  const [productType, setProductType] = useState<'simple' | 'variable' | 'grouped'>(() => {
+  // 1. Product Type: 'simple' | 'variable' (Auto-detected from variations or attributes!)
+  const [productType, setProductType] = useState<'simple' | 'variable'>(() => {
     if (!initialProduct) return 'simple';
-    if (
-      initialProduct.productType === 'grouped' ||
-      initialProduct.type === 'grouped' ||
-      (initialProduct as any).type === 'combo' ||
-      (Array.isArray((initialProduct as any).groupedProductIds) && (initialProduct as any).groupedProductIds.length > 0)
-    ) {
-      return 'grouped';
-    }
     const attrs = parseInitialAttributes(initialProduct);
     const vars = parseInitialVariations(initialProduct, attrs);
     if (
@@ -350,8 +342,21 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
     return 'simple';
   });
 
-  // Grouped / Combo Products State
-  const [groupedProductIds, setGroupedProductIds] = useState<string[]>(() => {
+  // Combo Deal / Frequently Bought Together State (Available on all products)
+  const [comboDealEnabled, setComboDealEnabled] = useState<boolean>(() => {
+    if (initialProduct?.comboDeal?.enabled !== undefined) {
+      return Boolean(initialProduct.comboDeal.enabled);
+    }
+    if (initialProduct?.groupedProductIds && Array.isArray(initialProduct.groupedProductIds) && initialProduct.groupedProductIds.length > 0) {
+      return true;
+    }
+    return false;
+  });
+
+  const [comboProductIds, setComboProductIds] = useState<string[]>(() => {
+    if (initialProduct?.comboDeal?.productIds && Array.isArray(initialProduct.comboDeal.productIds)) {
+      return initialProduct.comboDeal.productIds;
+    }
     if (initialProduct?.groupedProductIds && Array.isArray(initialProduct.groupedProductIds)) {
       return initialProduct.groupedProductIds;
     }
@@ -360,21 +365,25 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
     }
     return [];
   });
-  const [groupedProductQuantities, setGroupedProductQuantities] = useState<Record<string, number>>(() => {
-    const init: Record<string, number> = {};
-    if ((initialProduct as any)?.groupedProducts && Array.isArray((initialProduct as any).groupedProducts)) {
-      (initialProduct as any).groupedProducts.forEach((gp: any) => {
-        if (gp && gp.id) {
-          init[String(gp.id)] = Number(gp.quantity) || 1;
-        }
-      });
+
+  const [comboDiscountAmount, setComboDiscountAmount] = useState<string>(() => {
+    if (initialProduct?.comboDeal?.discountAmount !== undefined && initialProduct.comboDeal.discountAmount !== null) {
+      return String(initialProduct.comboDeal.discountAmount);
     }
-    return init;
+    return '';
   });
+
+  const [comboCustomPrice, setComboCustomPrice] = useState<string>(() => {
+    if (initialProduct?.comboDeal?.discountPrice !== undefined && initialProduct.comboDeal.discountPrice !== null) {
+      return String(initialProduct.comboDeal.discountPrice);
+    }
+    return '';
+  });
+
   const [groupSearchQuery, setGroupSearchQuery] = useState('');
   const [groupSearchOpen, setGroupSearchOpen] = useState(false);
 
-  // All catalog products available for combo selection (excluding current editing product if applicable)
+  // All catalog products available for combo selection (excluding current editing product)
   const [catalogItems, setCatalogItems] = useState<ProductItem[]>(() => {
     if (products && products.length > 0) return products;
     return realProducts as any[];
@@ -395,21 +404,19 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
     }
   }, [products]);
 
-  // Selected products details for the combo
-  const selectedGroupedProducts = useMemo(() => {
-    return groupedProductIds
+  // Selected companion products for the combo
+  const selectedComboProducts = useMemo(() => {
+    return comboProductIds
       .map((id) => catalogItems.find((p) => String(p.id) === String(id)))
       .filter(Boolean) as ProductItem[];
-  }, [groupedProductIds, catalogItems]);
+  }, [comboProductIds, catalogItems]);
 
-  // Combined sum of standard selling prices (accounting for component quantities)
-  const totalBundleRegularValue = useMemo(() => {
-    return selectedGroupedProducts.reduce((sum, p) => {
+  const companionTotalValue = useMemo(() => {
+    return selectedComboProducts.reduce((sum, p) => {
       const reg = p.regularPrice || (p.regularPriceMinor ? p.regularPriceMinor / 100 : 0) || (p.salePrice || 0);
-      const qty = groupedProductQuantities[String(p.id)] || 1;
-      return sum + (reg * qty);
+      return sum + reg;
     }, 0);
-  }, [selectedGroupedProducts, groupedProductQuantities]);
+  }, [selectedComboProducts]);
 
   // 2. Basic Information (Completely blank if adding new!)
   const resolveInitialCategory = (prod?: any): string => {
@@ -803,7 +810,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
         parsedVars.length > 0 ||
         initialProduct.productType === 'variable' ||
         initialProduct.type === 'variable';
-      setProductType(isVar ? 'variable' : (initialProduct.productType || initialProduct.type || 'simple'));
+      setProductType(isVar ? 'variable' : 'simple');
       setProductName(initialProduct.name || '');
       setSku(initialProduct.sku || '');
       setBrand(initialProduct.brand || '');
@@ -1179,17 +1186,6 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       return;
     }
 
-    if (productType === 'grouped') {
-      if (groupedProductIds.length < 2) {
-        showNotification('Please select at least 2 products to create a Group Product / Combo Deal.');
-        return;
-      }
-      if (regP <= 0 && totalBundleRegularValue <= 0) {
-        showNotification('Please enter the Regular Price for the Combo Deal.');
-        return;
-      }
-    }
-
     if (productType === 'variable') {
       if (variations.length === 0) {
         showNotification('Please generate at least one variation.');
@@ -1214,27 +1210,8 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
 
     const defaultReg = variations.find((v) => v.regularPrice && v.regularPrice > 0)?.regularPrice || regP;
     const defaultSale = variations.find((v) => v.salePrice && v.salePrice > 0)?.salePrice || saleP || defaultReg;
-    const finalReg = productType === 'grouped'
-      ? (regP > 0 ? regP : totalBundleRegularValue)
-      : (productType === 'variable' ? (regP > 0 ? regP : defaultReg) : regP);
-    const finalSale = productType === 'grouped'
-      ? (enteredSaleP > 0 ? enteredSaleP : finalReg)
-      : (productType === 'variable' ? (saleP > 0 ? saleP : defaultSale) : saleP);
-
-    if (productType === 'grouped') {
-      if (selectedGroupedProducts.length < 2) {
-        showNotification('A Group Product (Combo Deal) must contain at least 2 products.');
-        return;
-      }
-      if (finalSale > finalReg) {
-        showNotification('Combo Discounted Price cannot be higher than Combo Total Price.');
-        return;
-      }
-      if (finalSale <= 0) {
-        showNotification('Combo Discounted Price must be greater than 0.');
-        return;
-      }
-    }
+    const finalReg = productType === 'variable' ? (regP > 0 ? regP : defaultReg) : regP;
+    const finalSale = productType === 'variable' ? (saleP > 0 ? saleP : defaultSale) : saleP;
 
     const stockQty =
       productType === 'variable' && variations.length > 0
@@ -1300,31 +1277,34 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       ? (hasAnyVarInStock ? 'Active' : 'Out of stock')
       : status;
 
-    const groupedSummary = productType === 'grouped'
-      ? selectedGroupedProducts.map((p) => ({
-          id: String(p.id),
-          name: p.name,
-          sku: p.sku || '',
-          image: p.displayImage || p.image || (p.imageUrls && p.imageUrls[0]) || '',
-          regularPrice: p.regularPrice || (p.regularPriceMinor ? p.regularPriceMinor / 100 : 0) || (p.salePrice || 0),
-          salePrice: p.salePrice || (p.salePriceMinor ? p.salePriceMinor / 100 : 0) || (p.regularPrice || 0),
-          quantity: groupedProductQuantities[String(p.id)] || 1,
-          productType: p.productType || p.type || ((p.variations && p.variations.length > 0) ? 'variable' : 'simple'),
-          slug: (p as any).slug || String(p.id),
-          brand: p.brand || '',
-        }))
-      : undefined;
+    const comboPayload = comboDealEnabled && comboProductIds.length > 0 ? {
+      enabled: true,
+      productIds: comboProductIds,
+      discountAmount: parseFloat(comboDiscountAmount) || 0,
+      discountPrice: parseFloat(comboCustomPrice) || 0,
+      companionProducts: selectedComboProducts.map((p) => ({
+        id: String(p.id),
+        name: p.name,
+        image: p.displayImage || p.image || (p.imageUrls && p.imageUrls[0]) || '',
+        price: p.salePrice || (p.salePriceMinor ? p.salePriceMinor / 100 : 0) || p.regularPrice || (p.regularPriceMinor ? p.regularPriceMinor / 100 : 0) || 0,
+        regularPrice: p.regularPrice || (p.regularPriceMinor ? p.regularPriceMinor / 100 : 0) || 0,
+        salePrice: p.salePrice || (p.salePriceMinor ? p.salePriceMinor / 100 : 0) || 0,
+        sku: p.sku || '',
+        slug: (p as any).slug || String(p.id),
+      }))
+    } : undefined;
 
     const productPayload: ProductItem = {
       id: initialProduct?.id || `prod-${Date.now()}`,
       name: productName.trim(),
       sku: finalSku,
-      brand: productType === 'grouped' ? 'DWstore' : (brand.trim() || 'Generic'),
-      category: productType === 'grouped' ? 'Combo Deals' : (selectedCategory.trim() || 'SmartWatches'),
+      brand: brand.trim() || 'Generic',
+      category: selectedCategory.trim() || 'SmartWatches',
       productType,
       type: productType,
-      groupedProductIds: productType === 'grouped' ? groupedProductIds : undefined,
-      groupedProducts: productType === 'grouped' ? groupedSummary : undefined,
+      comboDeal: comboPayload,
+      groupedProductIds: undefined,
+      groupedProducts: undefined,
       regularPrice: finalReg,
       salePrice: finalSale,
       costPrice: costP,
@@ -1401,7 +1381,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
 
               <div className="row g-3">
                 {/* Simple Product Option */}
-                <div className="col-12 col-md-4">
+                <div className="col-12 col-md-6">
                   <div
                     onClick={() => setProductType('simple')}
                     className="p-3 rounded-3 cursor-pointer d-flex align-items-center gap-3 h-100"
@@ -1435,13 +1415,13 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                       <b className="d-block" style={{ fontSize: '14px' }}>
                         Simple Product
                       </b>
-                      <small className="text-muted" style={{ fontSize: '11px' }}>Single price & stock</small>
+                      <small className="text-muted" style={{ fontSize: '11px' }}>Single price &amp; stock</small>
                     </div>
                   </div>
                 </div>
 
                 {/* Variable Product Option */}
-                <div className="col-12 col-md-4">
+                <div className="col-12 col-md-6">
                   <div
                     onClick={() => {
                       setProductType('variable');
@@ -1483,49 +1463,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                       <b className="d-block" style={{ fontSize: '14px' }}>
                         Variable Product
                       </b>
-                      <small className="text-muted" style={{ fontSize: '11px' }}>Colors, Sizes, etc.</small>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Group Product (Combo Deal) Option */}
-                <div className="col-12 col-md-4">
-                  <div
-                    onClick={() => {
-                      setProductType('grouped');
-                    }}
-                    className="p-3 rounded-3 cursor-pointer d-flex align-items-center gap-3 h-100"
-                    style={{
-                      border:
-                        productType === 'grouped'
-                          ? '2px solid var(--text, #0f172a)'
-                          : '1px solid var(--border)',
-                      background:
-                        productType === 'grouped'
-                          ? 'var(--hover)'
-                          : 'var(--bg)',
-                      boxShadow: productType === 'grouped' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
-                      transition: 'all 0.2s ease',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <div
-                      className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                      style={{
-                        width: '20px',
-                        height: '20px',
-                        border:
-                          productType === 'grouped'
-                            ? '6px solid var(--text, #0f172a)'
-                            : '2px solid var(--muted)',
-                        background: 'var(--card)'
-                      }}
-                    />
-                    <div>
-                      <b className="d-block" style={{ fontSize: '14px' }}>
-                        Group Product (Combo)
-                      </b>
-                      <small className="text-muted" style={{ fontSize: '11px' }}>Bundle 2+ products together</small>
+                      <small className="text-muted" style={{ fontSize: '11px' }}>Multiple variations (Colors, Sizes, etc.)</small>
                     </div>
                   </div>
                 </div>
@@ -1562,7 +1500,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
 
               {/* SKU, Categories & Brand */}
               <div className="row g-3">
-                <div className={productType === 'grouped' ? 'col-12 col-md-5' : 'col-12 col-md-3'}>
+                <div className="col-12 col-md-4">
                   <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
                     SKU (Optional)
                   </label>
@@ -1585,31 +1523,8 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                   </small>
                 </div>
 
-                {productType === 'grouped' ? (
-                  <div className="col-12 col-md-7 d-flex align-items-center">
-                    <div
-                      className="w-100 p-2.5 rounded-2 d-flex align-items-center gap-2.5"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%)',
-                        border: '1px solid rgba(124, 58, 237, 0.25)',
-                        fontSize: '12px'
-                      }}
-                    >
-                      <span className="p-1 rounded bg-purple-subtle text-purple fw-bold" style={{ fontSize: '16px' }}>📦</span>
-                      <div style={{ lineHeight: 1.35 }}>
-                        <strong className="d-block text-purple-950" style={{ fontSize: '12px' }}>
-                          Category &amp; Brand Not Required for Combo Deals
-                        </strong>
-                        <span className="text-muted" style={{ fontSize: '11px' }}>
-                          Original products preserve their individual Categories &amp; Brands without any changes.
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {/* Searchable Hierarchical Category Selector */}
-                    <div className="col-12 col-md-5 position-relative" style={{ zIndex: 35 }}>
+                {/* Searchable Hierarchical Category Selector */}
+                <div className="col-12 col-md-4 position-relative" style={{ zIndex: 35 }}>
                   <div className="d-flex justify-content-between align-items-center mb-1">
                     <label className="text-muted m-0" style={{ fontSize: '13px', fontWeight: 600 }}>
                       Categories (Hierarchical)
@@ -1912,10 +1827,8 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                     </div>
                   )}
                 </div>
-              </>
-            )}
-          </div>
-        </div>
+              </div>
+            </div>
 
             {/* 3. Product Media & Gallery Card (VPS Self-Hosted Storage) */}
             <div className="card-x mb-4 shadow-sm">
@@ -2905,36 +2818,68 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
               </>
             )}
 
-            {/* 4. Group Product (Combo Deal): Select Products & Bundle Pricing */}
-            {productType === 'grouped' && (
-              <>
-                {/* 4A. Combo Deal Items (Grouped Products) Selection */}
-                <div className="card-x mb-4 shadow-sm" style={{ overflow: 'visible', position: 'relative', zIndex: 25 }}>
-                  <div className="card-head pb-3 mb-3 border-bottom d-flex align-items-center justify-content-between" style={{ borderColor: 'var(--border)' }}>
-                    <div>
-                      <h5 className="m-0 fw-bold d-flex align-items-center gap-2">
-                        <span style={{ color: '#7c3aed' }}>📦</span>
-                        <span>Included Products in this Combo Deal</span>
-                      </h5>
-                      <small className="text-muted" style={{ fontSize: '12px' }}>
-                        Select 2 or more products (simple or variable) from the catalog to bundle together into a combo deal
-                      </small>
+            {/* 4. Combo Deal / Frequently Bought Together (Optional Add-on for Simple & Variable Products) */}
+            <div className="card-x mb-4 shadow-sm" style={{ overflow: 'visible', position: 'relative', zIndex: 25 }}>
+              <div className="card-head pb-3 mb-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2" style={{ borderColor: 'var(--border)' }}>
+                <div>
+                  <h5 className="m-0 fw-bold d-flex align-items-center gap-2">
+                    <span style={{ fontSize: '18px' }}>🎁</span>
+                    <span>Combo Deal / Frequently Bought Together (Optional)</span>
+                  </h5>
+                  <small className="text-muted" style={{ fontSize: '12px' }}>
+                    Bundle this product with a companion gadget (e.g. Earbuds, Watch Strap) to offer customers a discounted combo price right on the product page.
+                  </small>
+                </div>
+                <div className="form-check form-switch m-0 d-flex align-items-center gap-2">
+                  <input
+                    className="form-check-input cursor-pointer"
+                    type="checkbox"
+                    role="switch"
+                    id="comboDealSwitch"
+                    style={{ width: '40px', height: '22px' }}
+                    checked={comboDealEnabled}
+                    onChange={(e) => setComboDealEnabled(e.target.checked)}
+                  />
+                  <label className="form-check-label fw-bold cursor-pointer" htmlFor="comboDealSwitch" style={{ fontSize: '13px', color: comboDealEnabled ? '#10b981' : 'var(--muted)' }}>
+                    {comboDealEnabled ? 'Combo Active' : 'Enable Combo'}
+                  </label>
+                </div>
+              </div>
+
+              {comboDealEnabled ? (
+                <div>
+                  {/* Variable product notice */}
+                  {productType === 'variable' && (
+                    <div
+                      className="p-3 mb-3 rounded-3 d-flex align-items-start gap-2.5"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(147, 51, 234, 0.08) 100%)',
+                        border: '1px solid rgba(59, 130, 246, 0.25)',
+                        fontSize: '12px'
+                      }}
+                    >
+                      <span style={{ fontSize: '16px' }}>⚡</span>
+                      <div>
+                        <strong className="d-block text-primary" style={{ fontSize: '12.5px' }}>
+                          Universal Combo Deal for Variable Product
+                        </strong>
+                        <span className="text-muted">
+                          This combo offer applies commonly across all variations (colors/sizes). Customers can pick any variation on the product page, and the combo discount will apply automatically to that variation's price!
+                        </span>
+                      </div>
                     </div>
-                    <span className="badge rounded-pill" style={{ background: '#7c3aed', color: '#fff', fontSize: '11px', padding: '5px 10px' }}>
-                      {selectedGroupedProducts.length} Items Selected
-                    </span>
-                  </div>
+                  )}
 
                   {/* Product Search & Quick Add */}
-                  <div className="mb-4 position-relative">
+                  <div className="mb-3 position-relative">
                     <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
-                      Search and Add Products to Bundle:
+                      Select Companion Product to Offer in Combo:
                     </label>
                     <div className="position-relative">
                       <input
                         type="text"
                         className="w-100 p-2 ps-3 rounded-2"
-                        placeholder="Type product name, model, or SKU to search catalog..."
+                        placeholder="Search catalog by name, model, or SKU to pick companion product..."
                         value={groupSearchQuery}
                         onChange={(e) => {
                           setGroupSearchQuery(e.target.value);
@@ -2979,7 +2924,6 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                           const matches = catalogItems
                             .filter((item) => {
                               if (initialProduct && String(item.id) === String(initialProduct.id)) return false;
-                              if (item.type === 'grouped' || item.productType === 'grouped') return false; // don't nest combos
                               const hay = `${item.name || ''} ${item.sku || ''} ${item.brand || ''}`.toLowerCase();
                               return hay.includes(query);
                             })
@@ -2994,10 +2938,9 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                           }
 
                           return matches.map((item) => {
-                            const isAdded = groupedProductIds.includes(String(item.id));
-                            const itemPrice = item.regularPrice || (item.regularPriceMinor ? item.regularPriceMinor / 100 : 0) || (item.salePrice || 0);
+                            const isAdded = comboProductIds.includes(String(item.id));
+                            const itemPrice = item.salePrice || (item.salePriceMinor ? item.salePriceMinor / 100 : 0) || item.regularPrice || (item.regularPriceMinor ? item.regularPriceMinor / 100 : 0) || 0;
                             const img = item.displayImage || item.image || (item.imageUrls && item.imageUrls[0]) || '/dwstore_logo.png';
-                            const isVar = item.productType === 'variable' || item.type === 'variable' || (item.variations && item.variations.length > 0);
 
                             return (
                               <div
@@ -3023,9 +2966,6 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                                     </div>
                                     <div className="d-flex align-items-center gap-2" style={{ fontSize: '11px' }}>
                                       <span className="text-muted">{item.sku || 'No SKU'}</span>
-                                      <span className="badge rounded-pill" style={{ background: isVar ? '#3b82f6' : '#64748b', color: '#fff', fontSize: '9px', padding: '1px 5px' }}>
-                                        {isVar ? 'Variable' : 'Simple'}
-                                      </span>
                                       <span className="fw-bold" style={{ color: '#10b981' }}>
                                         Rs. {itemPrice.toLocaleString()}
                                       </span>
@@ -3038,14 +2978,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                                   disabled={isAdded}
                                   onClick={() => {
                                     if (!isAdded) {
-                                      const nextIds = [...groupedProductIds, String(item.id)];
-                                      setGroupedProductIds(nextIds);
-                                      if (!mainImage && img) {
-                                        setMainImage(img);
-                                      }
-                                      if (!productName.trim() && nextIds.length === 1) {
-                                        setProductName(`${item.name} + Combo Deal`);
-                                      }
+                                      setComboProductIds([...comboProductIds, String(item.id)]);
                                       setGroupSearchQuery('');
                                       setGroupSearchOpen(false);
                                     }
@@ -3053,7 +2986,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                                   className={`btn btn-sm ${isAdded ? 'btn-secondary disabled' : 'btn-primary'} flex-shrink-0 ms-2`}
                                   style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '6px' }}
                                 >
-                                  {isAdded ? '✓ Added' : '+ Add to Combo'}
+                                  {isAdded ? '✓ Added' : '+ Select for Combo'}
                                 </button>
                               </div>
                             );
@@ -3063,229 +2996,77 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                     )}
                   </div>
 
-                  {/* Selected Products List */}
-                  {selectedGroupedProducts.length === 0 ? (
+                  {/* Selected Companion Products */}
+                  {selectedComboProducts.length === 0 ? (
                     <div
-                      className="p-4 rounded-3 text-center"
+                      className="p-3 mb-3 rounded-3 text-center"
                       style={{
                         background: 'var(--hover)',
                         border: '2px dashed var(--border)',
                         color: 'var(--muted)'
                       }}
                     >
-                      <div style={{ fontSize: '32px', marginBottom: '8px' }}>📦</div>
-                      <b className="d-block text-dark mb-1" style={{ fontSize: '14px', color: 'var(--text)' }}>
-                        No Products Added to this Combo Deal Yet
-                      </b>
                       <small style={{ fontSize: '12px' }}>
-                        Use the search box above to add 2 or more products (e.g. Smart Watch + Earbuds) to create a combo bundle.
+                        No companion product selected yet. Use the search box above to choose a companion gadget (e.g. Wireless Earbuds, Fast Charger, Protective Case).
                       </small>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <div className="d-flex align-items-center justify-content-between mb-2">
-                        <span className="fw-bold text-muted" style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          Combo Bundle Items ({selectedGroupedProducts.length})
-                        </span>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-link text-danger text-decoration-none p-0"
-                          style={{ fontSize: '11px' }}
-                          onClick={() => setGroupedProductIds([])}
-                        >
-                          Clear All Items
-                        </button>
-                      </div>
-
+                    <div className="mb-3">
+                      <label className="d-block mb-1 text-muted" style={{ fontSize: '12px', fontWeight: 600 }}>
+                        Companion Product(s) Selected:
+                      </label>
                       <div className="rounded-3 overflow-hidden border" style={{ borderColor: 'var(--border)' }}>
-                        {selectedGroupedProducts.map((p, idx) => {
-                          const pPrice = p.regularPrice || (p.regularPriceMinor ? p.regularPriceMinor / 100 : 0) || (p.salePrice || 0);
+                        {selectedComboProducts.map((p) => {
+                          const pPrice = p.salePrice || (p.salePriceMinor ? p.salePriceMinor / 100 : 0) || p.regularPrice || (p.regularPriceMinor ? p.regularPriceMinor / 100 : 0) || 0;
                           const pImg = p.displayImage || p.image || (p.imageUrls && p.imageUrls[0]) || '/dwstore_logo.png';
-                          const isVar = p.productType === 'variable' || p.type === 'variable' || (p.variations && p.variations.length > 0);
 
                           return (
                             <div
                               key={p.id}
-                              className={`p-3 d-flex align-items-center justify-content-between ${idx > 0 ? 'border-top' : ''}`}
-                              style={{
-                                borderColor: 'var(--border)',
-                                background: idx % 2 === 0 ? 'var(--card)' : 'var(--hover)'
-                              }}
+                              className="p-2.5 px-3 d-flex align-items-center justify-content-between"
+                              style={{ background: 'var(--card)' }}
                             >
-                              <div className="d-flex align-items-center gap-3" style={{ minWidth: 0 }}>
-                                <div
-                                  className="rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0 text-muted"
-                                  style={{
-                                    width: '24px',
-                                    height: '24px',
-                                    background: 'var(--hover)',
-                                    fontSize: '11px',
-                                    border: '1px solid var(--border)'
-                                  }}
-                                >
-                                  {idx + 1}
-                                </div>
+                              <div className="d-flex align-items-center gap-2.5" style={{ minWidth: 0 }}>
                                 <img
                                   src={pImg}
                                   alt={p.name}
                                   className="rounded-2 object-fit-cover flex-shrink-0"
-                                  style={{ width: '48px', height: '48px', border: '1px solid var(--border)' }}
+                                  style={{ width: '40px', height: '40px', border: '1px solid var(--border)' }}
                                   onError={(e: any) => { e.target.src = '/dwstore_logo.png'; }}
                                 />
                                 <div style={{ minWidth: 0 }}>
                                   <div className="fw-bold text-truncate" style={{ fontSize: '13px', color: 'var(--text)' }}>
                                     {p.name}
                                   </div>
-                                  <div className="d-flex align-items-center gap-2 mt-0.5" style={{ fontSize: '11px' }}>
-                                    <span className="text-muted">SKU: {p.sku || 'N/A'}</span>
-                                    <span className="badge rounded-pill" style={{ background: isVar ? '#3b82f6' : '#64748b', color: '#fff', fontSize: '9px', padding: '1px 5px' }}>
-                                      {isVar ? 'Variable (Any Variant)' : 'Simple'}
-                                    </span>
+                                  <div className="text-muted" style={{ fontSize: '11px' }}>
+                                    Standard Price: <span className="fw-semibold text-dark">Rs. {pPrice.toLocaleString()}</span>
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="d-flex align-items-center gap-3 flex-shrink-0 ms-3">
-                                {/* Component Quantity Controller */}
-                                <div className="d-flex align-items-center gap-1.5 px-2 py-1 rounded-2 border" style={{ background: 'var(--hover)', borderColor: 'var(--border)' }}>
-                                  <span className="text-muted" style={{ fontSize: '11px', fontWeight: 600 }}>Qty:</span>
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm btn-link p-0 text-decoration-none fw-bold text-muted"
-                                    style={{ width: '18px', height: '18px', lineHeight: '18px', textAlign: 'center' }}
-                                    onClick={() => {
-                                      const cur = groupedProductQuantities[String(p.id)] || 1;
-                                      if (cur > 1) {
-                                        setGroupedProductQuantities(prev => ({ ...prev, [String(p.id)]: cur - 1 }));
-                                      }
-                                    }}
-                                  >
-                                    -
-                                  </button>
-                                  <span className="fw-bold px-1" style={{ fontSize: '12px', minWidth: '16px', textAlign: 'center', color: 'var(--text)' }}>
-                                    {groupedProductQuantities[String(p.id)] || 1}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm btn-link p-0 text-decoration-none fw-bold text-muted"
-                                    style={{ width: '18px', height: '18px', lineHeight: '18px', textAlign: 'center' }}
-                                    onClick={() => {
-                                      const cur = groupedProductQuantities[String(p.id)] || 1;
-                                      setGroupedProductQuantities(prev => ({ ...prev, [String(p.id)]: cur + 1 }));
-                                    }}
-                                  >
-                                    +
-                                  </button>
-                                </div>
-
-                                <div className="text-end">
-                                  <span className="text-muted d-block" style={{ fontSize: '10px' }}>Item Price</span>
-                                  <span className="fw-bold" style={{ fontSize: '13px', color: 'var(--text)' }}>
-                                    Rs. {(pPrice * (groupedProductQuantities[String(p.id)] || 1)).toLocaleString()}
-                                  </span>
-                                </div>
-                                <button
-                                  type="button"
-                                  title="Remove from combo"
-                                  className="btn btn-sm btn-outline-danger"
-                                  style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '11px' }}
-                                  onClick={() => {
-                                    setGroupedProductIds(groupedProductIds.filter((id) => id !== String(p.id)));
-                                  }}
-                                >
-                                  ✕
-                                </button>
-                              </div>
+                              <button
+                                type="button"
+                                title="Remove from combo"
+                                className="btn btn-sm btn-outline-danger"
+                                style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '11px' }}
+                                onClick={() => {
+                                  setComboProductIds(comboProductIds.filter((id) => id !== String(p.id)));
+                                }}
+                              >
+                                ✕ Remove
+                              </button>
                             </div>
                           );
                         })}
                       </div>
-
-                      {/* Combo Bundle Summary Bar */}
-                      <div
-                        className="p-3 mt-3 rounded-3 d-flex flex-wrap align-items-center justify-content-between gap-3"
-                        style={{
-                          background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%)',
-                          border: '1px solid rgba(124, 58, 237, 0.25)'
-                        }}
-                      >
-                        <div>
-                          <span className="text-muted d-block" style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 600 }}>
-                            Original Combined Total Value:
-                          </span>
-                          <span className="fw-black" style={{ fontSize: '18px', color: '#7c3aed' }}>
-                            Rs. {totalBundleRegularValue.toLocaleString()}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          className="btn btn-sm text-white fw-bold"
-                          style={{
-                            background: '#7c3aed',
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                            padding: '6px 14px'
-                          }}
-                          onClick={() => {
-                            setRegularPrice(String(totalBundleRegularValue));
-                            if (!salePrice || parseFloat(salePrice) >= totalBundleRegularValue) {
-                              const suggestedSale = Math.round(totalBundleRegularValue * 0.85); // 15% discount
-                              setSalePrice(String(suggestedSale));
-                            }
-                            showNotification('Updated Regular Price to match total bundle value.');
-                          }}
-                        >
-                          ⚡ Auto-Set Regular Price (Rs. {totalBundleRegularValue.toLocaleString()})
-                        </button>
-                      </div>
                     </div>
                   )}
-                </div>
 
-                {/* 4B. Combo Deal Pricing & Stock Card */}
-                <div className="card-x mb-4 shadow-sm">
-                  <div className="card-head pb-3 mb-3 border-bottom d-flex align-items-center justify-content-between" style={{ borderColor: 'var(--border)' }}>
-                    <div>
-                      <h5 className="m-0 fw-bold">Combo Pricing &amp; Stock</h5>
-                      <small className="text-muted" style={{ fontSize: '12px' }}>
-                        Set special bundle price for the combo deal
-                      </small>
-                    </div>
-                    {parseFloat(regularPrice) > 0 && parseFloat(salePrice) > 0 && parseFloat(salePrice) < parseFloat(regularPrice) && (
-                      <span className="badge rounded-pill" style={{ background: '#10b981', color: '#fff', fontSize: '11px', padding: '5px 10px' }}>
-                        Save Rs. {(parseFloat(regularPrice) - parseFloat(salePrice)).toLocaleString()} ({Math.round(((parseFloat(regularPrice) - parseFloat(salePrice)) / parseFloat(regularPrice)) * 100)}% OFF)
-                      </span>
-                    )}
-                  </div>
-
+                  {/* Combo Discount Configuration */}
                   <div className="row g-3">
-                    <div className="col-12 col-md-4">
+                    <div className="col-12 col-md-6">
                       <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
-                        Regular Price (Total Value) *
-                      </label>
-                      <input
-                        type="number"
-                        className="w-100 p-2 rounded-2 fw-bold"
-                        style={{
-                          background: 'var(--bg)',
-                          border: '1px solid var(--border)',
-                          color: 'var(--text)',
-                          fontSize: '14px'
-                        }}
-                        placeholder={totalBundleRegularValue > 0 ? String(totalBundleRegularValue) : 'e.g. 8990'}
-                        value={regularPrice}
-                        onChange={(e) => setRegularPrice(e.target.value)}
-                        required
-                      />
-                      <small className="text-muted d-block mt-1" style={{ fontSize: '11px' }}>
-                        Combined normal price of items
-                      </small>
-                    </div>
-
-                    <div className="col-12 col-md-4">
-                      <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
-                        Combo Sale Price (Discounted Deal) *
+                        Combo Discount Amount (Rs. OFF)
                       </label>
                       <input
                         type="number"
@@ -3296,80 +3077,102 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                           color: '#10b981',
                           fontSize: '14px'
                         }}
-                        placeholder="e.g. 6990"
-                        value={salePrice}
-                        onChange={(e) => setSalePrice(e.target.value)}
-                        required
+                        placeholder="e.g. 500 or 1000"
+                        value={comboDiscountAmount}
+                        onChange={(e) => {
+                          setComboDiscountAmount(e.target.value);
+                          setComboCustomPrice('');
+                        }}
                       />
                       <small className="text-muted d-block mt-1" style={{ fontSize: '11px' }}>
-                        Special promotional price customer pays
-                      </small>
-                    </div>
-
-                    <div className="col-12 col-md-4">
-                      <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
-                        Catalog Stock Status
-                      </label>
-                      <select
-                        className="w-100 p-2 rounded-2"
-                        style={{
-                          background: 'var(--bg)',
-                          border: '1px solid var(--border)',
-                          color: 'var(--text)',
-                          fontSize: '13px'
-                        }}
-                        value={stockStatus}
-                        onChange={(e) => setStockStatus(e.target.value as any)}
-                      >
-                        <option value="Active">In Stock (Active)</option>
-                        <option value="Out of stock">Out of Stock</option>
-                      </select>
-                      <small className="text-muted d-block mt-1" style={{ fontSize: '11px' }}>
-                        Controls availability on storefront
+                        Customer saves this exact amount when purchasing both together.
                       </small>
                     </div>
 
                     <div className="col-12 col-md-6">
                       <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
-                        Stock Units Available (Optional)
+                        OR Fixed Combo Deal Price (Rs.) (Optional)
                       </label>
                       <input
                         type="number"
-                        className="w-100 p-2 rounded-2"
+                        className="w-100 p-2 rounded-2 fw-bold"
                         style={{
                           background: 'var(--bg)',
                           border: '1px solid var(--border)',
                           color: 'var(--text)',
-                          fontSize: '13px'
+                          fontSize: '14px'
                         }}
-                        placeholder="e.g. 50"
-                        value={openingStock}
-                        onChange={(e) => setOpeningStock(e.target.value)}
-                      />
-                    </div>
-
-                    <div className="col-12 col-md-6">
-                      <label className="d-block mb-1 text-muted" style={{ fontSize: '13px', fontWeight: 600 }}>
-                        Estimated Cost Price (Optional)
-                      </label>
-                      <input
-                        type="number"
-                        className="w-100 p-2 rounded-2"
-                        style={{
-                          background: 'var(--bg)',
-                          border: '1px solid var(--border)',
-                          color: 'var(--text)',
-                          fontSize: '13px'
+                        placeholder="e.g. 14990"
+                        value={comboCustomPrice}
+                        onChange={(e) => {
+                          setComboCustomPrice(e.target.value);
+                          setComboDiscountAmount('');
                         }}
-                        placeholder="e.g. 4500"
-                        value={costPrice}
-                        onChange={(e) => setCostPrice(e.target.value)}
                       />
+                      <small className="text-muted d-block mt-1" style={{ fontSize: '11px' }}>
+                        Overrides discount amount with a fixed bundle price.
+                      </small>
                     </div>
                   </div>
+
+                  {/* Live Calculation / Preview */}
+                  {selectedComboProducts.length > 0 && (
+                    <div
+                      className="p-3 mt-3 rounded-3"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%)',
+                        border: '1px solid rgba(16, 185, 129, 0.25)'
+                      }}
+                    >
+                      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div>
+                          <span className="text-muted d-block" style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 600 }}>
+                            Customer Storefront Offer Preview:
+                          </span>
+                          <div className="d-flex align-items-center gap-2 mt-0.5">
+                            <span className="fw-bold" style={{ fontSize: '14px', color: 'var(--text)' }}>
+                              {productName || 'This Gadget'} + {selectedComboProducts[0]?.name}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-end">
+                          {(() => {
+                            const mainP = parseFloat(salePrice) || parseFloat(regularPrice) || (variations[0]?.salePrice || variations[0]?.regularPrice) || 0;
+                            const compP = companionTotalValue;
+                            const totalNormal = mainP + compP;
+                            const discAmt = parseFloat(comboDiscountAmount) || 0;
+                            const fixedP = parseFloat(comboCustomPrice) || 0;
+                            const finalP = fixedP > 0 ? fixedP : Math.max(0, totalNormal - discAmt);
+                            const savings = fixedP > 0 ? Math.max(0, totalNormal - fixedP) : discAmt;
+
+                            return (
+                              <div>
+                                <span className="text-muted text-decoration-line-through d-block" style={{ fontSize: '11px' }}>
+                                  Normal: Rs. {totalNormal.toLocaleString()}
+                                </span>
+                                <span className="fw-bold text-success" style={{ fontSize: '16px' }}>
+                                  Combo Price: Rs. {finalP.toLocaleString()}
+                                </span>
+                                {savings > 0 && (
+                                  <span className="badge rounded-pill bg-success text-white ms-2" style={{ fontSize: '10px' }}>
+                                    Save Rs. {savings.toLocaleString()} OFF
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </>
-            )}
+              ) : (
+                <div className="p-3 rounded-2 text-center text-muted" style={{ background: 'var(--hover)', fontSize: '12px' }}>
+                  Enable the switch above if you want to offer a discounted combo deal with companion products on this gadget's page.
+                </div>
+              )}
+            </div>
 
             {/* 5. Descriptions: Short Description & Description (Separated clearly as requested) */}
             <div className="card-x mb-4 shadow-sm">

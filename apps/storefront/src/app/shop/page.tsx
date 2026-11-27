@@ -235,7 +235,7 @@ function ShopContent() {
 
         // Combos filter
         if (onlyCombos) {
-          const isGrouped = p.type === 'grouped' || (p as any).productType === 'grouped' || p.type === 'combo';
+          const isGrouped = p.type === 'grouped' || (p as any).productType === 'grouped' || p.type === 'combo' || Boolean(p.comboDeal?.enabled);
           if (!isGrouped) return false;
         }
 
@@ -816,7 +816,7 @@ function ShopContent() {
                     >
                       {/* Top Badges Container: Discount & Combo */}
                       <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 items-start">
-                        {(product.type === 'grouped' || (product as any).productType === 'grouped' || product.type === 'combo') && (
+                        {(product.type === 'grouped' || (product as any).productType === 'grouped' || product.type === 'combo' || Boolean(product.comboDeal?.enabled)) && (
                           <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1">
                             <Package className="w-2.5 h-2.5" />
                             Combo Deal

@@ -73,6 +73,22 @@ export interface ProductItem {
     quantity?: number;
     productType?: string;
   }>;
+  comboDeal?: {
+    enabled: boolean;
+    productIds: string[];
+    discountAmount?: number;
+    discountPrice?: number;
+    companionProducts?: Array<{
+      id: string;
+      name: string;
+      image?: string;
+      price?: number;
+      regularPrice?: number;
+      salePrice?: number;
+      sku?: string;
+      slug?: string;
+    }>;
+  };
   regularPrice: number;
   salePrice: number;
   regularPriceMinor?: number;

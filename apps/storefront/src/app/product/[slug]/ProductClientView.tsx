@@ -26,7 +26,8 @@ import {
   GitCompare,
   Zap,
   PhoneCall,
-  Package
+  Package,
+  Sparkles
 } from 'lucide-react';
 
 export function ProductClientView({ slug, initialProduct }: { slug: string; initialProduct?: any }) {
@@ -358,6 +359,45 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
 
   const comboSavings = Math.max(0, comboTotalItemsValue - (activePriceMinor / 100));
 
+  // Combo Deal / Frequently Bought Together calculations (for Simple & Variable products)
+  const hasComboDeal = Boolean(
+    product?.comboDeal?.enabled &&
+    product?.comboDeal?.companionProducts &&
+    product.comboDeal.companionProducts.length > 0
+  );
+
+  const primaryCompanion = useMemo(() => {
+    if (!hasComboDeal || !product?.comboDeal?.companionProducts) return null;
+    return product.comboDeal.companionProducts[0];
+  }, [hasComboDeal, product]);
+
+  const companionPriceMinor = useMemo(() => {
+    if (!primaryCompanion) return 0;
+    const p = primaryCompanion.salePrice || primaryCompanion.price || primaryCompanion.regularPrice || 0;
+    return Math.round(p * 100);
+  }, [primaryCompanion]);
+
+  const comboCombinedRegularMinor = useMemo(() => {
+    return activePriceMinor + companionPriceMinor;
+  }, [activePriceMinor, companionPriceMinor]);
+
+  const comboDealPriceMinor = useMemo(() => {
+    if (!product?.comboDeal) return comboCombinedRegularMinor;
+    const discAmountMinor = (product.comboDeal.discountAmount || 0) * 100;
+    const fixedPriceMinor = (product.comboDeal.discountPrice || 0) * 100;
+    if (fixedPriceMinor > 0) {
+      return fixedPriceMinor;
+    }
+    if (discAmountMinor > 0) {
+      return Math.max(0, comboCombinedRegularMinor - discAmountMinor);
+    }
+    return Math.round(comboCombinedRegularMinor * 0.9);
+  }, [product, comboCombinedRegularMinor]);
+
+  const comboSavingsMinor = useMemo(() => {
+    return Math.max(0, comboCombinedRegularMinor - comboDealPriceMinor);
+  }, [comboCombinedRegularMinor, comboDealPriceMinor]);
+
   // Overall stock check for product (at least one variation or simple product in stock)
   // Section 12.3: If any component in a combo is out of stock, the combo is Out of Stock!
   const hasAnyStock = useMemo(() => {
@@ -524,6 +564,73 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
     } catch (e) {}
 
     router.push('/checkout?buyNow=1');
+  };
+
+  const handleAddComboToCart = () => {
+    if (!primaryCompanion) return;
+    setValidationError(null);
+
+    // If variable product and customer hasn't selected an option
+    if (isVariable && (!matchedVariation || !isAllAttributesSelected)) {
+      const missing = requiredAttributes.find((a) => !selectedAttributes[a]) || 'variation option (e.g. Color)';
+      setValidationError(`Please select a ${missing} for the main product before adding the combo deal.`);
+      const el = document.getElementById('variation-selector-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    if (isOutOfStock) {
+      setValidationError('The selected option is currently Out of Stock.');
+      return;
+    }
+
+    const mainVarLabel = matchedVariation && matchedVariation.attributes
+      ? ` (${Object.values(matchedVariation.attributes).join(' / ')})`
+      : '';
+
+    addToCart({
+      productId: `${product.id}-combo-${primaryCompanion.id}`,
+      name: `${product.name}${mainVarLabel} + ${primaryCompanion.name} (Combo Deal)`,
+      slug: product.slug,
+      image: activeImage,
+      priceMinor: comboDealPriceMinor,
+      regularPriceMinor: comboCombinedRegularMinor,
+      quantity: 1,
+      allowedPaymentMethods: product.allowedPaymentMethods,
+      isGrouped: true,
+      groupedProducts: [
+        {
+          id: product.id,
+          name: `${product.name}${mainVarLabel}`,
+          image: activeImage,
+          regularPrice: (activeRegularPriceMinor ? activeRegularPriceMinor / 100 : activePriceMinor / 100),
+          salePrice: activePriceMinor / 100,
+          quantity: 1,
+          productType: isVariable ? 'variable' : 'simple',
+          slug: product.slug,
+          sku: product.sku || ''
+        },
+        {
+          id: primaryCompanion.id,
+          name: primaryCompanion.name,
+          image: primaryCompanion.image || '/placeholder-product.png',
+          regularPrice: primaryCompanion.regularPrice || (companionPriceMinor / 100),
+          salePrice: companionPriceMinor / 100,
+          quantity: 1,
+          productType: 'simple',
+          slug: primaryCompanion.slug || primaryCompanion.id,
+          sku: primaryCompanion.sku || ''
+        }
+      ],
+      variation: matchedVariation
+        ? {
+            id: matchedVariation.id,
+            attributes: matchedVariation.attributes || selectedAttributes,
+          }
+        : null,
+    }, true);
+    setAddedNotice(true);
+    setTimeout(() => setAddedNotice(false), 3000);
   };
 
   const handleClearAttributes = () => {
@@ -998,6 +1105,116 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
                 <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   Product added to cart! Proceed to checkout or order via WhatsApp.
+                </div>
+              )}
+
+              {/* Frequently Bought Together / Combo Deal Box (Optional Add-on) */}
+              {hasComboDeal && primaryCompanion && (
+                <div className="rounded-2xl border-2 border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-purple-50/30 to-white p-4 sm:p-5 shadow-xs space-y-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-600 text-white shadow-xs">
+                        <Package className="w-4 h-4" />
+                      </span>
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
+                          Frequently Bought Together (Combo Deal)
+                        </h4>
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          Buy both gadgets together and enjoy an instant combo discount!
+                        </p>
+                      </div>
+                    </div>
+                    {comboSavingsMinor > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-black shadow-xs">
+                        <Sparkles className="w-3 h-3" />
+                        <span>Save Rs. {(comboSavingsMinor / 100).toLocaleString()}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Dual Product Thumbnail Row */}
+                  <div className="flex items-center gap-2 sm:gap-3 bg-white/80 backdrop-blur-xs p-3 rounded-xl border border-indigo-100/70">
+                    {/* Main Item */}
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-slate-50 border border-slate-200 p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={activeImage}
+                          alt={product.name}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                          This Item {matchedVariation ? `(${Object.values(matchedVariation.attributes || {}).join(', ')})` : ''}
+                        </span>
+                        <p className="text-xs font-bold text-slate-800 truncate" title={product.name}>
+                          {product.name}
+                        </p>
+                        <p className="text-xs font-black text-slate-900">
+                          Rs. {(activePriceMinor / 100).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Plus Icon */}
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-black text-xs flex-shrink-0">
+                      +
+                    </div>
+
+                    {/* Companion Item */}
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-slate-50 border border-slate-200 p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={primaryCompanion.image || '/placeholder-product.png'}
+                          alt={primaryCompanion.name}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
+                          Companion Gadget
+                        </span>
+                        <p className="text-xs font-bold text-slate-800 truncate" title={primaryCompanion.name}>
+                          {primaryCompanion.name}
+                        </p>
+                        <p className="text-xs font-black text-slate-900">
+                          Rs. {(companionPriceMinor / 100).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pricing Comparison & Add Both Button */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                    <div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xs text-slate-500 font-bold">Combo Deal Price:</span>
+                        <span className="text-base sm:text-lg font-black text-indigo-600">
+                          Rs. {(comboDealPriceMinor / 100).toLocaleString()}
+                        </span>
+                        {comboSavingsMinor > 0 && (
+                          <span className="text-xs text-slate-400 line-through font-semibold">
+                            Rs. {(comboCombinedRegularMinor / 100).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      {comboSavingsMinor > 0 && (
+                        <p className="text-[11px] text-emerald-600 font-bold">
+                          🎉 Instant Combo Savings: Rs. {(comboSavingsMinor / 100).toLocaleString()} OFF
+                        </p>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleAddComboToCart}
+                      className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg transition cursor-pointer flex-shrink-0"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      <span>Add Both to Cart</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
