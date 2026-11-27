@@ -57,6 +57,7 @@ export interface ProductItem {
   id: string;
   name: string;
   sku: string;
+  slug?: string;
   brand: string;
   category: string;
   productType?: 'simple' | 'variable' | 'grouped';

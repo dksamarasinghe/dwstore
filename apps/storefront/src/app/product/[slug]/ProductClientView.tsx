@@ -37,8 +37,9 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
   
   const [product, setProduct] = useState<any>(() => {
     if (initialProduct) return initialProduct;
+    const cleanSlug = slug.replace(/-\d+$/, '');
     return (productsData as any[]).find(
-      (p) => p.slug === slug || String(p.id) === String(slug)
+      (p) => p.slug === slug || String(p.id) === String(slug) || p.slug === cleanSlug || p.slug.replace(/-\d+$/, '') === cleanSlug
     ) || null;
   });
 

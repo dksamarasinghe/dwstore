@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import productsData from '@/data/products.json';
 import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
 import { readDataJson } from '@/lib/data-paths';
@@ -13,10 +14,18 @@ export const dynamic = 'force-dynamic';
 const BASE_URL = 'https://www.dwstore.lk';
 
 function findProduct(slug: string) {
-  const decoded = decodeURIComponent(slug);
+  const decoded = decodeURIComponent(slug).trim();
   const products = readDataJson<any[]>('products.json', productsData as any[]);
-  return products.find(
+  // 1. Direct match by exact slug or id
+  const direct = products.find(
     (p) => p.slug === decoded || String(p.id) === decoded || p.slug === slug || String(p.id) === slug
+  );
+  if (direct) return direct;
+
+  // 2. Backward compatibility: if URL has old trailing SKU/ID number (e.g. anker-soundcore-r60i-nc-true-wireless-anc-earbuds-33554)
+  const cleanUrlSlug = decoded.replace(/-\d+$/, '');
+  return products.find(
+    (p) => p.slug === cleanUrlSlug || p.slug.replace(/-\d+$/, '') === cleanUrlSlug || String(p.id) === decoded.split('-').pop()
   );
 }
 
@@ -109,6 +118,12 @@ export default function ProductPage({ params }: PageProps) {
 
   if (!product) {
     return <ProductClientView slug={params.slug} />;
+  }
+
+  // If visitor navigated using an old SKU-suffixed link (e.g. ...-33554), redirect to the clean SEO URL
+  const decodedParam = decodeURIComponent(params.slug).trim();
+  if (product.slug && decodedParam !== product.slug) {
+    redirect(`/product/${product.slug}`);
   }
 
   const priceMinor = product.salePriceMinor || product.minPriceMinor || product.regularPriceMinor || 0;

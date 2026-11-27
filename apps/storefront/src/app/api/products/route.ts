@@ -98,7 +98,10 @@ export async function GET(req: NextRequest) {
   const products = getProducts();
 
   if (idOrSlug) {
-    const found = products.find((p) => String(p.id) === idOrSlug || p.slug === idOrSlug);
+    const cleanIdOrSlug = idOrSlug.replace(/-\d+$/, '');
+    const found = products.find(
+      (p) => String(p.id) === idOrSlug || p.slug === idOrSlug || p.slug === cleanIdOrSlug || p.slug.replace(/-\d+$/, '') === cleanIdOrSlug
+    );
     if (!found) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404, headers: CORS_HEADERS });
     }
@@ -116,10 +119,11 @@ export async function POST(req: NextRequest) {
     const products = getProducts();
 
     const productId = String(body.id || '');
-    const productSlug = body.slug || String(body.name || '').toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+    const rawSlug = body.slug || String(body.name || '').toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+    const productSlug = rawSlug.replace(/-\d+$/, '');
 
     const existingIndex = products.findIndex(
-      (p) => String(p.id) === productId || p.slug === productSlug
+      (p) => String(p.id) === productId || p.slug === productSlug || p.slug.replace(/-\d+$/, '') === productSlug
     );
 
     // Normalize prices to minor cents (e.g. Rs 1,990 => 199000)
@@ -274,6 +278,7 @@ export async function POST(req: NextRequest) {
       // Update existing product
       const updatedProduct = {
         ...products[existingIndex],
+        slug: productSlug,
         type: finalType,
         productType: finalType,
         groupedProductIds: isGrouped ? groupedProductIds : (products[existingIndex].groupedProductIds || undefined),

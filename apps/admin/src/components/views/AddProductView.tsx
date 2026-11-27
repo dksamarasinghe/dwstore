@@ -1298,6 +1298,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       id: initialProduct?.id || `prod-${Date.now()}`,
       name: productName.trim(),
       sku: finalSku,
+      slug: (initialProduct?.slug ? initialProduct.slug.replace(/-\d+$/, '') : productName.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-')).replace(/-\d+$/, ''),
       brand: brand.trim() || 'Generic',
       category: selectedCategory.trim() || 'SmartWatches',
       productType,
@@ -3802,7 +3803,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
                         DWstore.lk
                       </div>
                       <div style={{ fontSize: '11px', color: '#5f6368', lineHeight: 1.2 }}>
-                        https://www.dwstore.lk › product › {sku ? sku.toLowerCase() : 'product-slug'}
+                        https://www.dwstore.lk › product › {productName ? productName.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-') : 'product-slug'}
                       </div>
                     </div>
                   </div>

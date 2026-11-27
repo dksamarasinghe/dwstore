@@ -103,7 +103,10 @@ export function getAllBrands(): Brand[] {
 
 export function getProductBySlug(slug: string): Product | undefined {
   const products = getAllProducts();
-  return products.find((p) => p.slug === slug || p.id === slug);
+  const direct = products.find((p) => p.slug === slug || p.id === slug);
+  if (direct) return direct;
+  const clean = slug.replace(/-\d+$/, '');
+  return products.find((p) => p.slug === clean || p.slug.replace(/-\d+$/, '') === clean);
 }
 
 export function getProductsByCategory(categorySlug: string): Product[] {
