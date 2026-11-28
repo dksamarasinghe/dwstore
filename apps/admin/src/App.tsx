@@ -901,6 +901,45 @@ export default function App() {
   // Track recently manually modified order statuses / payment statuses to prevent background polling from reverting admin actions
   const recentOrderOverrides = useRef<Map<string, { status?: string; paymentStatus?: string; timestamp: number }>>(new Map());
 
+  // Helper functions for persistent manual overrides in localStorage (retained across page reloads)
+  const getStoredOverrides = (): Record<string, { status?: string; paymentStatus?: string; timestamp: number }> => {
+    try {
+      const raw = localStorage.getItem('dwstore_manual_order_overrides_v1');
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return {};
+  };
+
+  const setStoredOverride = (orderId: string, override: { status?: string; paymentStatus?: string }) => {
+    try {
+      const cleanId = String(orderId).replace(/^#+/, '').trim().toUpperCase();
+      const current = getStoredOverrides();
+      current[cleanId] = {
+        ...current[cleanId],
+        ...override,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem('dwstore_manual_order_overrides_v1', JSON.stringify(current));
+    } catch {}
+  };
+
+  const clearStoredOverrideIfMatched = (orderId: string, serverStatus?: string, serverPaymentStatus?: string) => {
+    try {
+      const cleanId = String(orderId).replace(/^#+/, '').trim().toUpperCase();
+      const current = getStoredOverrides();
+      const existing = current[cleanId];
+      if (!existing) return;
+
+      const statusMatches = !existing.status || (serverStatus && serverStatus.toLowerCase() === existing.status.toLowerCase());
+      const paymentMatches = !existing.paymentStatus || (serverPaymentStatus && serverPaymentStatus.toLowerCase() === existing.paymentStatus.toLowerCase());
+
+      if (statusMatches && paymentMatches) {
+        delete current[cleanId];
+        localStorage.setItem('dwstore_manual_order_overrides_v1', JSON.stringify(current));
+      }
+    } catch {}
+  };
+
   // Fetch orders from API with normalization (syncs latest status & customer updates)
   const fetchOrders = () => {
     fetch(`${getStorefrontUrl()}/api/orders?t=${Date.now()}`, { cache: 'no-store' })
@@ -909,35 +948,67 @@ export default function App() {
         if (data && Array.isArray(data.orders) && data.orders.length > 0) {
           const normalized = data.orders.map(normalizeOrder);
           const now = Date.now();
+          const storedOverrides = getStoredOverrides();
+
           setOrders((prev) => {
-            const map = new Map(prev.map((o) => [o.orderId, o]));
+            // Index existing orders by normalized key (without #, lowercase)
+            const map = new Map<string, OrderItem>();
+            prev.forEach((o) => {
+              const k = String(o.orderId || '').replace(/^#+/, '').trim().toLowerCase();
+              if (k) map.set(k, o);
+            });
+
             const newlyAdded: OrderItem[] = [];
             normalized.forEach((n) => {
-              const cleanNId = String(n.orderId).replace(/^#+/, '');
-              const override = recentOrderOverrides.current.get(cleanNId);
+              const cleanNId = String(n.orderId || '').replace(/^#+/, '').trim();
+              const upperNId = cleanNId.toUpperCase();
+              const lowerKey = cleanNId.toLowerCase();
+
+              // Check in-memory override or localStorage override (retained across page reloads)
+              const memOverride = recentOrderOverrides.current.get(cleanNId) || recentOrderOverrides.current.get(upperNId);
+              const diskOverride = storedOverrides[upperNId] || storedOverrides[cleanNId];
+              const override = memOverride || diskOverride;
+
               let itemToMerge = n;
-              if (override && (now - override.timestamp) < 60000) {
-                // If admin modified status/paymentStatus within last 60 seconds, keep admin's values
-                itemToMerge = {
-                  ...n,
-                  status: (override.status as any) || n.status,
-                  paymentStatus: (override.paymentStatus as any) || n.paymentStatus,
-                };
+
+              // If admin modified status/paymentStatus within last 24 hours, keep admin's values
+              if (override) {
+                const age = now - (override.timestamp || 0);
+                if (age < 86400000) {
+                  itemToMerge = {
+                    ...n,
+                    status: (override.status as any) || n.status,
+                    paymentStatus: (override.paymentStatus as any) || n.paymentStatus,
+                  };
+                }
               }
 
-              const existing = map.get(n.orderId);
+              // If server has updated to match admin's manual override, retire disk override
+              if (diskOverride) {
+                clearStoredOverrideIfMatched(cleanNId, n.status, n.paymentStatus);
+              }
+
+              const existing = map.get(lowerKey);
               if (existing) {
                 // If status changed to delivered (e.g. from customer portal)
                 if (itemToMerge.status === 'delivered' && existing.status !== 'delivered') {
                   setShipments((shps) =>
-                    shps.map((s) => (s.orderId === n.orderId ? { ...s, status: 'Delivered' } : s))
+                    shps.map((s) => {
+                      const sClean = String(s.orderId || '').replace(/^#+/, '').trim().toLowerCase();
+                      return sClean === lowerKey ? { ...s, status: 'Delivered' } : s;
+                    })
                   );
                 }
-                map.set(n.orderId, { ...existing, ...itemToMerge });
+                map.set(lowerKey, {
+                  ...existing,
+                  ...itemToMerge,
+                  orderId: existing.orderId, // preserve original formatting
+                });
               } else {
                 newlyAdded.push(itemToMerge);
               }
             });
+
             const result = newlyAdded.length > 0 ? [...newlyAdded, ...Array.from(map.values())] : Array.from(map.values());
             try {
               localStorage.setItem('dwstore_admin_orders_v3', JSON.stringify(result));
@@ -969,17 +1040,20 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Update order status PATCH API
+  // Update order status PATCH API (with POST fallback and persistent local override)
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
-    const cleanId = String(orderId).replace(/^#+/, '');
-    // 0. Lock manual override for 60 seconds so polling doesn't overwrite it
+    const cleanId = String(orderId).replace(/^#+/, '').trim();
+    // 0. Lock manual override in memory and in localStorage (persists across page reloads!)
     recentOrderOverrides.current.set(cleanId, { status: newStatus, timestamp: Date.now() });
+    recentOrderOverrides.current.set(cleanId.toUpperCase(), { status: newStatus, timestamp: Date.now() });
+    setStoredOverride(cleanId, { status: newStatus });
 
     // 1. Update order status locally and in localStorage
     setOrders((prev) => {
+      const targetLower = cleanId.toLowerCase();
       const next = prev.map((o) => {
-        const oClean = String(o.orderId).replace(/^#+/, '');
-        return (oClean === cleanId || o.orderId === orderId)
+        const oClean = String(o.orderId).replace(/^#+/, '').trim().toLowerCase();
+        return (oClean === targetLower || o.orderId === orderId)
           ? { ...o, status: newStatus as any }
           : o;
       });
@@ -988,9 +1062,10 @@ export default function App() {
       } catch (e) {}
       return next;
     });
+
     if (selectedOrder) {
-      const selClean = String(selectedOrder.orderId).replace(/^#+/, '');
-      if (selClean === cleanId || selectedOrder.orderId === orderId) {
+      const selClean = String(selectedOrder.orderId).replace(/^#+/, '').trim().toLowerCase();
+      if (selClean === cleanId.toLowerCase() || selectedOrder.orderId === orderId) {
         setSelectedOrder((prev) => (prev ? { ...prev, status: newStatus as any } : null));
       }
     }
@@ -999,14 +1074,14 @@ export default function App() {
     if (newStatus === 'delivered') {
       setShipments((prev) =>
         prev.map((s) => {
-          const sClean = String(s.orderId).replace(/^#+/, '');
-          return (sClean === cleanId || s.orderId === orderId) ? { ...s, status: 'Delivered' } : s;
+          const sClean = String(s.orderId).replace(/^#+/, '').trim().toLowerCase();
+          return (sClean === cleanId.toLowerCase() || s.orderId === orderId) ? { ...s, status: 'Delivered' } : s;
         })
       );
     } else if (newStatus === 'shipped') {
       const ord = orders.find((o) => {
-        const oClean = String(o.orderId).replace(/^#+/, '');
-        return oClean === cleanId || o.orderId === orderId;
+        const oClean = String(o.orderId).replace(/^#+/, '').trim().toLowerCase();
+        return oClean === cleanId.toLowerCase() || o.orderId === orderId;
       });
       if (ord) {
         const carrier = (ord.carrier || 'Koombiyo Delivery') as any;
@@ -1014,8 +1089,8 @@ export default function App() {
         const dispatchedDate = ord.dispatchedDate || new Date().toISOString().split('T')[0];
         setShipments((prev) => {
           const idx = prev.findIndex((s) => {
-            const sClean = String(s.orderId).replace(/^#+/, '');
-            return sClean === cleanId || s.orderId === orderId;
+            const sClean = String(s.orderId).replace(/^#+/, '').trim().toLowerCase();
+            return sClean === cleanId.toLowerCase() || s.orderId === orderId;
           });
           if (idx >= 0) {
             const copy = [...prev];
@@ -1045,6 +1120,8 @@ export default function App() {
       `${getStorefrontUrl()}/api/orders`,
       `/api/orders`,
     ];
+
+    let updated = false;
     for (const endpoint of endpoints) {
       try {
         const res = await fetch(endpoint, {
@@ -1052,20 +1129,39 @@ export default function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId: cleanId, status: newStatus }),
         });
-        if (res.ok) break;
+        if (res.ok) {
+          updated = true;
+          break;
+        }
+      } catch {}
+
+      // Fallback to POST if PATCH was dropped or failed
+      try {
+        const postRes = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'update_status', orderId: cleanId, status: newStatus }),
+        });
+        if (postRes.ok) {
+          updated = true;
+          break;
+        }
       } catch {}
     }
   };
 
   // Update order payment status PATCH API (Paid | Unpaid | Refunded)
   const handleUpdatePaymentStatus = async (orderId: string, newPaymentStatus: 'Paid' | 'Unpaid' | 'Refunded') => {
-    const cleanId = String(orderId).replace(/^#+/, '');
+    const cleanId = String(orderId).replace(/^#+/, '').trim();
     recentOrderOverrides.current.set(cleanId, { paymentStatus: newPaymentStatus, timestamp: Date.now() });
+    recentOrderOverrides.current.set(cleanId.toUpperCase(), { paymentStatus: newPaymentStatus, timestamp: Date.now() });
+    setStoredOverride(cleanId, { paymentStatus: newPaymentStatus });
 
     setOrders((prev) => {
+      const targetLower = cleanId.toLowerCase();
       const next = prev.map((o) => {
-        const oClean = String(o.orderId).replace(/^#+/, '');
-        return (oClean === cleanId || o.orderId === orderId)
+        const oClean = String(o.orderId).replace(/^#+/, '').trim().toLowerCase();
+        return (oClean === targetLower || o.orderId === orderId)
           ? { ...o, paymentStatus: newPaymentStatus }
           : o;
       });
@@ -1076,8 +1172,8 @@ export default function App() {
     });
 
     if (selectedOrder) {
-      const selClean = String(selectedOrder.orderId).replace(/^#+/, '');
-      if (selClean === cleanId || selectedOrder.orderId === orderId) {
+      const selClean = String(selectedOrder.orderId).replace(/^#+/, '').trim().toLowerCase();
+      if (selClean === cleanId.toLowerCase() || selectedOrder.orderId === orderId) {
         setSelectedOrder((prev) => (prev ? { ...prev, paymentStatus: newPaymentStatus } : null));
       }
     }
@@ -1096,6 +1192,16 @@ export default function App() {
           body: JSON.stringify({ orderId: cleanId, paymentStatus: newPaymentStatus }),
         });
         if (res.ok) break;
+      } catch {}
+
+      // Fallback to POST
+      try {
+        const postRes = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'update_payment', orderId: cleanId, paymentStatus: newPaymentStatus }),
+        });
+        if (postRes.ok) break;
       } catch {}
     }
   };
@@ -1267,40 +1373,58 @@ export default function App() {
       });
     }
 
+    setStoredOverride(cleanId, {
+      status: standardizedOrder.status,
+      paymentStatus: standardizedOrder.paymentStatus,
+    });
+
     // 3. Sync to Storefront API (try multiple endpoints)
     const endpoints = [
       `${getStorefrontUrl()}/api/orders`,
       `/api/orders`,
     ];
+    const payload = {
+      action: 'update',
+      orderId: cleanId,
+      status: standardizedOrder.status,
+      carrier: standardizedOrder.carrier,
+      trackingNumber: standardizedOrder.trackingNumber,
+      courierTrackingNumber: standardizedOrder.trackingNumber,
+      dispatchedDate: standardizedOrder.dispatchedDate,
+      customerName: standardizedOrder.customerName,
+      customerPhone: standardizedOrder.customerPhone,
+      customerEmail: standardizedOrder.customerEmail,
+      shippingAddress: standardizedOrder.shippingAddress,
+      city: standardizedOrder.city,
+      district: standardizedOrder.district,
+      postalCode: standardizedOrder.postalCode,
+      paymentStatus: standardizedOrder.paymentStatus,
+      paymentMethod: standardizedOrder.paymentMethod,
+      total: standardizedOrder.total,
+      notes: standardizedOrder.notes,
+    };
+
     for (const endpoint of endpoints) {
       try {
         const res = await fetch(endpoint, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId: cleanId,
-            status: standardizedOrder.status,
-            carrier: standardizedOrder.carrier,
-            trackingNumber: standardizedOrder.trackingNumber,
-            courierTrackingNumber: standardizedOrder.trackingNumber,
-            dispatchedDate: standardizedOrder.dispatchedDate,
-            customerName: standardizedOrder.customerName,
-            customerPhone: standardizedOrder.customerPhone,
-            customerEmail: standardizedOrder.customerEmail,
-            shippingAddress: standardizedOrder.shippingAddress,
-            city: standardizedOrder.city,
-            district: standardizedOrder.district,
-            postalCode: standardizedOrder.postalCode,
-            paymentStatus: standardizedOrder.paymentStatus,
-            paymentMethod: standardizedOrder.paymentMethod,
-            total: standardizedOrder.total,
-            notes: standardizedOrder.notes,
-          }),
+          body: JSON.stringify(payload),
         });
         if (res.ok) break;
       } catch (e) {
         console.warn('Sync order update error:', e);
       }
+
+      // Fallback to POST
+      try {
+        const postRes = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (postRes.ok) break;
+      } catch {}
     }
   };
 

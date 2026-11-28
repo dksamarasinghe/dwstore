@@ -1157,28 +1157,30 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
               {hasComboDeal && comboCompanions.length > 0 && (
                 <div className="rounded-2xl border-2 border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-purple-50/30 to-white p-3.5 sm:p-5 shadow-xs space-y-3 sm:space-y-4">
                   {/* Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-xs flex-shrink-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+                    <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+                      <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-red-600 to-rose-600 text-white shadow-xs flex-shrink-0 mt-0.5 sm:mt-0">
                         <Package className="w-4 h-4" />
                       </span>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <h4 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight flex items-center gap-1.5 flex-wrap">
                           <span>Frequently Bought Together</span>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-100/70 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-red-700 bg-red-100/80 border border-red-200/60 px-1.5 py-0.5 rounded">
                             Combo Deal
                           </span>
                         </h4>
-                        <p className="text-[11px] text-slate-500 font-medium">
+                        <p className="text-[11px] text-slate-500 font-medium leading-tight mt-0.5">
                           Buy gadgets together and enjoy an instant combo bundle discount!
                         </p>
                       </div>
                     </div>
                     {comboSavingsMinor > 0 && (
-                      <span className="inline-flex self-start sm:self-center items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-black shadow-xs flex-shrink-0">
-                        <Sparkles className="w-3 h-3" />
-                        <span>Save Rs. {(comboSavingsMinor / 100).toLocaleString()}</span>
-                      </span>
+                      <div className="sm:self-center pl-10.5 sm:pl-0">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-black shadow-xs flex-shrink-0">
+                          <Sparkles className="w-3 h-3" />
+                          <span>Save Rs. {(comboSavingsMinor / 100).toLocaleString()}</span>
+                        </span>
+                      </div>
                     )}
                   </div>
 
@@ -1255,11 +1257,11 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
                   </div>
 
                   {/* Pricing Comparison & Add Both Button */}
-                  <div className="bg-indigo-950/5 p-3 sm:p-4 rounded-xl border border-indigo-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                  <div className="bg-slate-50/90 p-3 sm:p-4 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                     <div>
                       <div className="flex items-baseline gap-2 flex-wrap">
                         <span className="text-xs text-slate-600 font-bold">Total Combo Price:</span>
-                        <span className="text-base sm:text-xl font-black text-indigo-700">
+                        <span className="text-base sm:text-xl font-black text-red-600">
                           Rs. {(comboDealPriceMinor / 100).toLocaleString()}
                         </span>
                         {comboSavingsMinor > 0 && (
@@ -1279,7 +1281,7 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
                     <button
                       type="button"
                       onClick={handleAddComboToCart}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:scale-[0.98] text-white font-black text-xs sm:text-sm px-5 py-3 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer flex-shrink-0"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-700 hover:to-rose-800 active:scale-[0.98] text-white font-black text-xs sm:text-sm px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer flex-shrink-0"
                     >
                       <ShoppingCart className="w-4 h-4" />
                       <span>{comboCompanions.length > 1 ? `Add All (${comboCompanions.length + 1} Items) to Cart` : 'Add Both to Cart'}</span>

@@ -35,6 +35,9 @@ async function handleSync() {
     const shippedOrders = orders.filter(
       (o: any) =>
         (o.status === 'shipped' || o.status === 'processing') &&
+        o.status !== 'cancelled' &&
+        o.status !== 'refunded' &&
+        o.status !== 'returned' &&
         (o.trackingNumber || o.courierTrackingNumber)
     );
 

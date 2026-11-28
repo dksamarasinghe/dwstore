@@ -68,6 +68,17 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // If request is an order update (action: 'update' | 'update_status' | 'update_payment' OR has orderId with status/paymentStatus and no items)
+    if (
+      body.action === 'update' ||
+      body.action === 'update_status' ||
+      body.action === 'update_payment' ||
+      (body.orderId && (body.status || body.paymentStatus || body.carrier || body.trackingNumber) && (!body.items || !Array.isArray(body.items) || body.items.length === 0))
+    ) {
+      return handleOrderUpdate(body);
+    }
+
     const orders = getOrders();
 
     const rawPm = String(body.paymentMethod || 'cod').toLowerCase();
@@ -282,9 +293,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function PATCH(req: NextRequest) {
+async function handleOrderUpdate(body: any) {
   try {
-    const body = await req.json();
     const { 
       orderId, 
       status, 
@@ -317,19 +327,22 @@ export async function PATCH(req: NextRequest) {
 
     const orders = getOrders();
     const targetClean = String(orderId).replace(/^#+/, '').trim().toLowerCase();
+    const targetCleanNoDws = targetClean.replace(/^dws-/, '').trim();
     const targetDigits = String(orderId).replace(/\D/g, '');
 
     const index = orders.findIndex((o: any) => {
-      const oId = String(o.orderId || '').replace(/^#+/, '').trim().toLowerCase();
+      const oId = String(o.orderId || o.id || o.number || '').replace(/^#+/, '').trim().toLowerCase();
       if (oId === targetClean) return true;
-      const oDigits = String(o.orderId || '').replace(/\D/g, '');
+      const oIdNoDws = oId.replace(/^dws-/, '').trim();
+      if (targetCleanNoDws && oIdNoDws && targetCleanNoDws === oIdNoDws) return true;
+      const oDigits = String(o.orderId || o.id || o.number || '').replace(/\D/g, '');
       if (targetDigits && oDigits && targetDigits === oDigits) return true;
       return false;
     });
 
     if (index === -1) {
       return NextResponse.json(
-        { success: false, error: 'Order not found' },
+        { success: false, error: `Order #${orderId} not found in database` },
         { status: 404, headers: CORS_HEADERS }
       );
     }
@@ -410,7 +423,7 @@ export async function PATCH(req: NextRequest) {
       orders[index].customer.orderNotes = notes;
     }
 
-    // Section 12.4 & Section 14: Restore stock if order is cancelled or refunded
+    // Restore stock if order is cancelled or refunded
     const isNewCancellation = (status === 'cancelled' || status === 'refunded') &&
       previousStatus !== 'cancelled' && previousStatus !== 'refunded';
 
@@ -450,12 +463,27 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
-    saveOrders(orders);
+    const saved = saveOrders(orders);
+    if (!saved) {
+      console.error('[Orders API] Error: saveOrders returned false');
+    }
 
     return NextResponse.json(
       { success: true, order: orders[index] },
       { headers: CORS_HEADERS }
     );
+  } catch (err: any) {
+    return NextResponse.json(
+      { success: false, error: err.message },
+      { status: 400, headers: CORS_HEADERS }
+    );
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    return handleOrderUpdate(body);
   } catch (err: any) {
     return NextResponse.json(
       { success: false, error: err.message },
