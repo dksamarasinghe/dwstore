@@ -481,10 +481,10 @@ export default function App() {
   }, []);
   const [orders, setOrders] = useState<OrderItem[]>(() => {
     try {
-      const saved = localStorage.getItem('dwstore_admin_orders_v3');
+      const saved = localStorage.getItem('dwstore_admin_orders_v4');
       if (saved) return JSON.parse(saved);
 
-      const oldSaved = localStorage.getItem('dwstore_admin_orders');
+      const oldSaved = localStorage.getItem('dwstore_admin_orders_v3') || localStorage.getItem('dwstore_admin_orders');
       if (oldSaved) {
         const parsed: OrderItem[] = JSON.parse(oldSaved);
         const map = new Map(realOrders.map(ro => [ro.orderId, ro]));
@@ -533,7 +533,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('dwstore_admin_orders_v3', JSON.stringify(orders));
+      localStorage.setItem('dwstore_admin_orders_v4', JSON.stringify(orders));
     } catch (e) {}
   }, [orders]);
 
@@ -1011,7 +1011,7 @@ export default function App() {
 
             const result = newlyAdded.length > 0 ? [...newlyAdded, ...Array.from(map.values())] : Array.from(map.values());
             try {
-              localStorage.setItem('dwstore_admin_orders_v3', JSON.stringify(result));
+              localStorage.setItem('dwstore_admin_orders_v4', JSON.stringify(result));
             } catch (e) {}
             return result;
           });
@@ -1058,7 +1058,7 @@ export default function App() {
           : o;
       });
       try {
-        localStorage.setItem('dwstore_admin_orders_v3', JSON.stringify(next));
+        localStorage.setItem('dwstore_admin_orders_v4', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -1166,7 +1166,7 @@ export default function App() {
           : o;
       });
       try {
-        localStorage.setItem('dwstore_admin_orders_v3', JSON.stringify(next));
+        localStorage.setItem('dwstore_admin_orders_v4', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -1229,7 +1229,7 @@ export default function App() {
           : o;
       });
       try {
-        localStorage.setItem('dwstore_admin_orders_v3', JSON.stringify(next));
+        localStorage.setItem('dwstore_admin_orders_v4', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -1316,7 +1316,7 @@ export default function App() {
           : o;
       });
       try {
-        localStorage.setItem('dwstore_admin_orders_v3', JSON.stringify(next));
+        localStorage.setItem('dwstore_admin_orders_v4', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
