@@ -399,7 +399,13 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
 
   const companionsTotalRegularMinor = useMemo(() => {
     return comboCompanions.reduce((sum: number, comp: any) => {
-      const p = comp.salePrice || comp.price || comp.regularPrice || 0;
+      const fullProd = (productsData as any[])?.find((p) => String(p.id) === String(comp.id));
+      const target = fullProd || comp;
+      const p = (target.salePrice && target.salePrice > 0 ? target.salePrice : 0) ||
+        (target.price && target.price > 0 ? target.price : 0) ||
+        (target.salePriceMinor && target.salePriceMinor > 0 ? target.salePriceMinor / 100 : 0) ||
+        (target.regularPrice && target.regularPrice > 0 ? target.regularPrice : 0) ||
+        (target.regularPriceMinor && target.regularPriceMinor > 0 ? target.regularPriceMinor / 100 : 0) || 0;
       return sum + Math.round(p * 100);
     }, 0);
   }, [comboCompanions]);
@@ -412,13 +418,16 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
     if (!product?.comboDeal) return comboCombinedRegularMinor;
     const discAmountMinor = (product.comboDeal.discountAmount || 0) * 100;
     const fixedPriceMinor = (product.comboDeal.discountPrice || 0) * 100;
-    if (fixedPriceMinor > 0) {
+    // If a custom combo price was set AND it is lower than the combined selling price, apply it!
+    if (fixedPriceMinor > 0 && fixedPriceMinor < comboCombinedRegularMinor) {
       return fixedPriceMinor;
     }
+    // If a discount amount was set, deduct it!
     if (discAmountMinor > 0) {
       return Math.max(0, comboCombinedRegularMinor - discAmountMinor);
     }
-    return Math.round(comboCombinedRegularMinor * 0.9);
+    // If no combo discount/custom price is configured, strictly return the normal combined total price!
+    return comboCombinedRegularMinor;
   }, [product, comboCombinedRegularMinor]);
 
   const comboSavingsMinor = useMemo(() => {
@@ -626,7 +635,13 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       allocatedTotal += mainDiscountedPriceMinor;
 
       comboCompanions.forEach((comp: any, idx: number) => {
-        const compReg = Math.round((comp.salePrice || comp.price || comp.regularPrice || 0) * 100);
+        const fullProd = (productsData as any[])?.find((p) => String(p.id) === String(comp.id));
+        const target = fullProd || comp;
+        const compPrice = (target.salePrice && target.salePrice > 0 ? target.salePrice : 0) ||
+          (target.price && target.price > 0 ? target.price : 0) ||
+          (target.salePriceMinor && target.salePriceMinor > 0 ? target.salePriceMinor / 100 : 0) ||
+          (target.regularPrice && target.regularPrice > 0 ? target.regularPrice : 0) || 0;
+        const compReg = Math.round(compPrice * 100);
         if (idx === comboCompanions.length - 1) {
           // Final item absorbs any cent remainder so the exact sum matches comboDealPriceMinor
           const remainder = Math.max(0, comboDealPriceMinor - allocatedTotal);
@@ -640,7 +655,13 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       });
     } else {
       comboCompanions.forEach((comp: any) => {
-        compAllocatedPrices.push(Math.round((comp.salePrice || comp.price || comp.regularPrice || 0) * 100));
+        const fullProd = (productsData as any[])?.find((p) => String(p.id) === String(comp.id));
+        const target = fullProd || comp;
+        const compPrice = (target.salePrice && target.salePrice > 0 ? target.salePrice : 0) ||
+          (target.price && target.price > 0 ? target.price : 0) ||
+          (target.salePriceMinor && target.salePriceMinor > 0 ? target.salePriceMinor / 100 : 0) ||
+          (target.regularPrice && target.regularPrice > 0 ? target.regularPrice : 0) || 0;
+        compAllocatedPrices.push(Math.round(compPrice * 100));
       });
     }
 
@@ -1261,16 +1282,28 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
                             <p className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-2 leading-tight" title={comp.name}>
                               {comp.name}
                             </p>
-                            <div className="flex items-baseline gap-1.5 mt-1">
-                              <span className="text-xs sm:text-sm font-black text-slate-900">
-                                Rs. {((comp.salePrice || comp.price || comp.regularPrice || 0)).toLocaleString()}
-                              </span>
-                              {comp.regularPrice && comp.salePrice && comp.regularPrice > comp.salePrice && (
-                                <span className="text-[10px] sm:text-xs text-slate-400 line-through font-semibold">
-                                  Rs. {comp.regularPrice.toLocaleString()}
-                                </span>
-                              )}
-                            </div>
+                            {(() => {
+                              const fullProd = (productsData as any[])?.find((p) => String(p.id) === String(comp.id));
+                              const target = fullProd || comp;
+                              const currP = (target.salePrice && target.salePrice > 0 ? target.salePrice : 0) ||
+                                (target.price && target.price > 0 ? target.price : 0) ||
+                                (target.salePriceMinor && target.salePriceMinor > 0 ? target.salePriceMinor / 100 : 0) ||
+                                (target.regularPrice && target.regularPrice > 0 ? target.regularPrice : 0) || 0;
+                              const regP = (target.regularPrice && target.regularPrice > 0 ? target.regularPrice : 0) ||
+                                (target.regularPriceMinor && target.regularPriceMinor > 0 ? target.regularPriceMinor / 100 : 0) || 0;
+                              return (
+                                <div className="flex items-baseline gap-1.5 mt-1">
+                                  <span className="text-xs sm:text-sm font-black text-slate-900">
+                                    Rs. {currP.toLocaleString()}
+                                  </span>
+                                  {regP > currP && (
+                                    <span className="text-[10px] sm:text-xs text-slate-400 line-through font-semibold">
+                                      Rs. {regP.toLocaleString()}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
                         </div>
                       </React.Fragment>

@@ -413,8 +413,13 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
 
   const companionTotalValue = useMemo(() => {
     return selectedComboProducts.reduce((sum, p) => {
-      const reg = p.regularPrice || (p.regularPriceMinor ? p.regularPriceMinor / 100 : 0) || (p.salePrice || 0);
-      return sum + reg;
+      // Prioritize the CURRENT active selling price (salePrice, then price, then salePriceMinor, then regularPrice)
+      const currentPrice = (p.salePrice && p.salePrice > 0 ? p.salePrice : 0) ||
+        ((p as any).price && (p as any).price > 0 ? (p as any).price : 0) ||
+        (p.salePriceMinor && p.salePriceMinor > 0 ? p.salePriceMinor / 100 : 0) ||
+        (p.regularPrice && p.regularPrice > 0 ? p.regularPrice : 0) ||
+        (p.regularPriceMinor && p.regularPriceMinor > 0 ? p.regularPriceMinor / 100 : 0) || 0;
+      return sum + currentPrice;
     }, 0);
   }, [selectedComboProducts]);
 
@@ -1277,18 +1282,40 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
       ? (hasAnyVarInStock ? 'Active' : 'Out of stock')
       : status;
 
+    const mainSellingPrice = (parseFloat(salePrice) > 0 ? parseFloat(salePrice) : 0) ||
+      (variations[0]?.salePrice && variations[0].salePrice > 0 ? variations[0].salePrice : 0) ||
+      (parseFloat(regularPrice) > 0 ? parseFloat(regularPrice) : 0) ||
+      (variations[0]?.regularPrice && variations[0].regularPrice > 0 ? variations[0].regularPrice : 0) ||
+      (initialProduct?.salePriceMinor ? initialProduct.salePriceMinor / 100 : 0) ||
+      (initialProduct?.regularPriceMinor ? initialProduct.regularPriceMinor / 100 : 0) || 0;
+    const normalTotal = mainSellingPrice + companionTotalValue;
+
+    const parsedCustomPrice = parseFloat(comboCustomPrice) || 0;
+    const validCustomPrice = (parsedCustomPrice > 0 && (normalTotal === 0 || parsedCustomPrice < normalTotal))
+      ? parsedCustomPrice
+      : 0;
+
+    const parsedDiscountAmount = parseFloat(comboDiscountAmount) || 0;
+    const validDiscountAmount = parsedDiscountAmount > 0 ? parsedDiscountAmount : 0;
+
     const comboPayload = comboDealEnabled && comboProductIds.length > 0 ? {
       enabled: true,
       productIds: comboProductIds,
-      discountAmount: parseFloat(comboDiscountAmount) || 0,
-      discountPrice: parseFloat(comboCustomPrice) || 0,
+      discountAmount: validDiscountAmount,
+      discountPrice: validCustomPrice,
       companionProducts: selectedComboProducts.map((p) => ({
         id: String(p.id),
         name: p.name,
         image: p.displayImage || p.image || (p.imageUrls && p.imageUrls[0]) || '',
-        price: p.salePrice || (p.salePriceMinor ? p.salePriceMinor / 100 : 0) || p.regularPrice || (p.regularPriceMinor ? p.regularPriceMinor / 100 : 0) || 0,
-        regularPrice: p.regularPrice || (p.regularPriceMinor ? p.regularPriceMinor / 100 : 0) || 0,
-        salePrice: p.salePrice || (p.salePriceMinor ? p.salePriceMinor / 100 : 0) || 0,
+        price: (p.salePrice && p.salePrice > 0 ? p.salePrice : 0) ||
+          ((p as any).price && (p as any).price > 0 ? (p as any).price : 0) ||
+          (p.salePriceMinor && p.salePriceMinor > 0 ? p.salePriceMinor / 100 : 0) ||
+          (p.regularPrice && p.regularPrice > 0 ? p.regularPrice : 0) ||
+          (p.regularPriceMinor && p.regularPriceMinor > 0 ? p.regularPriceMinor / 100 : 0) || 0,
+        regularPrice: (p.regularPrice && p.regularPrice > 0 ? p.regularPrice : 0) ||
+          (p.regularPriceMinor && p.regularPriceMinor > 0 ? p.regularPriceMinor / 100 : 0) || 0,
+        salePrice: (p.salePrice && p.salePrice > 0 ? p.salePrice : 0) ||
+          (p.salePriceMinor && p.salePriceMinor > 0 ? p.salePriceMinor / 100 : 0) || 0,
         sku: p.sku || '',
         slug: (p as any).slug || String(p.id),
       }))
@@ -3164,18 +3191,25 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
 
                         <div className="text-end">
                           {(() => {
-                            const mainP = parseFloat(salePrice) || parseFloat(regularPrice) || (variations[0]?.salePrice || variations[0]?.regularPrice) || 0;
+                            const mainP = (parseFloat(salePrice) > 0 ? parseFloat(salePrice) : 0) ||
+                              (variations[0]?.salePrice && variations[0].salePrice > 0 ? variations[0].salePrice : 0) ||
+                              (parseFloat(regularPrice) > 0 ? parseFloat(regularPrice) : 0) ||
+                              (variations[0]?.regularPrice && variations[0].regularPrice > 0 ? variations[0].regularPrice : 0) ||
+                              (initialProduct?.salePriceMinor ? initialProduct.salePriceMinor / 100 : 0) ||
+                              (initialProduct?.regularPriceMinor ? initialProduct.regularPriceMinor / 100 : 0) || 0;
                             const compP = companionTotalValue;
                             const totalNormal = mainP + compP;
                             const discAmt = parseFloat(comboDiscountAmount) || 0;
                             const fixedP = parseFloat(comboCustomPrice) || 0;
-                            const finalP = fixedP > 0 ? fixedP : Math.max(0, totalNormal - discAmt);
-                            const savings = fixedP > 0 ? Math.max(0, totalNormal - fixedP) : discAmt;
+                            const finalP = (fixedP > 0 && fixedP < totalNormal)
+                              ? fixedP
+                              : (discAmt > 0 ? Math.max(0, totalNormal - discAmt) : totalNormal);
+                            const savings = Math.max(0, totalNormal - finalP);
 
                             return (
                               <div>
-                                <span className="text-muted text-decoration-line-through d-block" style={{ fontSize: '11px' }}>
-                                  Normal: Rs. {totalNormal.toLocaleString()}
+                                <span className="text-muted d-block" style={{ fontSize: '11px', textDecoration: savings > 0 ? 'line-through' : 'none' }}>
+                                  Normal Total (Rs. {mainP.toLocaleString()} + Rs. {compP.toLocaleString()}): <b>Rs. {totalNormal.toLocaleString()}</b>
                                 </span>
                                 <span className="fw-bold text-success" style={{ fontSize: '16px' }}>
                                   Combo Price: Rs. {finalP.toLocaleString()}
