@@ -7,7 +7,7 @@ import { formatPriceLKR } from '@/lib/catalog';
 import { X, ShoppingBag, Plus, Minus, Trash2, ArrowRight, ShieldCheck, Truck, MessageCircle, Sparkles } from 'lucide-react';
 
 export default function CartDrawer() {
-  const { cart, isOpen, closeCart, updateQuantity, removeFromCart, subtotalMinor, itemCount } = useCart();
+  const { cart, isOpen, closeCart, updateQuantity, removeFromCart, subtotalMinor, comboSavingsMinor, originalSubtotalMinor, itemCount } = useCart();
 
   if (!isOpen) return null;
 
@@ -194,14 +194,34 @@ export default function CartDrawer() {
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between text-slate-600">
                   <span>Subtotal</span>
-                  <span className="font-bold text-slate-900">LKR {formatPriceLKR(subtotalMinor)}</span>
+                  <span className="font-bold text-slate-900">
+                    LKR {formatPriceLKR(comboSavingsMinor > 0 ? originalSubtotalMinor : subtotalMinor)}
+                  </span>
                 </div>
+
+                {comboSavingsMinor > 0 && (
+                  <div className="flex justify-between text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200/80 font-bold text-xs items-center">
+                    <span className="flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                      Combo Deal Discount
+                    </span>
+                    <span>- LKR {formatPriceLKR(comboSavingsMinor)}</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between text-slate-600">
                   <span>Delivery</span>
                   <span className="text-slate-700 font-medium">Calculated at checkout</span>
                 </div>
                 <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
-                  <span>Estimated Total</span>
+                  <div>
+                    <span>Estimated Total</span>
+                    {comboSavingsMinor > 0 && (
+                      <span className="block text-[10px] text-emerald-600 font-bold">
+                        You save LKR {formatPriceLKR(comboSavingsMinor)} with Combo!
+                      </span>
+                    )}
+                  </div>
                   <span className="text-blue-600">LKR {formatPriceLKR(subtotalMinor)}</span>
                 </div>
               </div>

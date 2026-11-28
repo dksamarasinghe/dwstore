@@ -45,6 +45,8 @@ interface CartContextType {
   clearCart: () => void;
   itemCount: number;
   subtotalMinor: number;
+  comboSavingsMinor: number;
+  originalSubtotalMinor: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -180,6 +182,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     0
   );
 
+  const comboSavingsMinor = cart.reduce((total, item) => {
+    if (
+      item.comboDiscountBadge &&
+      item.regularPriceMinor &&
+      item.regularPriceMinor > item.priceMinor
+    ) {
+      return total + (item.regularPriceMinor - item.priceMinor) * item.quantity;
+    }
+    return total;
+  }, 0);
+
+  const originalSubtotalMinor = subtotalMinor + comboSavingsMinor;
+
   return (
     <CartContext.Provider
       value={{
@@ -195,6 +210,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         clearCart,
         itemCount,
         subtotalMinor,
+        comboSavingsMinor,
+        originalSubtotalMinor,
       }}
     >
       {children}

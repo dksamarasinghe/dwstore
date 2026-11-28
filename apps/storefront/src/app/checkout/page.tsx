@@ -90,6 +90,21 @@ function CheckoutContent() {
     return activeCart.reduce((sum, item) => sum + item.priceMinor * item.quantity, 0);
   }, [activeCart]);
 
+  const comboSavingsMinor = useMemo(() => {
+    return activeCart.reduce((total, item) => {
+      if (
+        item.comboDiscountBadge &&
+        item.regularPriceMinor &&
+        item.regularPriceMinor > item.priceMinor
+      ) {
+        return total + (item.regularPriceMinor - item.priceMinor) * item.quantity;
+      }
+      return total;
+    }, 0);
+  }, [activeCart]);
+
+  const originalSubtotalMinor = subtotalMinor + comboSavingsMinor;
+
   const handleUpdateQuantity = (itemId: string, newQty: number) => {
     if (isBuyNow && directItem) {
       if (newQty <= 0) {
@@ -433,6 +448,7 @@ function CheckoutContent() {
           shippingFeeMinor,
           paymentDiscountMinor,
           couponDiscountMinor,
+          comboDiscountMinor: comboSavingsMinor,
           couponCode: appliedCoupon?.code || '',
           installmentFeeMinor,
           totalMinor: finalTotalMinor,
@@ -527,6 +543,7 @@ function CheckoutContent() {
         items: activeCart,
         subtotalMinor,
         shippingFeeMinor,
+        comboDiscountMinor: comboSavingsMinor,
         installmentFeeMinor,
         totalMinor: finalTotalMinor,
         paymentMethod: 'whatsapp',
@@ -1116,8 +1133,20 @@ function CheckoutContent() {
                   <div className="space-y-2.5 text-xs pt-3 border-t border-slate-100">
                     <div className="flex justify-between text-slate-600">
                       <span>Subtotal</span>
-                      <span className="font-bold text-slate-900">LKR {formatPriceLKR(subtotalMinor)}</span>
+                      <span className="font-bold text-slate-900">
+                        LKR {formatPriceLKR(comboSavingsMinor > 0 ? originalSubtotalMinor : subtotalMinor)}
+                      </span>
                     </div>
+
+                    {comboSavingsMinor > 0 && (
+                      <div className="flex justify-between text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200/80 items-center font-bold">
+                        <span className="flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                          Combo Deal Discount
+                        </span>
+                        <span>-LKR {formatPriceLKR(comboSavingsMinor)}</span>
+                      </div>
+                    )}
 
                     <div className="flex justify-between text-slate-600 items-center">
                       <span>Islandwide Shipping</span>
@@ -1235,7 +1264,14 @@ function CheckoutContent() {
                     )}
 
                     <div className="pt-3 border-t border-slate-200 flex justify-between items-baseline">
-                      <span className="text-sm font-black text-slate-900">Total</span>
+                      <div>
+                        <span className="text-sm font-black text-slate-900 block">Total</span>
+                        {comboSavingsMinor > 0 && (
+                          <span className="block text-[11px] text-emerald-600 font-bold">
+                            Combo Savings Applied: LKR {formatPriceLKR(comboSavingsMinor)} OFF
+                          </span>
+                        )}
+                      </div>
                       <span className="text-xl font-black text-blue-600">
                         LKR {formatPriceLKR(finalTotalMinor)}
                       </span>

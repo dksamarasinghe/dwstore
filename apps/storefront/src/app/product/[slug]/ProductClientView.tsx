@@ -643,10 +643,14 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
     const compAllocatedPrices: number[] = [];
 
     if (comboCombinedRegularMinor > 0 && comboSavingsMinor > 0) {
-      let allocatedTotal = 0;
+      const totalSavingsMinor = comboCombinedRegularMinor - comboDealPriceMinor;
       const mainRatio = activePriceMinor / comboCombinedRegularMinor;
-      mainDiscountedPriceMinor = Math.round(comboDealPriceMinor * mainRatio);
-      allocatedTotal += mainDiscountedPriceMinor;
+      // Round to clean integer rupees (multiples of 100 minor units) if savings is in whole rupees
+      const mainDiscountMinor = totalSavingsMinor % 100 === 0
+        ? Math.round((totalSavingsMinor * mainRatio) / 100) * 100
+        : Math.round(totalSavingsMinor * mainRatio);
+      mainDiscountedPriceMinor = Math.max(0, activePriceMinor - mainDiscountMinor);
+      let allocatedSavings = mainDiscountMinor;
 
       comboCompanions.forEach((comp: any, idx: number) => {
         const fullProd = (productsData as any[])?.find((p) => String(p.id) === String(comp.id));
@@ -654,14 +658,16 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
         const compPrice = getTargetPrice(target);
         const compReg = Math.round(compPrice * 100);
         if (idx === comboCompanions.length - 1) {
-          // Final item absorbs any cent remainder so the exact sum matches comboDealPriceMinor
-          const remainder = Math.max(0, comboDealPriceMinor - allocatedTotal);
-          compAllocatedPrices.push(remainder);
+          // Final item absorbs any remainder so the exact sum matches comboDealPriceMinor
+          const remainderSavings = Math.max(0, totalSavingsMinor - allocatedSavings);
+          compAllocatedPrices.push(Math.max(0, compReg - remainderSavings));
         } else {
           const compRatio = compReg / comboCombinedRegularMinor;
-          const discounted = Math.round(comboDealPriceMinor * compRatio);
-          compAllocatedPrices.push(discounted);
-          allocatedTotal += discounted;
+          const compDiscountMinor = totalSavingsMinor % 100 === 0
+            ? Math.round((totalSavingsMinor * compRatio) / 100) * 100
+            : Math.round(totalSavingsMinor * compRatio);
+          compAllocatedPrices.push(Math.max(0, compReg - compDiscountMinor));
+          allocatedSavings += compDiscountMinor;
         }
       });
     } else {
@@ -696,7 +702,9 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       },
       // 2. All Companion Products as individual cart items
       ...comboCompanions.map((comp: any, idx: number) => {
-        const compReg = Math.round((comp.salePrice || comp.price || comp.regularPrice || 0) * 100);
+        const fullProd = (productsData as any[])?.find((p) => String(p.id) === String(comp.id));
+        const target = fullProd || comp;
+        const compReg = Math.round(getTargetPrice(target) * 100);
         return {
           productId: String(comp.id),
           name: comp.name,
