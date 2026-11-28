@@ -680,6 +680,11 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
     }
 
     const comboSavingsLabel = comboSavingsMinor > 0 ? 'Combo Savings Included' : undefined;
+    const comboBundleId = `bundle_${product.id}_${Date.now()}`;
+    const comboRequiredProductIds = [
+      String(product.id),
+      ...comboCompanions.map((c: any) => String(c.id)),
+    ];
 
     const itemsToAdd: any[] = [
       // 1. Main Product as its own cart item
@@ -693,6 +698,11 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
         quantity: 1,
         allowedPaymentMethods: product.allowedPaymentMethods,
         comboDiscountBadge: comboSavingsLabel,
+        comboBundleId,
+        comboRequiredProductIds,
+        normalPriceMinor: activePriceMinor,
+        normalRegularPriceMinor: activeRegularPriceMinor,
+        comboDiscountedPriceMinor: mainDiscountedPriceMinor,
         variation: matchedVariation
           ? {
               id: matchedVariation.id,
@@ -704,17 +714,24 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       ...comboCompanions.map((comp: any, idx: number) => {
         const fullProd = (productsData as any[])?.find((p) => String(p.id) === String(comp.id));
         const target = fullProd || comp;
-        const compReg = Math.round(getTargetPrice(target) * 100);
+        const compPrice = getTargetPrice(target);
+        const compReg = Math.round(compPrice * 100);
+        const compOriginalRegMinor = target.regularPriceMinor || (target.regularPrice ? Math.round(target.regularPrice * 100) : compReg);
         return {
           productId: String(comp.id),
           name: comp.name,
           slug: (comp.slug || comp.id).replace(/-\d+$/, ''),
-          image: comp.image || '/placeholder-product.png',
+          image: comp.image || (target.displayImage || (target.imageUrls && target.imageUrls[0])) || '/placeholder-product.png',
           priceMinor: compAllocatedPrices[idx],
           regularPriceMinor: compReg,
           quantity: 1,
           allowedPaymentMethods: comp.allowedPaymentMethods || product.allowedPaymentMethods,
           comboDiscountBadge: comboSavingsLabel,
+          comboBundleId,
+          comboRequiredProductIds,
+          normalPriceMinor: compReg,
+          normalRegularPriceMinor: compOriginalRegMinor,
+          comboDiscountedPriceMinor: compAllocatedPrices[idx],
           variation: null,
         };
       }),

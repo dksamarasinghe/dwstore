@@ -257,7 +257,7 @@ export default function App() {
         description: apiItem.description || '',
         warrantyPeriod: apiItem.warrantyPeriod || '',
         shipping: apiItem.shipping || undefined,
-        comboDeal: apiItem.comboDeal || undefined,
+        comboDeal: (apiItem.comboDeal && apiItem.comboDeal.enabled) ? apiItem.comboDeal : undefined,
         groupedProductIds: apiItem.groupedProductIds || undefined,
         groupedProducts: apiItem.groupedProducts || undefined,
         allowedPaymentMethods: apiItem.allowedPaymentMethods || undefined,
@@ -433,7 +433,9 @@ export default function App() {
                     imageUrls: apiItem.imageUrls || p.imageUrls || rp?.imageUrls || [],
                     galleryImages:
                       apiItem.imageUrls || p.galleryImages || rp?.galleryImages || [],
-                    comboDeal: apiItem.comboDeal !== undefined ? apiItem.comboDeal : p.comboDeal,
+                    comboDeal: (apiItem.comboDeal && apiItem.comboDeal.enabled)
+                      ? apiItem.comboDeal
+                      : (apiItem.comboDeal === null || apiItem.comboDeal?.enabled === false ? undefined : (p.comboDeal?.enabled ? p.comboDeal : undefined)),
                     groupedProductIds: apiItem.groupedProductIds || p.groupedProductIds,
                     groupedProducts: apiItem.groupedProducts || p.groupedProducts,
                     allowedPaymentMethods: apiItem.allowedPaymentMethods || p.allowedPaymentMethods,
@@ -732,7 +734,9 @@ export default function App() {
           : prod.galleryImages && prod.galleryImages.length > 0
           ? prod.galleryImages
           : realProd?.imageUrls || [],
-      comboDeal: prod.comboDeal || realProd?.comboDeal || undefined,
+      comboDeal: (prod.comboDeal && prod.comboDeal.enabled)
+        ? prod.comboDeal
+        : (realProd?.comboDeal && realProd.comboDeal.enabled ? realProd.comboDeal : undefined),
       groupedProductIds: prod.groupedProductIds || realProd?.groupedProductIds || undefined,
       groupedProducts: prod.groupedProducts || realProd?.groupedProducts || undefined,
       allowedPaymentMethods: prod.allowedPaymentMethods || realProd?.allowedPaymentMethods || undefined,
@@ -866,7 +870,13 @@ export default function App() {
                 imageUrls: fullProd.imageUrls || prod.imageUrls || realProd?.imageUrls || initialMerged.imageUrls,
                 galleryImages:
                   fullProd.imageUrls || prod.galleryImages || realProd?.galleryImages || initialMerged.galleryImages,
-                comboDeal: fullProd.comboDeal || prod.comboDeal || realProd?.comboDeal || undefined,
+                comboDeal: (fullProd.comboDeal && fullProd.comboDeal.enabled)
+                  ? fullProd.comboDeal
+                  : (fullProd.comboDeal === null || fullProd.comboDeal?.enabled === false)
+                  ? undefined
+                  : (prod.comboDeal && prod.comboDeal.enabled)
+                  ? prod.comboDeal
+                  : (realProd?.comboDeal && realProd.comboDeal.enabled ? realProd.comboDeal : undefined),
                 groupedProductIds: fullProd.groupedProductIds || prod.groupedProductIds || realProd?.groupedProductIds || undefined,
                 groupedProducts: fullProd.groupedProducts || prod.groupedProducts || realProd?.groupedProducts || undefined,
                 allowedPaymentMethods: fullProd.allowedPaymentMethods || prod.allowedPaymentMethods || realProd?.allowedPaymentMethods || undefined,

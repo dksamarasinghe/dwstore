@@ -306,7 +306,11 @@ export async function POST(req: NextRequest) {
         brand: body.brand !== undefined ? body.brand : products[existingIndex].brand,
         shortDescription: body.shortDesc !== undefined ? body.shortDesc : products[existingIndex].shortDescription,
         description: body.description !== undefined ? body.description : products[existingIndex].description,
-        comboDeal: body.comboDeal !== undefined ? body.comboDeal : products[existingIndex].comboDeal,
+        comboDeal: (body.comboDeal && body.comboDeal.enabled === true)
+          ? body.comboDeal
+          : (body.comboDeal !== undefined)
+          ? undefined
+          : (products[existingIndex].comboDeal?.enabled ? products[existingIndex].comboDeal : undefined),
         allowedPaymentMethods: Array.isArray(body.allowedPaymentMethods)
           ? body.allowedPaymentMethods
           : products[existingIndex].allowedPaymentMethods,
@@ -321,12 +325,16 @@ export async function POST(req: NextRequest) {
         updatedAtTimestamp: nowTs,
       };
 
+      if (!updatedProduct.comboDeal) {
+        delete (updatedProduct as any).comboDeal;
+      }
+
       // Move newly edited product to the front (top) of catalog
       products.splice(existingIndex, 1);
       products.unshift(updatedProduct);
     } else {
       // Create new product
-      const newProduct = {
+      const newProduct: any = {
         id: productId || `prod-${Date.now()}`,
         name: body.name,
         slug: productSlug,
@@ -346,7 +354,7 @@ export async function POST(req: NextRequest) {
         brand: body.brand || '',
         shortDescription: body.shortDesc || '',
         description: body.description || '',
-        comboDeal: body.comboDeal !== undefined ? body.comboDeal : undefined,
+        comboDeal: (body.comboDeal && body.comboDeal.enabled === true) ? body.comboDeal : undefined,
         allowedPaymentMethods: Array.isArray(body.allowedPaymentMethods)
           ? body.allowedPaymentMethods
           : undefined,
@@ -365,6 +373,9 @@ export async function POST(req: NextRequest) {
         updatedAt: nowIso,
         updatedAtTimestamp: nowTs,
       };
+      if (!newProduct.comboDeal) {
+        delete newProduct.comboDeal;
+      }
       products.unshift(newProduct);
     }
 

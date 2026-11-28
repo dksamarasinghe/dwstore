@@ -14,6 +14,11 @@ export interface CartItem {
   quantity: number;
   allowedPaymentMethods?: string[];
   comboDiscountBadge?: string;
+  comboBundleId?: string;
+  comboRequiredProductIds?: string[];
+  normalPriceMinor?: number;
+  normalRegularPriceMinor?: number | null;
+  comboDiscountedPriceMinor?: number;
   isGrouped?: boolean;
   groupedProducts?: Array<{
     id: string;
@@ -53,6 +58,76 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const CART_STORAGE_KEY = 'dwstore_cart_items';
 
+export function validateCartBundles(items: CartItem[]): CartItem[] {
+  // 1. Group items that have comboBundleId
+  const bundles: Record<string, CartItem[]> = {};
+  items.forEach((item) => {
+    if (item.comboBundleId) {
+      if (!bundles[item.comboBundleId]) {
+        bundles[item.comboBundleId] = [];
+      }
+      bundles[item.comboBundleId].push(item);
+    }
+  });
+
+  // 2. Identify which bundle IDs are intact (all required products are present with quantity > 0)
+  const validBundleIds = new Set<string>();
+  Object.entries(bundles).forEach(([bId, bItems]) => {
+    const requiredProductIds = bItems[0]?.comboRequiredProductIds;
+    if (Array.isArray(requiredProductIds) && requiredProductIds.length > 1) {
+      const presentProductIds = new Set(
+        bItems.filter((i) => i.quantity > 0).map((i) => String(i.productId))
+      );
+      const isComplete = requiredProductIds.every((reqId) => presentProductIds.has(String(reqId)));
+      if (isComplete) {
+        validBundleIds.add(bId);
+      }
+    }
+  });
+
+  // 3. Process each item:
+  // - If bundle is intact: keep discounted combo price and combo discount badge
+  // - If bundle is broken (any item was deleted): revert to standard normal selling price, clear badge & bundle fields
+  return items.map((item) => {
+    if (item.comboBundleId) {
+      if (validBundleIds.has(item.comboBundleId)) {
+        return {
+          ...item,
+          priceMinor: item.comboDiscountedPriceMinor ?? item.priceMinor,
+          comboDiscountBadge: 'Combo Savings Included',
+        };
+      } else {
+        // Bundle broken because one or more companion items were removed from cart!
+        const revertedPrice = item.normalPriceMinor ?? item.regularPriceMinor ?? item.priceMinor;
+        const revertedRegular = item.normalRegularPriceMinor !== undefined
+          ? item.normalRegularPriceMinor
+          : (item.regularPriceMinor && item.regularPriceMinor > revertedPrice ? item.regularPriceMinor : null);
+        return {
+          ...item,
+          priceMinor: revertedPrice,
+          regularPriceMinor: revertedRegular,
+          comboDiscountBadge: undefined,
+          comboBundleId: undefined,
+          comboRequiredProductIds: undefined,
+          comboDiscountedPriceMinor: undefined,
+          normalPriceMinor: undefined,
+          normalRegularPriceMinor: undefined,
+        };
+      }
+    }
+
+    // Clean up legacy items without bundle ID that may still have a lingering combo badge
+    if (item.comboDiscountBadge && (!item.regularPriceMinor || item.regularPriceMinor <= item.priceMinor)) {
+      return {
+        ...item,
+        comboDiscountBadge: undefined,
+      };
+    }
+
+    return item;
+  });
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -63,7 +138,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       const stored = localStorage.getItem(CART_STORAGE_KEY);
       if (stored) {
-        setCart(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setCart(validateCartBundles(Array.isArray(parsed) ? parsed : []));
       }
     } catch (e) {
       console.error('Failed to load cart from storage', e);
@@ -97,13 +173,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     setCart((prevCart) => {
       const existingIndex = prevCart.findIndex((i) => i.id === cartItemId);
+      let updated: CartItem[];
       if (existingIndex > -1) {
-        const updated = [...prevCart];
-        updated[existingIndex].quantity += newItem.quantity;
-        return updated;
+        updated = [...prevCart];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: updated[existingIndex].quantity + newItem.quantity,
+        };
       } else {
-        return [...prevCart, { ...newItem, id: cartItemId }];
+        updated = [...prevCart, { ...newItem, id: cartItemId }];
       }
+      return validateCartBundles(updated);
     });
 
     if (openDrawer) {
@@ -137,13 +217,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             quantity: updated[existingIndex].quantity + newItem.quantity,
             priceMinor: newItem.priceMinor,
             regularPriceMinor: newItem.regularPriceMinor ?? updated[existingIndex].regularPriceMinor,
+            normalPriceMinor: newItem.normalPriceMinor ?? updated[existingIndex].normalPriceMinor,
+            normalRegularPriceMinor: newItem.normalRegularPriceMinor ?? updated[existingIndex].normalRegularPriceMinor,
+            comboDiscountedPriceMinor: newItem.comboDiscountedPriceMinor ?? updated[existingIndex].comboDiscountedPriceMinor,
+            comboBundleId: newItem.comboBundleId ?? updated[existingIndex].comboBundleId,
+            comboRequiredProductIds: newItem.comboRequiredProductIds ?? updated[existingIndex].comboRequiredProductIds,
             comboDiscountBadge: newItem.comboDiscountBadge || updated[existingIndex].comboDiscountBadge,
           };
         } else {
           updated.push({ ...newItem, id: cartItemId });
         }
       });
-      return updated;
+      return validateCartBundles(updated);
     });
 
     if (openDrawer) {
@@ -158,7 +243,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const removeFromCart = (id: string) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+    setCart((prev) => validateCartBundles(prev.filter((item) => item.id !== id)));
   };
 
   const updateQuantity = (id: string, quantity: number) => {
@@ -167,7 +252,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setCart((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity } : item))
+      validateCartBundles(
+        prev.map((item) => (item.id === id ? { ...item, quantity } : item))
+      )
     );
   };
 

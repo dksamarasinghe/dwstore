@@ -1325,7 +1325,7 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
     const parsedDiscountAmount = parseFloat(comboDiscountAmount) || 0;
     const validDiscountAmount = parsedDiscountAmount > 0 ? parsedDiscountAmount : 0;
 
-    const comboPayload = comboDealEnabled && comboProductIds.length > 0 ? {
+    const comboPayload = (comboDealEnabled && comboProductIds.length > 0) ? {
       enabled: true,
       productIds: comboProductIds,
       discountAmount: validDiscountAmount,
@@ -1346,7 +1346,13 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
         sku: p.sku || '',
         slug: (p as any).slug || String(p.id),
       }))
-    } : undefined;
+    } : {
+      enabled: false,
+      productIds: [],
+      discountAmount: 0,
+      discountPrice: 0,
+      companionProducts: []
+    };
 
     const productPayload: ProductItem = {
       id: initialProduct?.id || `prod-${Date.now()}`,
