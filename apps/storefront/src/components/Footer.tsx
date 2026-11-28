@@ -57,10 +57,10 @@ export default function Footer() {
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-4">Products</h4>
             <ul className="space-y-2 text-xs">
               <li><Link href="/category/smartwatches" className="hover:text-blue-600 transition">Smart Watches</Link></li>
-              <li><Link href="/category/bluetooth-handfree" className="hover:text-blue-600 transition">Audio &amp; Earbuds</Link></li>
+              <li><Link href="/category/bluetooth-handsfree" className="hover:text-blue-600 transition">Audio &amp; Earbuds</Link></li>
               <li><Link href="/category/power-banks" className="hover:text-blue-600 transition">Power Banks</Link></li>
-              <li><Link href="/category/wall-chargers" className="hover:text-blue-600 transition">Chargers &amp; Adapters</Link></li>
-              <li><Link href="/category/temperd-glass" className="hover:text-blue-600 transition">Tempered Glass</Link></li>
+              <li><Link href="/category/cable-and-adaptors" className="hover:text-blue-600 transition">Chargers &amp; Adapters</Link></li>
+              <li><Link href="/category/tempered-glass" className="hover:text-blue-600 transition">Tempered Glass</Link></li>
               <li><Link href="/shop" className="hover:text-blue-600 transition font-bold text-blue-600">All 407 Products →</Link></li>
             </ul>
           </div>

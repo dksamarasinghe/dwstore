@@ -9,7 +9,8 @@ import { resolveImageUrl } from '@/lib/image';
 // Curated top categories with appropriate icons & images
 const CATEGORY_ICONS: Record<string, any> = {
   'smartwatches': Watch,
-  'bluetooth-handfree': Headphones,
+  'bluetooth-handsfree': Headphones,
+  'tempered-glass': Shield,
   'headphone-and-headset': Headphones,
   'power-banks': BatteryCharging,
   'bluetooth-speakers': Speaker,

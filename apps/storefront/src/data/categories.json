@@ -18,9 +18,9 @@
     "imageUrl": "/media/categories/smartwatches-T800-Ultra-Smart-Watch-1.jpg"
   },
   {
-    "id": "bluetooth-handfree",
-    "name": "Bluetooth Handfree",
-    "slug": "bluetooth-handfree",
+    "id": "bluetooth-handsfree",
+    "name": "Bluetooth Handsfree",
+    "slug": "bluetooth-handsfree",
     "parentSlug": "electronics-accessories",
     "level": 1,
     "productCount": 47,
@@ -54,9 +54,9 @@
     "imageUrl": "/media/categories/phone-accessories-m-6.jpg"
   },
   {
-    "id": "temperd-glass",
-    "name": "Temperd Glass",
-    "slug": "temperd-glass",
+    "id": "tempered-glass",
+    "name": "Tempered Glass",
+    "slug": "tempered-glass",
     "parentSlug": "phone-accessories",
     "level": 1,
     "productCount": 4,

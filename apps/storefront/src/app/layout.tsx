@@ -5,16 +5,18 @@ import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.dwstore.lk'),
-  title: "DWstore - Sri Lanka's Premier Electronics Store | dwstore.lk",
+  title: "DW Store Sri Lanka | Mobile Accessories, Audio, CCTV & Gadgets in Pannipitiya",
   description:
-    "Buy original smartphones, laptops, audio gear, gaming consoles, accessories and smart electronics at best prices in Sri Lanka. Island-wide cash on delivery — DWstore.lk",
+    "Buy genuine mobile accessories, audio gear, power banks, smartwatches and CCTV security cameras at best prices in Sri Lanka. Koko & Payzy 3-month installments, official warranty & islandwide Cash on Delivery. Visit our Pannipitiya flagship store!",
   icons: {
     icon: "/dwstoreicon_logo.png",
     shortcut: "/dwstoreicon_logo.png",
     apple: "/dwstoreicon_logo.png",
   },
   openGraph: {
-    siteName: 'DWstore.lk',
+    siteName: 'DW Store Sri Lanka',
+    title: 'DW Store Sri Lanka | Mobile Accessories, Audio, CCTV & Gadgets in Pannipitiya',
+    description: 'Buy genuine mobile accessories, audio gear, power banks, smartwatches and CCTV cameras with Koko & Payzy installments and island-wide Cash on Delivery.',
     locale: 'en_LK',
     type: 'website',
     images: [
@@ -27,6 +29,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
+    title: 'DW Store Sri Lanka | Mobile Accessories, Audio, CCTV & Gadgets in Pannipitiya',
+    description: 'Buy genuine mobile accessories, audio gear, power banks, smartwatches and CCTV cameras with Koko & Payzy installments and island-wide Cash on Delivery.',
     site: '@dwstorelk',
   },
   robots: {
@@ -83,7 +87,7 @@ export default function RootLayout({
                 },
                 {
                   "@type": "Organization",
-                  "name": "DWstore.lk",
+                  "name": "DW Store Sri Lanka",
                   "url": "https://www.dwstore.lk",
                   "logo": "https://www.dwstore.lk/dwstoreicon_logo.png",
                   "sameAs": [],
@@ -93,6 +97,56 @@ export default function RootLayout({
                     "contactType": "customer service",
                     "availableLanguage": ["English", "Sinhala"]
                   }
+                },
+                {
+                  "@type": "ElectronicsStore",
+                  "@id": "https://www.dwstore.lk/#store",
+                  "name": "DW Store - Pannipitiya Flagship Store",
+                  "description": "Sri Lanka's leading electronics and accessories store offering genuine audio devices, phone accessories, power banks, smartwatches, and CCTV security systems.",
+                  "url": "https://www.dwstore.lk",
+                  "logo": "https://www.dwstore.lk/dwstoreicon_logo.png",
+                  "image": "https://www.dwstore.lk/dwstoreicon_logo.png",
+                  "telephone": "+94756693358",
+                  "priceRange": "LKR",
+                  "paymentAccepted": ["Cash", "Credit Card", "Bank Transfer", "Koko Installments", "Payzy Installments"],
+                  "currenciesAccepted": "LKR",
+                  "address": {
+                    "@type": "PostalAddress",
+                    "streetAddress": "No.55/1/2, Borella Road",
+                    "addressLocality": "Pannipitiya",
+                    "addressRegion": "Western Province",
+                    "postalCode": "10230",
+                    "addressCountry": "LK"
+                  },
+                  "geo": {
+                    "@type": "GeoCoordinates",
+                    "latitude": 6.8485,
+                    "longitude": 79.9575
+                  },
+                  "openingHoursSpecification": [
+                    {
+                      "@type": "OpeningHoursSpecification",
+                      "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                      "opens": "09:00",
+                      "closes": "19:30"
+                    },
+                    {
+                      "@type": "OpeningHoursSpecification",
+                      "dayOfWeek": ["Sunday"],
+                      "opens": "10:00",
+                      "closes": "16:00"
+                    }
+                  ],
+                  "areaServed": [
+                    "Pannipitiya",
+                    "Maharagama",
+                    "Kottawa",
+                    "Homagama",
+                    "Thalawathugoda",
+                    "Athurugiriya",
+                    "Colombo",
+                    "Sri Lanka"
+                  ]
                 }
               ]
             })

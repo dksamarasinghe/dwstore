@@ -588,7 +588,7 @@ export default function Header() {
             <Link href="/brands" className="hover:text-blue-600 transition">Brands (56)</Link>
             <Link href="/shop?category=smartwatches" className="hover:text-blue-600 transition">Smart Watches</Link>
             <Link href="/shop?category=power-banks" className="hover:text-blue-600 transition">Power Banks</Link>
-            <Link href="/shop?category=bluetooth-handfree" className="hover:text-blue-600 transition">Earbuds</Link>
+            <Link href="/shop?category=bluetooth-handsfree" className="hover:text-blue-600 transition">Earbuds</Link>
           </nav>
 
           {/* Right helpers */}

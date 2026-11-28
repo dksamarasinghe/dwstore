@@ -12,6 +12,7 @@ import { Star, ShoppingCart, Heart, SlidersHorizontal, ChevronRight, ArrowLeft }
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useLiveProducts, getProductTimestamp } from '@/lib/useLiveProducts';
+import CategorySeoContent from '@/components/CategorySeoContent';
 
 export function CategoryClientView({ slug }: { slug: string }) {
   const router = useRouter();
@@ -343,6 +344,9 @@ export function CategoryClientView({ slug }: { slug: string }) {
             </button>
           </div>
         )}
+
+        {/* Rich SEO Content & Buying Guide */}
+        <CategorySeoContent slug={slug} categoryName={categoryName} />
       </div>
 
       <Footer />

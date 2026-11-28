@@ -12,7 +12,7 @@ import { resolveImageUrl } from '@/lib/image';
 const TABS = [
   { label: 'All Products', category: 'all' },
   { label: 'SmartWatches', category: 'smartwatches' },
-  { label: 'Audio & Earbuds', category: 'bluetooth-handfree' },
+  { label: 'Audio & Earbuds', category: 'bluetooth-handsfree' },
   { label: 'Power Banks', category: 'power-banks' },
   { label: 'Chargers & Adapters', category: 'wall-chargers' },
 ];

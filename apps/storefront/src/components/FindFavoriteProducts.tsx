@@ -83,7 +83,7 @@ export default function FindFavoriteProducts({ initialConfig }: FindFavoriteProd
 
     // Default fallback: Top trending genuine items
     const smartWatchProducts = allProducts.filter((p) => p.categorySlugs?.includes('smartwatches'));
-    const audioProducts = allProducts.filter((p) => p.categorySlugs?.includes('bluetooth-handfree') || p.categorySlugs?.includes('headphone-and-headset'));
+    const audioProducts = allProducts.filter((p) => p.categorySlugs?.includes('bluetooth-handsfree') || p.categorySlugs?.includes('bluetooth-handfree') || p.categorySlugs?.includes('headphone-and-headset'));
     const chargerProducts = allProducts.filter((p) => p.categorySlugs?.includes('power-banks') || p.categorySlugs?.includes('cable-and-adaptors'));
 
     return [

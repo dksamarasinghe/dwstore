@@ -8,7 +8,7 @@ import Footer from '@/components/Footer';
 import productsData from '@/data/products.json';
 import brandsData from '@/data/brands.json';
 import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
-import { Star, ShoppingCart, Heart, SlidersHorizontal, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Star, ShoppingCart, Heart, SlidersHorizontal, ChevronRight, ArrowLeft, ShieldCheck, CreditCard, Truck, MapPin } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useLiveProducts, getProductTimestamp } from '@/lib/useLiveProducts';
@@ -87,27 +87,71 @@ export function BrandClientView({ slug }: { slug: string }) {
       </div>
 
       {/* Brand Header Hero */}
-      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white py-8 border-b border-slate-800">
-        <div className="page-container flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-[11px] font-bold uppercase tracking-wider mb-2 border border-blue-400/20">
-              <span>Official Brand Catalog</span>
+      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white py-10 border-b border-slate-800">
+        <div className="page-container flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="flex items-start sm:items-center gap-4">
+            {currentBrand?.logo && (
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white p-2.5 flex items-center justify-center flex-shrink-0 shadow-md border border-slate-700/50">
+                <img
+                  src={currentBrand.logo.startsWith('http') ? currentBrand.logo : currentBrand.logo.startsWith('/') ? currentBrand.logo : `/${currentBrand.logo}`}
+                  alt={`${brandName} Logo`}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-[11px] font-bold uppercase tracking-wider mb-2 border border-blue-400/20">
+                <span>{slug.toLowerCase() === 'sony' ? 'Authorized Reseller' : '100% Genuine Brand'}</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white">
+                {slug.toLowerCase() === 'sony'
+                  ? 'Authorized Sony Reseller in Sri Lanka'
+                  : slug.toLowerCase() === 'anker'
+                  ? 'Original Anker Products in Sri Lanka'
+                  : slug.toLowerCase() === 'ezviz'
+                  ? 'Original EZVIZ Smart Security Cameras in Sri Lanka'
+                  : slug.toLowerCase() === 'hikvision'
+                  ? 'Hikvision CCTV & Surveillance in Sri Lanka'
+                  : slug.toLowerCase() === 'baseus'
+                  ? 'Original Baseus Fast Chargers & Accessories in Sri Lanka'
+                  : `Original ${brandName} Products in Sri Lanka`}
+              </h1>
+              <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                Shop genuine {brandName} devices and accessories at DW Store. Guaranteed original with official warranty, Koko &amp; Payzy 3-month interest-free installments, and island-wide Cash on Delivery to all 25 districts.
+              </p>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white">
-              {brandName}
-            </h1>
-            <p className="text-xs text-slate-300 mt-1 max-w-xl">
-              100% Genuine {brandName} devices and accessories backed by direct warranty &amp; island-wide Cash on Delivery in Sri Lanka.
-            </p>
           </div>
 
           <Link
             href="/shop"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition border border-white/20 w-fit"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition border border-white/20 w-fit flex-shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>All Products</span>
           </Link>
+        </div>
+
+        {/* Brand Trust Bar */}
+        <div className="page-container mt-6 pt-4 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-3 text-slate-300 text-[11px]">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <span>100% Company Warranty</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-purple-400 flex-shrink-0" />
+            <span>Koko &amp; Payzy 3x Installments</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Truck className="w-4 h-4 text-blue-400 flex-shrink-0" />
+            <span>Island-wide Express COD</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <span>Pannipitiya Flagship Store</span>
+          </div>
         </div>
       </div>
 

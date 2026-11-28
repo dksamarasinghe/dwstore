@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { MapPin, Phone, Mail, Clock, MessageSquare, Send, CheckCircle2 } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, MessageSquare, Send, CheckCircle2, Navigation, Car, ShieldCheck, CreditCard } from 'lucide-react';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -97,8 +97,33 @@ export default function ContactPage() {
                   className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm text-center"
                 >
                   <MapPin className="w-4 h-4" />
-                  <span>Open in Google Maps</span>
+                  <span>Get Directions on Google Maps</span>
                 </a>
+              </div>
+            </div>
+
+            {/* In-Store Benefits Card */}
+            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-3 text-xs">
+              <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[11px]">
+                In-Store Shopping Experience
+              </h4>
+              <div className="space-y-2 text-slate-600">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span>Live sound testing for Sony, JBL &amp; Anker audio</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span>EZVIZ &amp; Hikvision CCTV camera live demonstrations</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span>In-store Koko &amp; Payzy QR installment payments</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span>Customer parking available on Borella Road</span>
+                </div>
               </div>
             </div>
           </div>
@@ -181,6 +206,59 @@ export default function ContactPage() {
                 </form>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Local SEO & Location Guide */}
+        <div className="mt-12 bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 lg:p-10 shadow-xs space-y-8">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 inline-block mb-3">
+              Visit DW Store Pannipitiya
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              Electronics &amp; Gadgets Store Near Maharagama, Kottawa &amp; Pannipitiya
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 mt-2 max-w-3xl leading-relaxed">
+              Located conveniently on Borella Road in Pannipitiya, DW Store is easily accessible from High-Level Road (A4) and just minutes away from Pannipitiya Railway Station. We proudly serve tech enthusiasts, home owners, and professionals from Pannipitiya, Maharagama, Kottawa, Homagama, Thalawathugoda, Athurugiriya, Nugegoda, and the entire Colombo district.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/70">
+              <h4 className="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+                <Car className="w-4 h-4 text-blue-600" /> From Maharagama &amp; Nugegoda
+              </h4>
+              <p className="text-slate-600">
+                Drive along High-Level Road towards Pannipitiya flyover, turn onto Borella Road. Reach our store in under 7 minutes.
+              </p>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/70">
+              <h4 className="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+                <Navigation className="w-4 h-4 text-emerald-600" /> From Kottawa &amp; Homagama
+              </h4>
+              <p className="text-slate-600">
+                Accessible via High-Level Road or Kottawa Expressway interchange. Just 5 minutes driving distance with customer parking.
+              </p>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/70">
+              <h4 className="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-amber-600" /> From Thalawathugoda &amp; Battaramulla
+              </h4>
+              <p className="text-slate-600">
+                Take the Pannipitiya-Borella Road directly. A quick 10-minute drive avoiding heavy Colombo traffic.
+              </p>
+            </div>
+          </div>
+
+          {/* Interactive Google Map Embed */}
+          <div className="w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-200 shadow-xs relative bg-slate-100">
+            <iframe
+              title="DW Store Pannipitiya Google Map"
+              src="https://maps.google.com/maps?q=DWStore+No.55/1/2+Borella+Rd+Pannipitiya&t=&z=15&ie=UTF8&iwloc=&output=embed"
+              className="w-full h-full border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
           </div>
         </div>
       </div>

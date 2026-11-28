@@ -7,6 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PaymentInstallmentBoxes from '@/components/PaymentInstallmentBoxes';
 import productsData from '@/data/products.json';
+import categoriesData from '@/data/categories.json';
 import { formatPriceLKR, isProductInStock } from '@/lib/catalog';
 import { trackViewContent } from '@/lib/meta-pixel';
 import { useCart } from '@/context/CartContext';
@@ -42,6 +43,15 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       (p) => p.slug === slug || String(p.id) === String(slug) || p.slug === cleanSlug || p.slug.replace(/-\d+$/, '') === cleanSlug
     ) || null;
   });
+
+  const primaryCategory = useMemo(() => {
+    if (!product?.categorySlugs || !product.categorySlugs.length) return null;
+    const catSlug = product.categorySlugs[0];
+    return (categoriesData as any[]).find((c) => c.slug === catSlug || c.id === catSlug) || {
+      slug: catSlug,
+      name: catSlug.replace(/-/g, ' ')
+    };
+  }, [product]);
 
   // Fetch latest real-time product from API to guarantee freshly updated data from Admin
   useEffect(() => {
@@ -710,6 +720,14 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
             <Link href="/" className="hover:text-blue-600 flex-shrink-0">Home</Link>
             <ChevronRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
             <Link href="/shop" className="hover:text-blue-600 flex-shrink-0">Shop</Link>
+            {primaryCategory && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                <Link href={`/category/${primaryCategory.slug}`} className="hover:text-blue-600 flex-shrink-0 capitalize">
+                  {primaryCategory.name}
+                </Link>
+              </>
+            )}
             <ChevronRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
             <span className="font-semibold text-slate-900 truncate">{product.name}</span>
           </div>
@@ -779,9 +797,12 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
               {/* Brand & Stock Status */}
               <div className="flex items-center justify-between mb-2">
                 {product.brand && !['dwstore', 'dwstore original', 'unbranded', 'generic', 'no brand', 'none', ''].includes(product.brand.trim().toLowerCase()) ? (
-                  <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                  <Link
+                    href={`/brand/${product.brandSlug || product.brand.toLowerCase().replace(/\s+/g, '-')}`}
+                    className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 hover:bg-blue-100 transition px-3 py-1 rounded-full inline-block"
+                  >
                     {product.brand}
-                  </span>
+                  </Link>
                 ) : <span />}
                 {isOutOfStock ? (
                   <span className="text-xs font-bold text-rose-600 flex items-center gap-1.5 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200">
@@ -1612,6 +1633,45 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* SEO Internal Linking / Category & Store Exploration */}
+        <div className="mt-12 bg-slate-50 border border-slate-200/90 rounded-2xl p-5 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600">Explore More at DW Store</span>
+              <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                Buy Genuine {product.name} at Best Price in Sri Lanka
+              </h3>
+              <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+                Enjoy 100% genuine products with manufacturer warranty, 3-month interest-free installment plans with Koko &amp; Payzy, and island-wide Cash on Delivery to all 25 districts in Sri Lanka.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+              {primaryCategory && (
+                <Link
+                  href={`/category/${primaryCategory.slug}`}
+                  className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-1.5"
+                >
+                  <span>More {primaryCategory.name} →</span>
+                </Link>
+              )}
+              {product.brand && !['dwstore', 'dwstore original', 'unbranded', 'generic', 'no brand', 'none', ''].includes(product.brand.trim().toLowerCase()) && (
+                <Link
+                  href={`/brand/${product.brandSlug || product.brand.toLowerCase().replace(/\s+/g, '-')}`}
+                  className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 text-xs font-bold rounded-xl transition shadow-xs"
+                >
+                  <span>All {product.brand} Products</span>
+                </Link>
+              )}
+              <Link
+                href="/contact"
+                className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-xl transition"
+              >
+                <span>📍 Pannipitiya Store</span>
+              </Link>
+            </div>
           </div>
         </div>
 

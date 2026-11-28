@@ -58,6 +58,18 @@ export async function generateStaticParams() {
   }));
 }
 
+function cleanProductName(name: string, brand?: string): string {
+  let clean = (name || '').trim();
+  // Remove repeated brand prefix at start (e.g. SONY SONY, SONYSONY, AnkerAnker, Anker Anker)
+  if (brand && brand.trim()) {
+    const b = brand.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const doubleBrandRegex = new RegExp(`^(${b})\\s*\\1\\b`, 'i');
+    clean = clean.replace(doubleBrandRegex, '$1');
+  }
+  clean = clean.replace(/^([A-Za-z0-9]+)\1\b/i, '$1');
+  return clean.trim();
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const product = findProduct(params.slug);
 
@@ -70,11 +82,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const priceMinor = product.salePriceMinor || product.minPriceMinor || product.regularPriceMinor || 0;
   const formattedPrice = priceMinor > 0 ? `LKR ${formatPriceLKR(priceMinor)}` : '';
+  const cleanName = cleanProductName(product.name, product.brand);
 
-  // 1. Title: User custom SEO Title from Admin OR Auto-optimized Sri Lanka Title
-  const title = (product.seoTitle && product.seoTitle.trim())
-    ? product.seoTitle.trim()
-    : `${product.name}${formattedPrice ? ` - ${formattedPrice}` : ''} | Price in Sri Lanka | DWstore.lk`;
+  // 1. Title: Guarantee target keyword "Price in Sri Lanka | DW Store"
+  let title = '';
+  if (product.seoTitle && product.seoTitle.trim()) {
+    const custom = cleanProductName(product.seoTitle.trim(), product.brand);
+    if (custom.toLowerCase().includes('price in sri lanka')) {
+      title = custom;
+    } else {
+      title = `${custom}${formattedPrice ? ` - ${formattedPrice}` : ''} | Price in Sri Lanka | DW Store`;
+    }
+  } else {
+    title = `${cleanName}${formattedPrice ? ` - ${formattedPrice}` : ''} | Price in Sri Lanka | DW Store`;
+  }
 
   // 2. Description: User custom SEO Description from Admin OR Auto-generated
   let description = '';
@@ -86,11 +107,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       .replace(/\\r\\n|\\n|\/n/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-    const cleanSnippet = rawClean.length > 20 ? rawClean.slice(0, 140) : '';
+    const cleanSnippet = rawClean.length > 20 ? rawClean.slice(0, 120) : '';
 
-    description = `Buy ${product.name} at DWstore.lk${formattedPrice ? ` for ${formattedPrice}` : ''}. ${
-      cleanSnippet ? `${cleanSnippet}... ` : ''
-    }100% Genuine with Warranty & Island-wide Cash on Delivery in Sri Lanka. Order now!`;
+    description = `Buy original ${cleanName} at best price in Sri Lanka. ${
+      formattedPrice ? `Price: ${formattedPrice}. ` : ''
+    }${cleanSnippet ? `${cleanSnippet}... ` : ''}100% Genuine with Warranty, Koko & Payzy 3-month installments & Island-wide Cash on Delivery. Order now at DWstore.lk!`;
   }
 
   const ogImage = getAbsoluteImageUrl(product.displayImage || product.imageUrls?.[0]);

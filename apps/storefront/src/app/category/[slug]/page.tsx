@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { permanentRedirect } from 'next/navigation';
 import categoriesData from '@/data/categories.json';
 import { readDataJson } from '@/lib/data-paths';
 import { CategoryClientView } from './CategoryClientView';
@@ -11,11 +12,17 @@ export const dynamic = 'force-dynamic';
 
 const BASE_URL = 'https://www.dwstore.lk';
 
+const CATEGORY_REDIRECTS: Record<string, string> = {
+  'bluetooth-handfree': 'bluetooth-handsfree',
+  'temperd-glass': 'tempered-glass',
+};
+
 function findCategory(slug: string) {
   const decoded = decodeURIComponent(slug).toLowerCase();
+  const targetSlug = CATEGORY_REDIRECTS[decoded] || decoded;
   const categories = readDataJson<any[]>('categories.json', categoriesData as any[]);
   return categories.find(
-    (c) => c.slug === decoded || c.slug === slug || c.id === decoded
+    (c) => c.slug === targetSlug || c.slug === decoded || c.id === targetSlug || c.id === decoded
   );
 }
 
@@ -26,13 +33,15 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const category = findCategory(params.slug);
-  const categoryName = category?.name || params.slug.replace(/-/g, ' ');
+  const rawSlug = decodeURIComponent(params.slug).toLowerCase();
+  const cleanSlug = CATEGORY_REDIRECTS[rawSlug] || rawSlug;
+  const category = findCategory(cleanSlug);
+  const categoryName = category?.name || cleanSlug.replace(/-/g, ' ');
   const capitalizedName = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
 
   const title = `Buy ${capitalizedName} Online at Best Price in Sri Lanka | DWstore.lk`;
   const description = `Shop original ${capitalizedName} at DWstore.lk. Island-wide cash on delivery, manufacturer warranty, and lowest prices in Sri Lanka. Fast delivery to your doorstep!`;
-  const categoryUrl = `${BASE_URL}/category/${params.slug}`;
+  const categoryUrl = `${BASE_URL}/category/${cleanSlug}`;
 
   const imageUrl = category?.imageUrl
     ? (category.imageUrl.startsWith('http') ? category.imageUrl : `${BASE_URL}${category.imageUrl.startsWith('/') ? '' : '/'}${category.imageUrl}`)
@@ -70,6 +79,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default function CategoryPage({ params }: PageProps) {
+  const rawSlug = decodeURIComponent(params.slug).toLowerCase();
+  if (CATEGORY_REDIRECTS[rawSlug]) {
+    permanentRedirect(`/category/${CATEGORY_REDIRECTS[rawSlug]}`);
+  }
+
   const category = findCategory(params.slug);
   const categoryName = category?.name || params.slug.replace(/-/g, ' ');
   const capitalizedName = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
