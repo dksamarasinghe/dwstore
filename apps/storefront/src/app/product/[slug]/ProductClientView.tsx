@@ -31,6 +31,24 @@ import {
   Sparkles
 } from 'lucide-react';
 
+// Bulletproof price extractors that support regularPriceMinor / salePriceMinor / salePrice / regularPrice
+const getTargetPrice = (target: any): number => {
+  if (!target) return 0;
+  if (target.salePrice && target.salePrice > 0) return Number(target.salePrice);
+  if (target.price && target.price > 0) return Number(target.price);
+  if (target.salePriceMinor && target.salePriceMinor > 0) return target.salePriceMinor / 100;
+  if (target.regularPrice && target.regularPrice > 0) return Number(target.regularPrice);
+  if (target.regularPriceMinor && target.regularPriceMinor > 0) return target.regularPriceMinor / 100;
+  return 0;
+};
+
+const getTargetRegularPrice = (target: any): number => {
+  if (!target) return 0;
+  if (target.regularPrice && target.regularPrice > 0) return Number(target.regularPrice);
+  if (target.regularPriceMinor && target.regularPriceMinor > 0) return target.regularPriceMinor / 100;
+  return getTargetPrice(target);
+};
+
 export function ProductClientView({ slug, initialProduct }: { slug: string; initialProduct?: any }) {
   const router = useRouter();
   const { addToCart, addMultipleToCart } = useCart();
@@ -401,11 +419,7 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
     return comboCompanions.reduce((sum: number, comp: any) => {
       const fullProd = (productsData as any[])?.find((p) => String(p.id) === String(comp.id));
       const target = fullProd || comp;
-      const p = (target.salePrice && target.salePrice > 0 ? target.salePrice : 0) ||
-        (target.price && target.price > 0 ? target.price : 0) ||
-        (target.salePriceMinor && target.salePriceMinor > 0 ? target.salePriceMinor / 100 : 0) ||
-        (target.regularPrice && target.regularPrice > 0 ? target.regularPrice : 0) ||
-        (target.regularPriceMinor && target.regularPriceMinor > 0 ? target.regularPriceMinor / 100 : 0) || 0;
+      const p = getTargetPrice(target);
       return sum + Math.round(p * 100);
     }, 0);
   }, [comboCompanions]);
@@ -637,10 +651,7 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       comboCompanions.forEach((comp: any, idx: number) => {
         const fullProd = (productsData as any[])?.find((p) => String(p.id) === String(comp.id));
         const target = fullProd || comp;
-        const compPrice = (target.salePrice && target.salePrice > 0 ? target.salePrice : 0) ||
-          (target.price && target.price > 0 ? target.price : 0) ||
-          (target.salePriceMinor && target.salePriceMinor > 0 ? target.salePriceMinor / 100 : 0) ||
-          (target.regularPrice && target.regularPrice > 0 ? target.regularPrice : 0) || 0;
+        const compPrice = getTargetPrice(target);
         const compReg = Math.round(compPrice * 100);
         if (idx === comboCompanions.length - 1) {
           // Final item absorbs any cent remainder so the exact sum matches comboDealPriceMinor
@@ -657,10 +668,7 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
       comboCompanions.forEach((comp: any) => {
         const fullProd = (productsData as any[])?.find((p) => String(p.id) === String(comp.id));
         const target = fullProd || comp;
-        const compPrice = (target.salePrice && target.salePrice > 0 ? target.salePrice : 0) ||
-          (target.price && target.price > 0 ? target.price : 0) ||
-          (target.salePriceMinor && target.salePriceMinor > 0 ? target.salePriceMinor / 100 : 0) ||
-          (target.regularPrice && target.regularPrice > 0 ? target.regularPrice : 0) || 0;
+        const compPrice = getTargetPrice(target);
         compAllocatedPrices.push(Math.round(compPrice * 100));
       });
     }
@@ -1285,12 +1293,8 @@ export function ProductClientView({ slug, initialProduct }: { slug: string; init
                             {(() => {
                               const fullProd = (productsData as any[])?.find((p) => String(p.id) === String(comp.id));
                               const target = fullProd || comp;
-                              const currP = (target.salePrice && target.salePrice > 0 ? target.salePrice : 0) ||
-                                (target.price && target.price > 0 ? target.price : 0) ||
-                                (target.salePriceMinor && target.salePriceMinor > 0 ? target.salePriceMinor / 100 : 0) ||
-                                (target.regularPrice && target.regularPrice > 0 ? target.regularPrice : 0) || 0;
-                              const regP = (target.regularPrice && target.regularPrice > 0 ? target.regularPrice : 0) ||
-                                (target.regularPriceMinor && target.regularPriceMinor > 0 ? target.regularPriceMinor / 100 : 0) || 0;
+                              const currP = getTargetPrice(target);
+                              const regP = getTargetRegularPrice(target);
                               return (
                                 <div className="flex items-baseline gap-1.5 mt-1">
                                   <span className="text-xs sm:text-sm font-black text-slate-900">

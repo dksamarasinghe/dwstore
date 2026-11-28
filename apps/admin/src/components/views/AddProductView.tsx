@@ -858,6 +858,33 @@ export const AddProductView: React.FC<AddProductViewProps> = ({
         ? initialProduct.imageUrls
         : (img ? [img] : []);
       setGalleryImages(galleries);
+
+      // Synchronize Combo Deal State
+      const hasCombo = Boolean(
+        (initialProduct.comboDeal?.enabled && initialProduct.comboDeal?.productIds && initialProduct.comboDeal.productIds.length > 0) ||
+        initialProduct.comboDeal?.enabled ||
+        (initialProduct.groupedProductIds && Array.isArray(initialProduct.groupedProductIds) && initialProduct.groupedProductIds.length > 0)
+      );
+      setComboDealEnabled(hasCombo);
+
+      const pIds = (initialProduct.comboDeal?.productIds && Array.isArray(initialProduct.comboDeal.productIds))
+        ? initialProduct.comboDeal.productIds
+        : (initialProduct.groupedProductIds && Array.isArray(initialProduct.groupedProductIds))
+        ? initialProduct.groupedProductIds
+        : [];
+      setComboProductIds(pIds);
+
+      setComboDiscountAmount(
+        initialProduct.comboDeal?.discountAmount !== undefined && initialProduct.comboDeal?.discountAmount !== null
+          ? String(initialProduct.comboDeal.discountAmount)
+          : ''
+      );
+
+      setComboCustomPrice(
+        initialProduct.comboDeal?.discountPrice !== undefined && initialProduct.comboDeal?.discountPrice !== null
+          ? String(initialProduct.comboDeal.discountPrice)
+          : ''
+      );
     }
   }, [initialProduct]);
 

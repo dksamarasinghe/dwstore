@@ -105,12 +105,12 @@ export default function App() {
   // Main entity states with 100% Real WooCommerce Database & Koombiyo Logistics
   const [products, setProducts] = useState<ProductItem[]>(() => {
     try {
-      const savedV5 = localStorage.getItem('dwstore_admin_products_v5');
-      if (savedV5) {
-        const parsed: ProductItem[] = JSON.parse(savedV5);
+      const savedV6 = localStorage.getItem('dwstore_admin_products_v6');
+      if (savedV6) {
+        const parsed: ProductItem[] = JSON.parse(savedV6);
         if (Array.isArray(parsed) && parsed.length > 0) return mergeCatalogWithReal(parsed);
       }
-      const savedOld = localStorage.getItem('dwstore_admin_products_v4') || localStorage.getItem('dwstore_admin_products_v2') || localStorage.getItem('dwstore_admin_products_v1');
+      const savedOld = localStorage.getItem('dwstore_admin_products_v5') || localStorage.getItem('dwstore_admin_products_v4') || localStorage.getItem('dwstore_admin_products_v2') || localStorage.getItem('dwstore_admin_products_v1');
       if (savedOld) {
         const parsed: ProductItem[] = JSON.parse(savedOld);
         if (Array.isArray(parsed) && parsed.length > 0) return mergeCatalogWithReal(parsed);
@@ -121,9 +121,8 @@ export default function App() {
 
   useEffect(() => {
     try {
+      localStorage.setItem('dwstore_admin_products_v6', JSON.stringify(products));
       localStorage.setItem('dwstore_admin_products_v5', JSON.stringify(products));
-      localStorage.setItem('dwstore_admin_products_v4', JSON.stringify(products));
-      localStorage.setItem('dwstore_admin_products_v2', JSON.stringify(products));
     } catch (e) {}
   }, [products]);
 
@@ -258,6 +257,10 @@ export default function App() {
         description: apiItem.description || '',
         warrantyPeriod: apiItem.warrantyPeriod || '',
         shipping: apiItem.shipping || undefined,
+        comboDeal: apiItem.comboDeal || undefined,
+        groupedProductIds: apiItem.groupedProductIds || undefined,
+        groupedProducts: apiItem.groupedProducts || undefined,
+        allowedPaymentMethods: apiItem.allowedPaymentMethods || undefined,
         attributes: normalizedAttributes,
         variations: normalizedVars,
         createdAt: apiItem.createdAt || new Date().toISOString(),
@@ -430,6 +433,10 @@ export default function App() {
                     imageUrls: apiItem.imageUrls || p.imageUrls || rp?.imageUrls || [],
                     galleryImages:
                       apiItem.imageUrls || p.galleryImages || rp?.galleryImages || [],
+                    comboDeal: apiItem.comboDeal !== undefined ? apiItem.comboDeal : p.comboDeal,
+                    groupedProductIds: apiItem.groupedProductIds || p.groupedProductIds,
+                    groupedProducts: apiItem.groupedProducts || p.groupedProducts,
+                    allowedPaymentMethods: apiItem.allowedPaymentMethods || p.allowedPaymentMethods,
                     createdAt: apiItem.createdAt || p.createdAt,
                     createdAtTimestamp: apiItem.createdAtTimestamp || p.createdAtTimestamp,
                     updatedAt: apiItem.updatedAt || p.updatedAt,
@@ -725,6 +732,10 @@ export default function App() {
           : prod.galleryImages && prod.galleryImages.length > 0
           ? prod.galleryImages
           : realProd?.imageUrls || [],
+      comboDeal: prod.comboDeal || realProd?.comboDeal || undefined,
+      groupedProductIds: prod.groupedProductIds || realProd?.groupedProductIds || undefined,
+      groupedProducts: prod.groupedProducts || realProd?.groupedProducts || undefined,
+      allowedPaymentMethods: prod.allowedPaymentMethods || realProd?.allowedPaymentMethods || undefined,
     };
 
     // 1. Immediately open form with complete merged data (Zero lag, no waiting for network)
@@ -855,6 +866,10 @@ export default function App() {
                 imageUrls: fullProd.imageUrls || prod.imageUrls || realProd?.imageUrls || initialMerged.imageUrls,
                 galleryImages:
                   fullProd.imageUrls || prod.galleryImages || realProd?.galleryImages || initialMerged.galleryImages,
+                comboDeal: fullProd.comboDeal || prod.comboDeal || realProd?.comboDeal || undefined,
+                groupedProductIds: fullProd.groupedProductIds || prod.groupedProductIds || realProd?.groupedProductIds || undefined,
+                groupedProducts: fullProd.groupedProducts || prod.groupedProducts || realProd?.groupedProducts || undefined,
+                allowedPaymentMethods: fullProd.allowedPaymentMethods || prod.allowedPaymentMethods || realProd?.allowedPaymentMethods || undefined,
               };
               setEditingProductForForm((curr) => {
                 if (!curr || String(curr.id) !== String(prod.id)) return curr;
@@ -1542,9 +1557,8 @@ export default function App() {
     setProducts((prev) => {
       const next = [withTimestamp, ...prev];
       try {
+        localStorage.setItem('dwstore_admin_products_v6', JSON.stringify(next));
         localStorage.setItem('dwstore_admin_products_v5', JSON.stringify(next));
-        localStorage.setItem('dwstore_admin_products_v4', JSON.stringify(next));
-        localStorage.setItem('dwstore_admin_products_v2', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -1579,9 +1593,8 @@ export default function App() {
       const filtered = prev.filter((p) => p.id !== updatedProduct.id);
       const next = [withTimestamp, ...filtered];
       try {
+        localStorage.setItem('dwstore_admin_products_v6', JSON.stringify(next));
         localStorage.setItem('dwstore_admin_products_v5', JSON.stringify(next));
-        localStorage.setItem('dwstore_admin_products_v4', JSON.stringify(next));
-        localStorage.setItem('dwstore_admin_products_v2', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -1610,9 +1623,8 @@ export default function App() {
     setProducts((prev) => {
       const next = prev.filter((p) => String(p.id) !== String(id));
       try {
+        localStorage.setItem('dwstore_admin_products_v6', JSON.stringify(next));
         localStorage.setItem('dwstore_admin_products_v5', JSON.stringify(next));
-        localStorage.setItem('dwstore_admin_products_v4', JSON.stringify(next));
-        localStorage.setItem('dwstore_admin_products_v2', JSON.stringify(next));
       } catch (e) {}
       return next;
     });

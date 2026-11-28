@@ -79,8 +79,21 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     return Array.from(set).sort();
   }, [products, brands]);
 
+  // Helper to determine if a product has an active combo deal
+  const isComboProduct = (p: any): boolean => {
+    return Boolean(
+      (p.comboDeal?.enabled && p.comboDeal?.productIds && p.comboDeal.productIds.length > 0) ||
+      (p.comboDeal?.enabled && p.comboDeal?.companionProducts && p.comboDeal.companionProducts.length > 0) ||
+      p.comboDeal?.enabled ||
+      p.productType === 'grouped' ||
+      p.type === 'grouped' ||
+      p.type === 'combo'
+    );
+  };
+
   // Counts
   const totalCount = products.length;
+  const comboCount = useMemo(() => products.filter(isComboProduct).length, [products]);
   const activeCount = products.filter((p) => p.status === 'Active').length;
   const lowStockCount = products.filter((p) => p.status === 'Low stock').length;
   const outOfStockCount = products.filter((p) => p.status === 'Out of stock').length;
@@ -88,8 +101,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   // Filter & sort
   const filtered = useMemo(() => {
     let result = products.filter((p) => {
+      const isCombo = isComboProduct(p);
       const matchesTab =
-        activeTabFilter === 'all' || p.status.toLowerCase() === activeTabFilter.toLowerCase();
+        activeTabFilter === 'all'
+          ? true
+          : activeTabFilter === 'combo'
+          ? isCombo
+          : p.status.toLowerCase() === activeTabFilter.toLowerCase();
       const s = searchTerm.toLowerCase();
       const matchesSearch =
         p.name.toLowerCase().includes(s) ||
@@ -331,6 +349,17 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             All <em>{totalCount}</em>
           </button>
           <button
+            className={activeTabFilter === 'combo' ? 'on' : ''}
+            onClick={() => {
+              setActiveTabFilter('combo');
+              setCurrentPage(1);
+            }}
+            type="button"
+            style={activeTabFilter === 'combo' ? { borderColor: '#e11d48', color: '#e11d48', fontWeight: 'bold' } : {}}
+          >
+            Combo Deals <em>{comboCount}</em>
+          </button>
+          <button
             className={activeTabFilter === 'active' ? 'on' : ''}
             onClick={() => {
               setActiveTabFilter('active');
@@ -537,9 +566,18 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                                   Variable ({prod.variations?.length || 0})
                                 </span>
                               )}
-                              {(prod.productType === 'grouped' || prod.type === 'grouped' || (prod as any).type === 'combo') && (
-                                <span className="badge text-white" style={{ fontSize: '10px', padding: '2px 6px', background: '#7c3aed' }}>
-                                  Combo Deal ({prod.groupedProductIds?.length || (prod as any).groupedProducts?.length || 0} items)
+                              {isComboProduct(prod) && (
+                                <span
+                                  className="badge text-white cursor-pointer"
+                                  style={{ fontSize: '10px', padding: '2px 6px', background: '#e11d48' }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveTabFilter('combo');
+                                    setCurrentPage(1);
+                                  }}
+                                  title="Filter products with Combo Deals"
+                                >
+                                  Combo Deal {prod.comboDeal?.companionProducts?.length ? `(${prod.comboDeal.companionProducts.length + 1} Items)` : ''}
                                 </span>
                               )}
                             </small>
